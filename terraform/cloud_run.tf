@@ -74,6 +74,11 @@ resource "google_cloud_run_v2_service" "ui_api" {
         name  = "DATASET_ID"
         value = var.dataset_id
       }
+
+      env {
+        name  = "AGENT_RUNNER_URL"
+        value = google_cloud_run_v2_service.agent_runner.uri
+      }
     }
 
     service_account = google_service_account.cash_agent_sa.email

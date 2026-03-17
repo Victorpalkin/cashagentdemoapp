@@ -108,16 +108,18 @@ Before diving into the interactive demo, highlight the autonomous capabilities:
 **What happens**: Root agent delegates to `CashForecastAgent`, which calls BQML ARIMA+ model and cross-references AR/AP open items.
 
 **Expected response** — Weekly breakdown of expected inflows vs outflows by currency, highlighting:
-- Total AR (receivables) expected over 30 days
-- Total AP (payables) + scheduled payment runs
-- A projected **USD shortfall around Week 3** (large payment runs of $2.8M + $1.5M vs more moderate AR collections)
+- Total AR (receivables) expected over 30 days: ~$6.5M USD (probability-weighted), ~€3.4M EUR, ~£551K GBP
+- Total AP (payables) + scheduled payment runs: ~$14.6M USD, ~€4.4M EUR, ~£2.7M GBP
+- **Weekly cash flow patterns** visible in the BQML forecast: Tuesday-Wednesday inflow peaks, Monday outflow spikes, Friday quiet days
+- **USD pressure in Week 3**: Large payment runs ($2.8M on day 9 + $1.5M payroll on day 16) create temporary cash pressure, partially offset by incoming AR collections
 
 **Talking points**:
 - BQML ARIMA+ model trained on `cash_journal` historical data — no ML infra needed
+- The forecast chart shows realistic weekly seasonality (business cycles, month-end effects)
 - AR items are probability-weighted (not all receivables are equally certain)
 - Tease: "Let's see if there are any anomalies we should worry about"
 
-**UI interaction**: The Dashboard's forecast chart shows the same BQML ARIMA+ projection with confidence intervals.
+**UI interaction**: The Dashboard's forecast chart shows the same BQML ARIMA+ projection with confidence intervals and clear weekly patterns.
 
 ---
 
@@ -155,12 +157,12 @@ Before diving into the interactive demo, highlight the autonomous capabilities:
    - Policy ref: Treasury Policy Section 2.3 (reserve monitoring)
 
 2. **MEDIUM: Place EUR term deposit** (EUR surplus)
-   - Rationale: EUR 6.8M balance significantly exceeds 120% of 30-day EUR obligations
+   - Rationale: EUR 6.8M balance = ~153% of 30-day EUR obligations (€4.4M = AP €3.3M + payment runs €1.1M), exceeding the 120% surplus threshold
    - Policy ref: Treasury Policy Section 3.1 (surplus > 120% threshold)
    - Note: Amount > $500K requires VP Treasury approval (Approval Matrix Section 2.1)
 
-3. **MEDIUM: Hedge GBP FX exposure** (BAE Systems GBP 800,000)
-   - Rationale: GBP 800K AP payment exceeds GBP 500K mandatory hedging threshold
+3. **MEDIUM: Hedge GBP FX exposure** (net GBP ~£1.4M)
+   - Rationale: Net GBP exposure is ~£1.4M (AP £1.9M minus probability-weighted AR £551K), well above the GBP 500K mandatory hedging threshold. BAE Systems £800K payment is the largest single driver.
    - Policy ref: FX Hedging Policy Section 2.1
 
 **Talking points**:
@@ -379,7 +381,9 @@ Copy-paste these prompts in order:
 | ACME Corp receivable | EUR 2,300,000 at 45% probability | ar_open_items |
 | BAE Systems payable | GBP 800,000 | ap_open_items |
 | Surplus threshold | 120% of 30-day obligations | Treasury Policy 3.1 |
+| Net GBP exposure | ~GBP 1,377,000 (AP 1.9M - weighted AR 551K) | ar/ap_open_items |
 | FX hedge threshold (GBP) | GBP 500,000 | FX Hedging Policy 2.1 |
+| EUR surplus ratio | ~153% of 30-day obligations | bank_accounts vs ap/payment_runs |
 | Auto-execute limit | < $100K | Approval Matrix 3.1 |
 | Confirm limit | $100K-$500K | Approval Matrix 3.2 |
 | Formal approval limit | > $500K | Approval Matrix 3.3 |

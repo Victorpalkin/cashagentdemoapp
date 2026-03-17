@@ -160,6 +160,19 @@ def get_fx_rates():
     return {"rates": [dict(r) for r in rows]}
 
 
+def get_payment_runs():
+    client = _bq_client()
+    query = f"""
+        SELECT payment_run_id, scheduled_date, total_amount, currency,
+               item_count, status, description
+        FROM {_table('payment_runs')}
+        WHERE status = 'SCHEDULED'
+        ORDER BY scheduled_date
+    """
+    rows = client.query(query).result()
+    return {"payment_runs": [dict(r) for r in rows]}
+
+
 def log_agent_action(agent_name, action, tool_name, input_summary, output_summary):
     client = _bq_client()
     table_ref = f"{PROJECT_ID}.{DATASET_ID}.agent_audit_log"
@@ -262,35 +275,43 @@ async def daily_review():
 
         # Step 4: Generate recommendations via Gemini
         fx = get_fx_rates()
+        payment_runs = get_payment_runs()
 
         # Build context for Gemini
         context_data = _serialize_for_prompt({
-            "balances": balances,
-            "ar_items": ar["items"][:10],  # Top 10 for context
-            "ap_items": ap["items"][:10],
+            "bank_balances": balances,
+            "ar_items": ar["items"],
+            "ap_items": ap["items"],
+            "payment_runs": payment_runs["payment_runs"],
             "anomalies": anomalies["anomalies"],
             "fx_rates": fx["rates"],
         })
 
-        prompt = f"""You are an autonomous treasury cash management agent. Based on the following data, generate 2-4 actionable recommendations.
+        prompt = f"""You are an autonomous treasury cash management agent for a company whose FUNCTIONAL CURRENCY is USD. EUR and GBP are foreign currencies. Based on the following data, generate exactly 3 actionable recommendations.
 
 DATA:
 {json.dumps(context_data, indent=2, default=str)}
 
-POLICIES:
-- Surplus > 120% of 30-day obligations should be invested (term deposits)
-- FX exposures > GBP 500,000 or EUR 1,000,000 must be hedged
-- Receivables with probability < 60% require collection acceleration
-- Transactions > $500K require VP Treasury approval
-- Transactions $100K-$500K require user confirmation
+POLICIES (from corporate treasury policy documents):
+- Treasury Policy Section 2.3: Receivables with probability < 60% represent collection risk and must be escalated to VP Treasury immediately.
+- Treasury Policy Section 3.1: Surplus is defined as cash balances exceeding 120% of the next 30 days' projected obligations for a given currency. Surplus funds should be invested in approved short-term instruments.
+- FX Hedging Policy Section 2.1: FX exposures in FOREIGN currencies (EUR, GBP — NOT USD) must be hedged when net obligation exceeds EUR 750,000 or GBP 500,000. "Net obligation" = AP total minus probability-weighted AR total in that currency.
+- Approval Matrix Section 3.3: Transactions > $500,000 USD equivalent require formal VP Treasury approval.
+- Approval Matrix Section 3.2: Transactions $100,000-$500,000 require user confirmation.
 
-Return a JSON array of recommendations. Each recommendation must have:
-- "priority": "HIGH" | "MEDIUM" | "LOW"
-- "action_type": one of "PLACE_DEPOSIT", "HEDGE_FX", "ACCELERATE_COLLECTION", "INTERNAL_TRANSFER", "INCREASE_RESERVE"
-- "amount": number
+ANALYSIS INSTRUCTIONS:
+1. Check anomalies first: any receivable with probability < 60% is HIGH priority for collection acceleration.
+2. Calculate 30-day obligations per currency = sum of AP items + scheduled payment runs in that currency. Compare bank balances to 120% of obligations to find surplus currencies. Surplus investment is MEDIUM priority.
+3. Calculate net FX exposure per FOREIGN currency (EUR, GBP) = AP total - probability-weighted AR total. Check against hedging thresholds. FX hedging is MEDIUM priority.
+4. Do NOT recommend hedging USD — it is the functional currency.
+
+Return exactly 3 recommendations as a JSON array. Each must have:
+- "priority": "HIGH" for collection risks, "MEDIUM" for surplus investment and FX hedging
+- "action_type": one of "PLACE_DEPOSIT", "HEDGE_FX", "ACCELERATE_COLLECTION"
+- "amount": number (the recommended action amount)
 - "currency": "USD" | "EUR" | "GBP"
 - "description": short human-readable description
-- "rationale": detailed reasoning with policy references
+- "rationale": detailed reasoning citing specific policy sections and computed values (show the math)
 
 Return ONLY the JSON array, no other text."""
 

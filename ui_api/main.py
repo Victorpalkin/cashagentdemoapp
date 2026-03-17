@@ -358,26 +358,24 @@ def reset_demo(full: bool = Query(default=False)):
             results["errors"].append(f"{table_name}: {str(e)}")
 
     if full:
-        # Full reset: regenerate seed data with today's dates and reload
-        try:
-            import importlib.util
-            import sys
+        # Full reset: call agent-runner service to regenerate seed data
+        import urllib.request
+        import urllib.error
 
-            # Find refresh_data module (in agent_runner/ relative to ui_api/)
-            refresh_paths = [
-                os.path.join(os.path.dirname(__file__), "..", "agent_runner", "refresh_data.py"),
-                "/app/refresh_data.py",
-            ]
-            for path in refresh_paths:
-                if os.path.exists(path):
-                    spec = importlib.util.spec_from_file_location("refresh_data", path)
-                    mod = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(mod)
-                    refresh_result = mod.refresh_all_data(PROJECT_ID, DATASET_ID)
-                    results["refresh"] = refresh_result
-                    break
-            else:
-                results["errors"].append("refresh_data.py not found")
+        agent_runner_url = os.environ.get(
+            "AGENT_RUNNER_URL",
+            "https://agent-runner-558326705804.us-central1.run.app",
+        )
+        refresh_url = f"{agent_runner_url}/run/refresh-data"
+
+        try:
+            req = urllib.request.Request(refresh_url, method="POST")
+            req.add_header("Content-Type", "application/json")
+            with urllib.request.urlopen(req, timeout=300) as resp:
+                refresh_result = json.loads(resp.read().decode())
+                results["refresh"] = refresh_result
+        except urllib.error.URLError as e:
+            results["errors"].append(f"Full reset (agent-runner call): {str(e)}")
         except Exception as e:
             results["errors"].append(f"Full reset: {str(e)}")
 

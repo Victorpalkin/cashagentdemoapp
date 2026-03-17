@@ -143,8 +143,57 @@ def generate_fx_rates(today):
     print(f"  Created {rates_file}")
 
 
+def _day_seasonality(d):
+    """Return multipliers for (inflow_amount, outflow_amount, inflow_count, outflow_count).
+
+    Creates weekly and monthly patterns that ARIMA+ can detect:
+    - Monday: heavy outflow day (vendor batch payments)
+    - Tuesday-Wednesday: peak inflow days (customer payments settle)
+    - Thursday: moderate
+    - Friday: light (end of week)
+    - Month-end (last 3 days): heavy outflows (settlements, rent, subscriptions)
+    - Month-start (first 3 days): heavy inflows (monthly contracts pay)
+    """
+    dow = d.weekday()  # 0=Mon, 4=Fri
+    dom = d.day
+    next_day = d + timedelta(days=1)
+    is_month_end = next_day.month != d.month or (next_day + timedelta(days=1)).month != d.month or (next_day + timedelta(days=2)).month != d.month
+    is_month_start = dom <= 3
+
+    # Base weekly pattern: (inflow_amt_mult, outflow_amt_mult, inflow_count_adj, outflow_count_adj)
+    weekly = {
+        0: (0.85, 1.35, 0, 2),    # Monday: heavy outflows
+        1: (1.25, 0.90, 2, 0),    # Tuesday: peak inflows
+        2: (1.20, 0.85, 1, 0),    # Wednesday: strong inflows
+        3: (1.00, 1.05, 0, 0),    # Thursday: moderate
+        4: (0.75, 0.80, -1, -1),  # Friday: light
+    }
+    in_amt, out_amt, in_cnt, out_cnt = weekly[dow]
+
+    # Monthly overlay
+    if is_month_end:
+        out_amt *= 1.4
+        out_cnt += 2
+    if is_month_start:
+        in_amt *= 1.3
+        in_cnt += 2
+
+    # Quarter-end bump (Mar, Jun, Sep, Dec last week)
+    if d.month in (3, 6, 9, 12) and dom >= 25:
+        in_amt *= 1.15   # quarterly contract payments arrive
+        out_amt *= 1.25  # quarterly settlements go out
+
+    # Gradual growth trend: ~0.5% per month over the year
+    months_from_start = (d.year - 2025) * 12 + d.month - 3
+    trend = 1.0 + 0.005 * max(0, months_from_start)
+    in_amt *= trend
+    out_amt *= trend
+
+    return in_amt, out_amt, in_cnt, out_cnt
+
+
 def generate_cash_journal(today):
-    """Generate 12 months of cash journal entries."""
+    """Generate 12 months of cash journal entries with weekly/monthly seasonality."""
     today = _to_date(today)
     start_date = today - timedelta(days=365)
     end_date = today - timedelta(days=1)
@@ -169,13 +218,15 @@ def generate_cash_journal(today):
                 continue
 
             date_str = current_date.strftime('%Y-%m-%d')
+            in_amt_mult, out_amt_mult, in_cnt_adj, out_cnt_adj = _day_seasonality(current_date)
 
             # Check for payroll day
             if is_payroll_day(current_date):
+                payroll = int(random.randint(1450000, 1550000) * out_amt_mult)
                 writer.writerow([
                     f'CJ-{journal_id:06d}',
                     date_str,
-                    random.randint(1450000, 1550000),
+                    payroll,
                     'USD',
                     'OUTFLOW',
                     'ADP Payroll Services',
@@ -186,9 +237,9 @@ def generate_cash_journal(today):
                 journal_id += 1
 
             # USD inflows
-            usd_inflows = random.randint(3, 6)
+            usd_inflows = max(1, random.randint(3, 6) + in_cnt_adj)
             for _ in range(usd_inflows):
-                amount = random.randint(80000, 150000)
+                amount = int(random.randint(80000, 150000) * in_amt_mult)
                 counterparty = random.choice(COUNTERPARTIES['USD_INFLOW'])
                 gl_account = random.choice(GL_ACCOUNTS['USD_INFLOW'])
 
@@ -214,9 +265,9 @@ def generate_cash_journal(today):
                 journal_id += 1
 
             # USD outflows
-            usd_outflows = random.randint(3, 6)
+            usd_outflows = max(1, random.randint(3, 6) + out_cnt_adj)
             for _ in range(usd_outflows):
-                amount = random.randint(60000, 120000)
+                amount = int(random.randint(60000, 120000) * out_amt_mult)
                 counterparty = random.choice(COUNTERPARTIES['USD_OUTFLOW'])
                 gl_account = random.choice(GL_ACCOUNTS['USD_OUTFLOW'])
 
@@ -243,9 +294,9 @@ def generate_cash_journal(today):
                 journal_id += 1
 
             # EUR inflows
-            eur_inflows = random.randint(2, 4)
+            eur_inflows = max(1, random.randint(2, 4) + in_cnt_adj)
             for _ in range(eur_inflows):
-                amount = random.randint(30000, 80000)
+                amount = int(random.randint(30000, 80000) * in_amt_mult)
                 counterparty = random.choice(COUNTERPARTIES['EUR_INFLOW'])
                 gl_account = random.choice(GL_ACCOUNTS['EUR_INFLOW'])
 
@@ -274,9 +325,9 @@ def generate_cash_journal(today):
                 journal_id += 1
 
             # EUR outflows
-            eur_outflows = random.randint(2, 4)
+            eur_outflows = max(1, random.randint(2, 4) + out_cnt_adj)
             for _ in range(eur_outflows):
-                amount = random.randint(20000, 60000)
+                amount = int(random.randint(20000, 60000) * out_amt_mult)
                 counterparty = random.choice(COUNTERPARTIES['EUR_OUTFLOW'])
                 gl_account = random.choice(GL_ACCOUNTS['EUR_OUTFLOW'])
 
@@ -301,9 +352,9 @@ def generate_cash_journal(today):
                 journal_id += 1
 
             # GBP inflows
-            gbp_inflows = random.randint(1, 3)
+            gbp_inflows = max(1, random.randint(1, 3) + in_cnt_adj)
             for _ in range(gbp_inflows):
-                amount = random.randint(10000, 40000)
+                amount = int(random.randint(10000, 40000) * in_amt_mult)
                 counterparty = random.choice(COUNTERPARTIES['GBP_INFLOW'])
                 gl_account = random.choice(GL_ACCOUNTS['GBP_INFLOW'])
 
@@ -327,9 +378,9 @@ def generate_cash_journal(today):
                 journal_id += 1
 
             # GBP outflows
-            gbp_outflows = random.randint(1, 3)
+            gbp_outflows = max(1, random.randint(1, 3) + out_cnt_adj)
             for _ in range(gbp_outflows):
-                amount = random.randint(8000, 30000)
+                amount = int(random.randint(8000, 30000) * out_amt_mult)
                 counterparty = random.choice(COUNTERPARTIES['GBP_OUTFLOW'])
                 gl_account = random.choice(GL_ACCOUNTS['GBP_OUTFLOW'])
 
