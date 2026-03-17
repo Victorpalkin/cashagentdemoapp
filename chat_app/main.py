@@ -3,7 +3,7 @@
 import json
 import os
 
-from flask import Flask, Request, request, jsonify
+from flask import Flask, Request, request, jsonify, render_template_string
 
 app = Flask(__name__)
 
@@ -61,9 +61,144 @@ def _query_agent(user_id: str, message: str) -> str:
     return response_text or "I didn't get a response. Please try again."
 
 
-@app.route("/", methods=["POST"])
-def chat_webhook():
-    """Handle incoming Google Chat events."""
+CHAT_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cash Agent</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; height: 100vh; display: flex; flex-direction: column; background: #f5f5f5; }
+.header { background: #1a237e; color: #fff; padding: 16px 24px; font-size: 20px; font-weight: 600; flex-shrink: 0; display: flex; align-items: center; gap: 10px; }
+.header span { font-size: 14px; font-weight: 400; opacity: 0.8; }
+.messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.msg { max-width: 75%; padding: 12px 16px; border-radius: 16px; line-height: 1.5; font-size: 14px; word-wrap: break-word; }
+.msg.user { align-self: flex-end; background: #1565c0; color: #fff; border-bottom-right-radius: 4px; }
+.msg.agent { align-self: flex-start; background: #fff; color: #212121; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+.msg.agent p { margin: 0 0 8px 0; } .msg.agent p:last-child { margin-bottom: 0; }
+.msg.agent strong { font-weight: 600; }
+.msg.agent code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+.msg.agent pre { background: #f0f0f0; padding: 12px; border-radius: 8px; overflow-x: auto; margin: 8px 0; }
+.msg.agent pre code { background: none; padding: 0; }
+.msg.agent ul, .msg.agent ol { margin: 4px 0 4px 20px; }
+.msg.thinking { align-self: flex-start; background: #fff; color: #999; font-style: italic; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+.input-bar { display: flex; padding: 16px; background: #fff; border-top: 1px solid #e0e0e0; flex-shrink: 0; gap: 8px; }
+.input-bar input { flex: 1; padding: 12px 16px; border: 1px solid #ddd; border-radius: 24px; font-size: 14px; outline: none; }
+.input-bar input:focus { border-color: #1565c0; }
+.input-bar button { background: #1565c0; color: #fff; border: none; border-radius: 24px; padding: 12px 24px; font-size: 14px; cursor: pointer; font-weight: 500; }
+.input-bar button:hover { background: #0d47a1; }
+.input-bar button:disabled { background: #bbb; cursor: not-allowed; }
+.welcome { text-align: center; color: #666; margin: auto; max-width: 400px; }
+.welcome h2 { margin-bottom: 12px; color: #1a237e; }
+.welcome p { font-size: 14px; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="header">Cash Agent <span>AI Treasury Assistant</span></div>
+<div class="messages" id="messages">
+  <div class="welcome">
+    <h2>Welcome to Cash Agent</h2>
+    <p>Ask about cash positions, forecasts, recommendations, FX hedging, anomalies, or scenario analysis.</p>
+  </div>
+</div>
+<div class="input-bar">
+  <input type="text" id="input" placeholder="Ask Cash Agent..." autocomplete="off">
+  <button id="send" onclick="sendMessage()">Send</button>
+</div>
+<script>
+const messagesEl = document.getElementById('messages');
+const inputEl = document.getElementById('input');
+const sendBtn = document.getElementById('send');
+let firstMsg = true;
+
+inputEl.addEventListener('keydown', e => { if (e.key === 'Enter' && !sendBtn.disabled) sendMessage(); });
+
+function renderMarkdown(text) {
+  let html = text
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/```([\\s\\S]*?)```/g, (_, code) => '<pre><code>' + code.trim() + '</code></pre>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\\*\\*(.+?)\\*\\*/g, '<strong>$1</strong>')
+    .replace(/\\*(.+?)\\*/g, '<em>$1</em>');
+  html = html.replace(/(^|\\n)- (.+)/g, '$1<li>$2</li>');
+  html = html.replace(/(<li>.*<\\/li>)/gs, '<ul>$1</ul>');
+  html = html.replace(/<\\/ul>\\s*<ul>/g, '');
+  html = html.split(/\\n{2,}/).map(p => {
+    p = p.trim();
+    if (!p || p.startsWith('<pre>') || p.startsWith('<ul>') || p.startsWith('<ol>')) return p;
+    return '<p>' + p + '</p>';
+  }).join('');
+  html = html.replace(/\\n/g, '<br>');
+  return html;
+}
+
+function addMessage(text, cls) {
+  if (firstMsg) { messagesEl.querySelector('.welcome')?.remove(); firstMsg = false; }
+  const div = document.createElement('div');
+  div.className = 'msg ' + cls;
+  if (cls === 'agent') div.innerHTML = renderMarkdown(text);
+  else div.textContent = text;
+  messagesEl.appendChild(div);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+  return div;
+}
+
+async function sendMessage() {
+  const text = inputEl.value.trim();
+  if (!text) return;
+  inputEl.value = '';
+  addMessage(text, 'user');
+  sendBtn.disabled = true;
+  const thinking = addMessage('Thinking...', 'thinking');
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: text})
+    });
+    const data = await res.json();
+    thinking.remove();
+    addMessage(data.response || data.error || 'No response', 'agent');
+  } catch (err) {
+    thinking.remove();
+    addMessage('Error: ' + err.message, 'agent');
+  }
+  sendBtn.disabled = false;
+  inputEl.focus();
+}
+</script>
+</body>
+</html>"""
+
+
+@app.route("/api/chat", methods=["POST"])
+def api_chat():
+    """JSON API for the web chat UI."""
+    data = request.get_json()
+    message = (data.get("message") or "").strip() if data else ""
+    if not message:
+        return jsonify({"error": "No message provided"}), 400
+
+    if not AGENT_ENGINE_ID:
+        return jsonify({
+            "response": (
+                "Agent Engine is not configured on this deployment. "
+                "Set the AGENT_ENGINE_ID environment variable, or use "
+                "'adk web' locally to chat with the agent."
+            )
+        })
+
+    response = _query_agent("web-user", message)
+    return jsonify({"response": response})
+
+
+@app.route("/", methods=["GET", "POST"])
+def root():
+    """GET: serve web chat UI. POST: handle Google Chat webhook events."""
+    if request.method == "GET":
+        return render_template_string(CHAT_HTML)
+
+    # POST — Google Chat webhook
     event = request.get_json()
     event_type = event.get("type", "")
 
