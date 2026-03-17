@@ -171,24 +171,41 @@ python3 -c "
 import vertexai
 from vertexai import agent_engines
 
-vertexai.init(project='${PROJECT_ID}', location='${REGION}')
+vertexai.init(
+    project='${PROJECT_ID}',
+    location='${REGION}',
+    staging_bucket='gs://${PROJECT_ID}-staging',
+)
 
-# Deploy the agent
+from agent.agent import root_agent
+
 agent_engine = agent_engines.create(
-    agent_engine='agent.agent:root_agent',
+    agent_engine=root_agent,
     requirements=[
         'google-adk',
         'google-cloud-bigquery',
         'google-cloud-storage',
         'requests',
     ],
+    extra_packages=['./agent'],
+    env_vars={
+        'PROJECT_ID': '${PROJECT_ID}',
+        'REGION': '${REGION}',
+        'DATASET_ID': 'cash_agent_demo',
+        'SAP_API_URL': 'https://sap-api-mock-\${CLOUD_RUN_SUFFIX}.a.run.app',
+        'BANK_API_URL': 'https://bank-api-mock-\${CLOUD_RUN_SUFFIX}.a.run.app',
+        'BROKER_API_URL': 'https://broker-api-mock-\${CLOUD_RUN_SUFFIX}.a.run.app',
+    },
     display_name='Cash Agent Demo',
-    description='AI-powered Treasury Cash Agent',
+    description='AI-powered Treasury Cash Agent with enriched forecasting',
 )
 print(f'Agent Engine ID: {agent_engine.resource_name}')
 print(f'Extract the ID from the resource name above.')
 "
 ```
+
+> **Note**: The staging bucket must exist before deploying. Create it with:
+> `gcloud storage buckets create gs://${PROJECT_ID}-staging --project=${PROJECT_ID} --location=${REGION}`
 
 Copy the Agent Engine ID (the last part of the resource name).
 
