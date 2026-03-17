@@ -140,6 +140,43 @@ resource "google_cloud_run_v2_service" "chat_app" {
   depends_on = [google_project_service.run, google_artifact_registry_repository.docker]
 }
 
+# Agent Runner Service (autonomous scheduled operations)
+resource "google_cloud_run_v2_service" "agent_runner" {
+  name     = "agent-runner"
+  location = var.region
+
+  template {
+    containers {
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/cash-agent-demo/agent-runner"
+
+      ports {
+        container_port = 8080
+      }
+
+      env {
+        name  = "PROJECT_ID"
+        value = var.project_id
+      }
+
+      env {
+        name  = "DATASET_ID"
+        value = var.dataset_id
+      }
+
+      env {
+        name  = "REGION"
+        value = var.region
+      }
+    }
+
+    service_account = google_service_account.cash_agent_sa.email
+
+    timeout = "540s"
+  }
+
+  depends_on = [google_project_service.run, google_artifact_registry_repository.docker]
+}
+
 # Allow unauthenticated access to all services (adjust as needed for production)
 resource "google_cloud_run_v2_service_iam_member" "sap_api_mock_public" {
   name     = google_cloud_run_v2_service.sap_api_mock.name
@@ -179,6 +216,13 @@ resource "google_cloud_run_v2_service_iam_member" "cash_agent_ui_public" {
 resource "google_cloud_run_v2_service_iam_member" "chat_app_public" {
   name     = google_cloud_run_v2_service.chat_app.name
   location = google_cloud_run_v2_service.chat_app.location
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
+resource "google_cloud_run_v2_service_iam_member" "agent_runner_public" {
+  name     = google_cloud_run_v2_service.agent_runner.name
+  location = google_cloud_run_v2_service.agent_runner.location
   role     = "roles/run.invoker"
   member   = "allUsers"
 }

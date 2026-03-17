@@ -1,36 +1,36 @@
 ar_item_id,customer_id,customer_name,invoice_number,amount,currency,due_date,status,probability,description
-AR-001,C-001,TechGlobal Solutions,INV-AR-001,450000,USD,2026-03-18,OPEN,0.95,Q1 software implementation project
-AR-002,C-002,AutoMotive Industries GmbH,INV-AR-002,380000,EUR,2026-03-20,OPEN,0.92,Manufacturing equipment delivery
-AR-003,C-003,British Retail Group,INV-AR-003,95000,GBP,2026-03-19,OPEN,0.88,Retail POS system integration
-AR-004,C-004,Pacific Trading Corp,INV-AR-004,520000,USD,2026-03-22,OPEN,0.94,International shipping services
-AR-005,C-005,Nordic Energy AS,INV-AR-005,285000,EUR,2026-03-24,OPEN,0.90,Energy management consulting
-AR-006,C-006,London Financial Services,INV-AR-006,125000,GBP,2026-03-25,OPEN,0.91,Financial software licensing
-AR-007,C-007,MegaCorp USA,INV-AR-007,680000,USD,2026-03-27,OPEN,0.96,Enterprise cloud migration
-AR-008,C-008,Deutsche Industrial AG,INV-AR-008,195000,EUR,2026-03-28,OPEN,0.89,Industrial automation project
-AR-009,C-009,Highland Manufacturing,INV-AR-009,78000,GBP,2026-03-29,OPEN,0.85,Equipment calibration services
-AR-010,C-010,American Logistics Inc,INV-AR-010,425000,USD,2026-03-31,OPEN,0.93,Supply chain optimization
-AR-011,C-011,EuroTech Solutions,INV-AR-011,340000,EUR,2026-04-01,OPEN,0.91,IT infrastructure upgrade
-AR-012,C-012,Westminster Holdings,INV-AR-012,42000,GBP,2026-04-02,OPEN,0.87,Business consulting services
-AR-013,C-013,Continental Systems,INV-AR-013,575000,USD,2026-04-03,OPEN,0.95,Software licensing annual renewal
-AR-014,C-014,FranceTech SA,INV-AR-014,265000,EUR,2026-04-04,OPEN,0.90,Digital transformation services
-AR-015,C-015,Manchester United Industries,INV-AR-015,35000,GBP,2026-04-05,OPEN,0.86,Maintenance contract quarterly
-AR-016,C-016,Global Pharma Corp,INV-AR-016,890000,USD,2026-04-06,OPEN,0.97,Pharmaceutical data analytics platform
-AR-017,C-017,Siemens Digital Industries,INV-AR-017,425000,EUR,2026-04-07,OPEN,0.92,IoT platform deployment
-AR-018,C-018,Oxford Research Labs,INV-AR-018,52000,GBP,2026-04-08,OPEN,0.88,Research data management system
-AR-019,C-019,TransAtlantic Shipping,INV-AR-019,755000,USD,2026-04-09,OPEN,0.96,Fleet management software
-AR-020,C-020,ACME Corp,INV-AR-035,2300000,EUR,2026-03-17,OPEN,0.45,Major enterprise solution delivery - Phase 3
-AR-021,C-021,Cambridge Biotech,INV-AR-021,68000,GBP,2026-04-10,OPEN,0.89,Laboratory information system
-AR-022,C-022,Midwest Manufacturing,INV-AR-022,385000,USD,2026-04-11,OPEN,0.94,Production monitoring system
-AR-023,C-023,Berlin Analytics GmbH,INV-AR-023,215000,EUR,2026-04-12,OPEN,0.90,Business intelligence platform
-AR-024,C-024,Scottish Energy Solutions,INV-AR-024,28000,GBP,2026-04-13,OPEN,0.85,Energy audit services
-AR-025,C-025,Sunrise Technologies,INV-AR-025,495000,USD,2026-04-14,OPEN,0.93,Mobile application development
+AR-001,C-001,TechGlobal Solutions,INV-AR-001,450000,USD,2026-03-19,OPEN,0.95,Q1 software implementation project
+AR-002,C-002,AutoMotive Industries GmbH,INV-AR-002,380000,EUR,2026-03-21,OPEN,0.92,Manufacturing equipment delivery
+AR-003,C-003,British Retail Group,INV-AR-003,95000,GBP,2026-03-20,OPEN,0.88,Retail POS system integration
+AR-004,C-004,Pacific Trading Corp,INV-AR-004,520000,USD,2026-03-23,OPEN,0.94,International shipping services
+AR-005,C-005,Nordic Energy AS,INV-AR-005,285000,EUR,2026-03-25,OPEN,0.9,Energy management consulting
+AR-006,C-006,London Financial Services,INV-AR-006,125000,GBP,2026-03-26,OPEN,0.91,Financial software licensing
+AR-007,C-007,MegaCorp USA,INV-AR-007,680000,USD,2026-03-28,OPEN,0.96,Enterprise cloud migration
+AR-008,C-008,Deutsche Industrial AG,INV-AR-008,195000,EUR,2026-03-29,OPEN,0.89,Industrial automation project
+AR-009,C-009,Highland Manufacturing,INV-AR-009,78000,GBP,2026-03-30,OPEN,0.85,Equipment calibration services
+AR-010,C-010,American Logistics Inc,INV-AR-010,425000,USD,2026-04-01,OPEN,0.93,Supply chain optimization
+AR-011,C-011,EuroTech Solutions,INV-AR-011,340000,EUR,2026-04-02,OPEN,0.91,IT infrastructure upgrade
+AR-012,C-012,Westminster Holdings,INV-AR-012,42000,GBP,2026-04-03,OPEN,0.87,Business consulting services
+AR-013,C-013,Continental Systems,INV-AR-013,575000,USD,2026-04-04,OPEN,0.95,Software licensing annual renewal
+AR-014,C-014,FranceTech SA,INV-AR-014,265000,EUR,2026-04-05,OPEN,0.9,Digital transformation services
+AR-015,C-015,Manchester United Industries,INV-AR-015,35000,GBP,2026-04-06,OPEN,0.86,Maintenance contract quarterly
+AR-016,C-016,Global Pharma Corp,INV-AR-016,890000,USD,2026-04-07,OPEN,0.97,Pharmaceutical data analytics platform
+AR-017,C-017,Siemens Digital Industries,INV-AR-017,425000,EUR,2026-04-08,OPEN,0.92,IoT platform deployment
+AR-018,C-018,Oxford Research Labs,INV-AR-018,52000,GBP,2026-04-09,OPEN,0.88,Research data management system
+AR-019,C-019,TransAtlantic Shipping,INV-AR-019,755000,USD,2026-04-10,OPEN,0.96,Fleet management software
+AR-020,C-020,ACME Corp,INV-AR-035,2300000,EUR,2026-03-18,OPEN,0.45,Major enterprise solution delivery - Phase 3
+AR-021,C-021,Cambridge Biotech,INV-AR-021,68000,GBP,2026-04-11,OPEN,0.89,Laboratory information system
+AR-022,C-022,Midwest Manufacturing,INV-AR-022,385000,USD,2026-04-12,OPEN,0.94,Production monitoring system
+AR-023,C-023,Berlin Analytics GmbH,INV-AR-023,215000,EUR,2026-04-13,OPEN,0.9,Business intelligence platform
+AR-024,C-024,Scottish Energy Solutions,INV-AR-024,28000,GBP,2026-04-14,OPEN,0.85,Energy audit services
+AR-025,C-025,Sunrise Technologies,INV-AR-025,495000,USD,2026-04-15,OPEN,0.93,Mobile application development
 AR-026,C-026,Rhine Logistics AG,INV-AR-026,175000,EUR,2026-04-15,OPEN,0.91,Warehouse management system
-AR-027,C-027,Cardiff Construction Ltd,INV-AR-027,45000,GBP,2026-03-21,OPEN,0.87,Project management software
-AR-028,C-028,Coastal Shipping USA,INV-AR-028,620000,USD,2026-03-23,OPEN,0.95,Port operations management
-AR-029,C-029,Munich Automotive,INV-AR-029,155000,EUR,2026-03-26,OPEN,0.89,Quality control system
-AR-030,C-030,Bristol Aerospace,INV-AR-030,38000,GBP,2026-03-30,OPEN,0.86,Engineering documentation system
-AR-031,C-031,Sunbelt Energy Corp,INV-AR-031,725000,USD,2026-04-02,OPEN,0.96,Smart grid analytics platform
-AR-032,C-032,Hamburg Port Services,INV-AR-032,95000,EUR,2026-04-05,OPEN,0.88,Terminal management system
-AR-033,C-033,Metropolitan Transit,INV-AR-033,22000,GBP,2026-04-07,OPEN,0.85,Ticketing system maintenance
-AR-034,C-034,Midwest Agribusiness,INV-AR-034,340000,USD,2026-04-08,OPEN,0.92,Agricultural IoT platform
-AR-035,C-035,Stuttgart Engineering,INV-AR-036,125000,EUR,2026-04-11,OPEN,0.90,CAD/CAM system licensing
+AR-027,C-027,Cardiff Construction Ltd,INV-AR-027,45000,GBP,2026-03-22,OPEN,0.87,Project management software
+AR-028,C-028,Coastal Shipping USA,INV-AR-028,620000,USD,2026-03-24,OPEN,0.95,Port operations management
+AR-029,C-029,Munich Automotive,INV-AR-029,155000,EUR,2026-03-27,OPEN,0.89,Quality control system
+AR-030,C-030,Bristol Aerospace,INV-AR-030,38000,GBP,2026-03-31,OPEN,0.86,Engineering documentation system
+AR-031,C-031,Sunbelt Energy Corp,INV-AR-031,725000,USD,2026-04-03,OPEN,0.96,Smart grid analytics platform
+AR-032,C-032,Hamburg Port Services,INV-AR-032,95000,EUR,2026-04-06,OPEN,0.88,Terminal management system
+AR-033,C-033,Metropolitan Transit,INV-AR-033,22000,GBP,2026-04-08,OPEN,0.85,Ticketing system maintenance
+AR-034,C-034,Midwest Agribusiness,INV-AR-034,340000,USD,2026-04-09,OPEN,0.92,Agricultural IoT platform
+AR-035,C-035,Stuttgart Engineering,INV-AR-036,125000,EUR,2026-04-12,OPEN,0.9,CAD/CAM system licensing

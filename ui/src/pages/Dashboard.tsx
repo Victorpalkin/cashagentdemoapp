@@ -1,10 +1,10 @@
-import { Box, Grid, Card, CardContent, Typography, List, ListItem, ListItemText, CircularProgress, Alert } from '@mui/material'
+import { Box, Grid, Card, CardContent, Typography, List, ListItem, ListItemText, Chip, CircularProgress, Alert } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import CashPositionCard from '../components/CashPositionCard'
 import CurrencySummaryCard from '../components/CurrencySummaryCard'
 import ForecastChart from '../components/ForecastChart'
 import ObligationsTable from '../components/ObligationsTable'
-import { getCashPosition, getForecast, getObligations, getAuditLog } from '../api/bigquery'
+import { getCashPosition, getForecast, getObligations, getAuditLog, getRecommendations } from '../api/bigquery'
 
 const CURRENCY_COLORS: Record<string, string> = {
   USD: '#0070F2',
@@ -17,6 +17,7 @@ const Dashboard = () => {
   const forecastQuery = useQuery({ queryKey: ['forecast'], queryFn: () => getForecast(30) })
   const obligationsQuery = useQuery({ queryKey: ['obligations'], queryFn: getObligations })
   const auditQuery = useQuery({ queryKey: ['auditLog'], queryFn: () => getAuditLog(10) })
+  const recQuery = useQuery({ queryKey: ['recommendations'], queryFn: getRecommendations })
 
   const currencyTotals = cashQuery.data?.currencyTotals ?? []
   const grandTotal = cashQuery.data?.grandTotalUsd ?? 0
@@ -122,6 +123,52 @@ const Dashboard = () => {
           </Card>
         </Grid>
       </Grid>
+
+      {/* Recent Recommendations */}
+      {recQuery.data && recQuery.data.length > 0 && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent sx={{ p: 3 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+              Recent Recommendations
+            </Typography>
+            <List dense>
+              {recQuery.data.slice(0, 3).map((rec) => (
+                <ListItem
+                  key={rec.recommendation_id}
+                  sx={{
+                    borderLeft: '3px solid',
+                    borderColor:
+                      rec.priority === 'HIGH' ? 'error.main' :
+                      rec.priority === 'MEDIUM' ? 'warning.main' : 'info.main',
+                    mb: 1,
+                    bgcolor: 'background.default',
+                    borderRadius: 1,
+                  }}
+                >
+                  <ListItemText
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Chip
+                          label={rec.priority}
+                          size="small"
+                          color={rec.priority === 'HIGH' ? 'error' : rec.priority === 'MEDIUM' ? 'warning' : 'info'}
+                        />
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {rec.action_type.replace(/_/g, ' ')}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {new Intl.NumberFormat('en-US', { style: 'currency', currency: rec.currency, minimumFractionDigits: 0 }).format(rec.amount)}
+                        </Typography>
+                      </Box>
+                    }
+                    secondary={rec.description}
+                  />
+                </ListItem>
+              ))}
+            </List>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Forecast Chart */}
       <Box sx={{ mb: 3 }}>

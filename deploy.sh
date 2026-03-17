@@ -86,6 +86,7 @@ terraform apply -auto-approve -input=false \
   -target=google_project_service.iam \
   -target=google_project_service.artifactregistry \
   -target=google_project_service.cloudbuild \
+  -target=google_project_service.cloudscheduler \
   -target=google_artifact_registry_repository.docker
 
 cd "$SCRIPT_DIR"
@@ -107,6 +108,13 @@ declare -A IMAGES=(
   ["ui-api"]="ui_api"
   ["chat-app"]="chat_app"
 )
+
+# Agent runner uses a Dockerfile that needs repo root as build context
+AGENT_RUNNER_IMAGE="${REGISTRY}/agent-runner:latest"
+info "  Building agent-runner from agent_runner/ (repo root context)..."
+docker build -t "$AGENT_RUNNER_IMAGE" -f "$SCRIPT_DIR/agent_runner/Dockerfile" "$SCRIPT_DIR"
+docker push "$AGENT_RUNNER_IMAGE"
+ok "  Pushed ${AGENT_RUNNER_IMAGE}"
 
 for IMAGE_NAME in "${!IMAGES[@]}"; do
   BUILD_DIR="${IMAGES[$IMAGE_NAME]}"
@@ -199,7 +207,7 @@ echo ""
 
 # Retrieve Cloud Run URLs
 info "Service URLs:"
-for SVC_NAME in sap-api-mock bank-api-mock broker-api-mock ui-api cash-agent-ui chat-app; do
+for SVC_NAME in sap-api-mock bank-api-mock broker-api-mock ui-api cash-agent-ui chat-app agent-runner; do
   URL=$(gcloud run services describe "$SVC_NAME" --region "$REGION" --format='value(status.url)' 2>/dev/null || echo "N/A")
   echo -e "  ${BLUE}${SVC_NAME}${NC}: ${URL}"
 done

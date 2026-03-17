@@ -192,3 +192,36 @@ export const getAuditLog = async (limit: number = 50): Promise<AuditLog[]> => {
   const resp = await apiFetch<{ entries: AuditLog[] }>(`/api/audit-log?limit=${limit}`)
   return resp.entries
 }
+
+// ---- Recommendations ----
+
+export interface Recommendation {
+  recommendation_id: string
+  created_at: string
+  priority: 'HIGH' | 'MEDIUM' | 'LOW'
+  action_type: string
+  amount: number
+  currency: string
+  description: string
+  rationale: string
+  status: string
+  approval_request_id: string
+}
+
+export const getRecommendations = async (): Promise<Recommendation[]> => {
+  const resp = await apiFetch<{ recommendations: Recommendation[] }>('/api/recommendations')
+  return resp.recommendations
+}
+
+export const dismissRecommendation = async (recommendationId: string): Promise<void> => {
+  const res = await fetch(`${API_BASE}/api/recommendations/${recommendationId}/dismiss`, { method: 'POST' })
+  if (!res.ok) throw new Error(`Dismiss failed: ${res.status}`)
+}
+
+// ---- Reset Demo ----
+
+export const resetDemo = async (full: boolean = false): Promise<{ status: string }> => {
+  const res = await fetch(`${API_BASE}/api/reset-demo${full ? '?full=true' : ''}`, { method: 'POST' })
+  if (!res.ok) throw new Error(`Reset failed: ${res.status}`)
+  return res.json()
+}

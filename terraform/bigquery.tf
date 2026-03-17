@@ -413,6 +413,67 @@ resource "google_bigquery_table" "approval_requests" {
   ])
 }
 
+# Agent Recommendations Table
+resource "google_bigquery_table" "agent_recommendations" {
+  dataset_id          = google_bigquery_dataset.cash_agent_demo.dataset_id
+  table_id            = "agent_recommendations"
+  deletion_protection = false
+
+  schema = jsonencode([
+    {
+      name = "recommendation_id"
+      type = "STRING"
+      mode = "REQUIRED"
+    },
+    {
+      name                   = "created_at"
+      type                   = "TIMESTAMP"
+      mode                   = "REQUIRED"
+      defaultValueExpression = "CURRENT_TIMESTAMP()"
+    },
+    {
+      name = "priority"
+      type = "STRING"
+      mode = "REQUIRED"
+    },
+    {
+      name = "action_type"
+      type = "STRING"
+      mode = "REQUIRED"
+    },
+    {
+      name = "amount"
+      type = "FLOAT"
+      mode = "REQUIRED"
+    },
+    {
+      name = "currency"
+      type = "STRING"
+      mode = "REQUIRED"
+    },
+    {
+      name = "description"
+      type = "STRING"
+      mode = "NULLABLE"
+    },
+    {
+      name = "rationale"
+      type = "STRING"
+      mode = "NULLABLE"
+    },
+    {
+      name = "status"
+      type = "STRING"
+      mode = "REQUIRED"
+    },
+    {
+      name = "approval_request_id"
+      type = "STRING"
+      mode = "NULLABLE"
+    }
+  ])
+}
+
 # Agent Audit Log Table
 resource "google_bigquery_table" "agent_audit_log" {
   dataset_id          = google_bigquery_dataset.cash_agent_demo.dataset_id

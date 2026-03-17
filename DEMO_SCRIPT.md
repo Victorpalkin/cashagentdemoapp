@@ -4,14 +4,30 @@
 
 ---
 
+## Always-Fresh Demo
+
+Data refreshes daily at 2 AM UTC via Cloud Scheduler. The autonomous agent runner generates recommendations, detects anomalies, and logs activity every few hours. This means:
+
+- **Dates are always relative to today** — no stale data
+- **BQML model is retrained nightly** on fresh historical data
+- **Dashboard shows recent agent activity** from autonomous runs
+- **Recommendations tab is pre-populated** with agent-generated suggestions
+- **No need to run `reset_demo.sh` before demos** (though you can use the UI's gear icon for quick/full reset)
+
+---
+
 ## Pre-Demo Setup
 
-1. **Reset demo state** (truncates operational tables from prior runs):
+1. **Option A — Use the UI Reset** (recommended):
+   Open the Management UI, click the gear icon (top-right), and choose "Quick Reset" to clear operational tables. Or "Full Reset" to also regenerate seed data with today's dates.
+
+2. **Option B — Command line**:
    ```bash
-   bash reset_demo.sh
+   bash reset_demo.sh          # Quick: truncate operational tables
+   bash reset_demo.sh --full   # Full: also reload seed data
    ```
 
-2. **Start the agent** (choose one):
+3. **Start the agent** (choose one):
    ```bash
    # Local (preferred for demos — fastest response)
    cd agent && adk web
@@ -20,17 +36,37 @@
    open https://chat-app-rgw57p2taa-uc.a.run.app
    ```
 
-3. **Open the Management UI** in a second browser tab (side-by-side with agent chat):
+4. **Open the Management UI** in a second browser tab (side-by-side with agent chat):
    ```
    https://cash-agent-ui-rgw57p2taa-uc.a.run.app
    ```
    The UI connects to BigQuery via the ui-api service and shows live data.
 
-4. **Verify data is loaded**:
+5. **Verify data is loaded**:
    ```bash
    bash reset_demo.sh --verify
    ```
-   You should see 7 seed tables with data and 0 rows in the 2 operational tables.
+   You should see 7 seed tables with data and 0 rows in the 3 operational tables.
+
+---
+
+## Autonomous Agent Operations
+
+Before diving into the interactive demo, highlight the autonomous capabilities:
+
+> "This isn't just a chatbot — the agent runs autonomously on a schedule. Let me show you what it's already done today."
+
+1. **Dashboard**: Point to the "Recent Agent Activity" section — it shows autonomous forecast updates, anomaly scans, and position checks from the agent runner's scheduled execution.
+
+2. **Recommendations tab**: Click the Recommendations tab — the autonomous agent has already generated 2-4 recommendations based on today's data, complete with policy citations and priority rankings.
+
+3. **Approvals tab**: If any recommendation exceeds $500K, the agent has already created an approval request — visible in the Approvals tab.
+
+**Talking points**:
+- Agents don't just respond to prompts — they work autonomously on schedule
+- Cloud Scheduler triggers the agent runner every 2-4 hours
+- Human-in-the-loop is preserved: high-value actions require approval even when running autonomously
+- All autonomous actions are fully auditable
 
 ---
 
@@ -61,7 +97,7 @@
 - Real-time BigQuery queries, not cached reports
 - Automatic FX conversion to USD equivalent using live rates (EUR/USD ~1.08, GBP/USD ~1.27)
 
-**UI interaction**: Switch to the Dashboard tab — notice the same ~$22.4M total the agent just reported, with live currency breakdown cards and the forecast chart.
+**UI interaction**: Switch to the Dashboard tab — notice the same ~$22.4M total the agent just reported, with live currency breakdown cards and the forecast chart. The Dashboard already shows data from the autonomous agent's recent review.
 
 ---
 
@@ -97,8 +133,9 @@
 - **HIGH severity**: ACME Corp (C-020) — EUR 2,300,000 receivable at only **45% probability** (vs typical 85-97%). Due tomorrow. This is a major enterprise delivery (Phase 3) with abnormally low collection confidence.
 
 **Talking points**:
+- The autonomous agent's anomaly scan already flagged this — check the Audit Trail
 - Statistical basis: 45% probability is a clear outlier vs the 85-97% range of other receivables
-- Quantified impact: EUR 2.3M at risk ≈ $2.5M USD
+- Quantified impact: EUR 2.3M at risk = $2.5M USD
 - The agent doesn't just find numbers — it explains *why* something is anomalous
 
 **UI interaction**: In the Dashboard, the Obligations table highlights the ACME Corp row with a warning indicator (low probability flag).
@@ -284,15 +321,18 @@ This lets the audience see the agent's analysis appear in real-time while the Ma
 
 ### Architecture Highlights
 - **Agentic architecture**: 1 root agent + 6 specialized sub-agents, 15+ tools
+- **Autonomous operations**: Scheduled agent runner for continuous monitoring and recommendations
 - **Policy grounding**: Semantic search over 3 markdown policy documents (treasury, FX hedging, approval matrix)
-- **Human-in-the-loop**: Three-tier threshold model (auto / confirm / approve)
-- **Google Cloud native**: ADK, Vertex AI, BQML ARIMA+, BigQuery, Cloud Run
+- **Human-in-the-loop**: Three-tier threshold model (auto / confirm / approve) — even for autonomous runs
+- **Google Cloud native**: ADK, Vertex AI, BQML ARIMA+, BigQuery, Cloud Run, Cloud Scheduler
 
 ### Why This Matters
 - **Not a chatbot** — an agent that can analyze, recommend, *and execute* real financial operations
+- **Autonomous + interactive**: Runs on schedule AND responds to prompts
 - **Policy-compliant by design** — every action is checked against corporate policies
 - **Auditable** — full trail of agent reasoning, approvals, and execution confirmations
 - **Composable** — sub-agents can be swapped, added, or promoted independently
+- **Always-fresh data** — daily seed data refresh keeps the demo current
 
 ### Google Cloud Components Used
 | Component | Role |
@@ -301,7 +341,8 @@ This lets the audience see the agent's analysis appear in real-time while the Ma
 | Vertex AI | LLM inference (Gemini) |
 | BigQuery | Data warehouse, operational tables |
 | BQML ARIMA+ | Time-series cash flow forecasting |
-| Cloud Run | Mock services (SAP, Bank, Broker), UI, UI API, Chat App |
+| Cloud Run | Mock services, UI, UI API, Chat App, Agent Runner |
+| Cloud Scheduler | Autonomous agent execution + daily data refresh |
 | Artifact Registry | Docker image management |
 
 ---
@@ -372,7 +413,7 @@ Copy-paste these prompts in order:
 | Issue | Fix |
 |-------|-----|
 | Agent returns errors about missing tables | Run `bash reset_demo.sh --full` to reload seed data |
-| "No FX rates found" | FX rates table uses date-based lookup; ensure seed data covers the demo date |
+| "No FX rates found" | FX rates table uses date-based lookup; use "Full Reset" from the gear icon to regenerate with today's dates |
 | Approval workflow not triggering | Ensure `approval_requests` table exists; run `--full` reset |
 | BQML forecast unavailable | Model may need retraining; see `deploy.sh` step 6 |
 | Slow responses on `adk web` | First query initializes connections; subsequent queries are faster |

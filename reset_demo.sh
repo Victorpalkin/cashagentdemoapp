@@ -44,7 +44,7 @@ info "Project:  $PROJECT_ID"
 info "Dataset:  $DATASET_ID"
 
 # ---------- Operational tables (written during demo) ----------
-OPERATIONAL_TABLES=(approval_requests agent_audit_log)
+OPERATIONAL_TABLES=(approval_requests agent_audit_log agent_recommendations)
 
 # ---------- Seed tables (read-only during demo) ----------
 SEED_TABLES=(gl_accounts bank_accounts cash_journal ap_open_items ar_open_items fx_rates payment_runs)
@@ -83,7 +83,7 @@ if $FULL_RESET; then
   warn "FULL RESET: This will truncate operational tables AND reload all 7 seed CSVs."
 else
   echo ""
-  info "QUICK RESET: This will truncate 2 operational tables (approval_requests, agent_audit_log)."
+  info "QUICK RESET: This will truncate 3 operational tables (approval_requests, agent_audit_log, agent_recommendations)."
 fi
 
 read -rp "Continue? [y/N] " CONFIRM

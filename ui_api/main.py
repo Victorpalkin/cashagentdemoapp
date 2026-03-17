@@ -302,3 +302,83 @@ def fx_rates():
     """
     rows = client.query(query).result()
     return {"rates": _serialize(rows)}
+
+
+# ---- Recommendations ----
+
+@app.get("/api/recommendations")
+def recommendations():
+    client = bigquery.Client(project=PROJECT_ID)
+    query = f"""
+        SELECT recommendation_id, created_at, priority, action_type,
+               amount, currency, description, rationale, status,
+               approval_request_id
+        FROM {_table('agent_recommendations')}
+        ORDER BY
+            CASE priority WHEN 'HIGH' THEN 0 WHEN 'MEDIUM' THEN 1 ELSE 2 END,
+            created_at DESC
+    """
+    rows = client.query(query).result()
+    return {"recommendations": _serialize(rows)}
+
+
+@app.post("/api/recommendations/{recommendation_id}/dismiss")
+def dismiss_recommendation(recommendation_id: str):
+    client = bigquery.Client(project=PROJECT_ID)
+    query = f"""
+        UPDATE {_table('agent_recommendations')}
+        SET status = 'DISMISSED'
+        WHERE recommendation_id = @rec_id
+    """
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[
+            bigquery.ScalarQueryParameter("rec_id", "STRING", recommendation_id)
+        ]
+    )
+    client.query(query, job_config=job_config).result()
+    return {"status": "dismissed", "recommendation_id": recommendation_id}
+
+
+# ---- Reset Demo ----
+
+@app.post("/api/reset-demo")
+def reset_demo(full: bool = Query(default=False)):
+    client = bigquery.Client(project=PROJECT_ID)
+    results = {"status": "ok", "tables_truncated": [], "errors": []}
+
+    # Always truncate operational tables
+    operational_tables = ["approval_requests", "agent_audit_log", "agent_recommendations"]
+    for table_name in operational_tables:
+        try:
+            client.query(
+                f"TRUNCATE TABLE `{PROJECT_ID}.{DATASET_ID}.{table_name}`"
+            ).result()
+            results["tables_truncated"].append(table_name)
+        except Exception as e:
+            results["errors"].append(f"{table_name}: {str(e)}")
+
+    if full:
+        # Full reset: regenerate seed data with today's dates and reload
+        try:
+            import importlib.util
+            import sys
+
+            # Find refresh_data module (in agent_runner/ relative to ui_api/)
+            refresh_paths = [
+                os.path.join(os.path.dirname(__file__), "..", "agent_runner", "refresh_data.py"),
+                "/app/refresh_data.py",
+            ]
+            for path in refresh_paths:
+                if os.path.exists(path):
+                    spec = importlib.util.spec_from_file_location("refresh_data", path)
+                    mod = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(mod)
+                    refresh_result = mod.refresh_all_data(PROJECT_ID, DATASET_ID)
+                    results["refresh"] = refresh_result
+                    break
+            else:
+                results["errors"].append("refresh_data.py not found")
+        except Exception as e:
+            results["errors"].append(f"Full reset: {str(e)}")
+
+    return results
