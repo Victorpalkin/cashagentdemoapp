@@ -1,0 +1,7 @@
+payment_run_id,scheduled_date,total_amount,currency,item_count,status,description
+PR-001,2026-03-18,1200000,USD,5,SCHEDULED,Weekly vendor payments - USD batch 1
+PR-002,2026-03-20,450000,EUR,3,SCHEDULED,EUR vendor payments
+PR-003,2026-03-25,2800000,USD,8,SCHEDULED,Weekly vendor payments - USD batch 2
+PR-004,2026-03-28,800000,GBP,4,SCHEDULED,GBP vendor payments
+PR-005,2026-04-01,1500000,USD,6,SCHEDULED,Monthly payroll run
+PR-006,2026-04-05,650000,EUR,3,SCHEDULED,EUR vendor payments batch 2

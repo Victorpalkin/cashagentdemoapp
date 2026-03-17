@@ -1,0 +1,118 @@
+{
+  "dataset_id": "cash_agent_demo",
+  "tables": {
+    "gl_accounts": {
+      "schema": [
+        {"name": "company_code", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "gl_account", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "gl_account_name", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "currency", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "account_type", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "is_bank_account", "type": "BOOLEAN", "mode": "REQUIRED"}
+      ]
+    },
+    "bank_accounts": {
+      "schema": [
+        {"name": "bank_account_id", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "bank_name", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "account_type", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "currency", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "current_balance", "type": "FLOAT", "mode": "REQUIRED"},
+        {"name": "gl_account", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "last_updated", "type": "DATE", "mode": "REQUIRED"}
+      ]
+    },
+    "cash_journal": {
+      "schema": [
+        {"name": "journal_id", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "posting_date", "type": "DATE", "mode": "REQUIRED"},
+        {"name": "amount", "type": "FLOAT", "mode": "REQUIRED"},
+        {"name": "currency", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "transaction_type", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "counterparty", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "gl_account", "type": "STRING", "mode": "NULLABLE"},
+        {"name": "description", "type": "STRING", "mode": "NULLABLE"},
+        {"name": "bank_account_id", "type": "STRING", "mode": "NULLABLE"}
+      ]
+    },
+    "ap_open_items": {
+      "schema": [
+        {"name": "ap_item_id", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "vendor_id", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "vendor_name", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "invoice_number", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "amount", "type": "FLOAT", "mode": "REQUIRED"},
+        {"name": "currency", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "due_date", "type": "DATE", "mode": "REQUIRED"},
+        {"name": "status", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "payment_method", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "description", "type": "STRING", "mode": "NULLABLE"}
+      ]
+    },
+    "ar_open_items": {
+      "schema": [
+        {"name": "ar_item_id", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "customer_id", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "customer_name", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "invoice_number", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "amount", "type": "FLOAT", "mode": "REQUIRED"},
+        {"name": "currency", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "due_date", "type": "DATE", "mode": "REQUIRED"},
+        {"name": "status", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "probability", "type": "FLOAT", "mode": "REQUIRED"},
+        {"name": "description", "type": "STRING", "mode": "NULLABLE"}
+      ]
+    },
+    "fx_rates": {
+      "schema": [
+        {"name": "rate_date", "type": "DATE", "mode": "REQUIRED"},
+        {"name": "from_currency", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "to_currency", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "exchange_rate", "type": "FLOAT", "mode": "REQUIRED"}
+      ]
+    },
+    "payment_runs": {
+      "schema": [
+        {"name": "payment_run_id", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "scheduled_date", "type": "DATE", "mode": "REQUIRED"},
+        {"name": "total_amount", "type": "FLOAT", "mode": "REQUIRED"},
+        {"name": "currency", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "item_count", "type": "INTEGER", "mode": "REQUIRED"},
+        {"name": "status", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "description", "type": "STRING", "mode": "NULLABLE"}
+      ]
+    },
+    "approval_requests": {
+      "schema": [
+        {"name": "request_id", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "action_type", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "amount", "type": "FLOAT", "mode": "REQUIRED"},
+        {"name": "currency", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "description", "type": "STRING", "mode": "NULLABLE"},
+        {"name": "agent_reasoning", "type": "STRING", "mode": "NULLABLE"},
+        {"name": "status", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "requested_at", "type": "TIMESTAMP", "mode": "NULLABLE"},
+        {"name": "requested_by", "type": "STRING", "mode": "NULLABLE"},
+        {"name": "approved_at", "type": "TIMESTAMP", "mode": "NULLABLE"},
+        {"name": "approved_by", "type": "STRING", "mode": "NULLABLE"},
+        {"name": "rejection_reason", "type": "STRING", "mode": "NULLABLE"}
+      ]
+    },
+    "agent_audit_log": {
+      "schema": [
+        {"name": "timestamp", "type": "TIMESTAMP", "mode": "REQUIRED", "default_value_expression": "CURRENT_TIMESTAMP()"},
+        {"name": "agent_name", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "action", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "tool_name", "type": "STRING", "mode": "NULLABLE"},
+        {"name": "input_summary", "type": "STRING", "mode": "NULLABLE"},
+        {"name": "output_summary", "type": "STRING", "mode": "NULLABLE"}
+      ]
+    }
+  },
+  "ml_model": {
+    "name": "cash_forecast_model",
+    "type": "ARIMA_PLUS",
+    "description": "Time-series forecast of daily net cash flow by currency",
+    "create_sql": "CREATE OR REPLACE MODEL `{project}.{dataset}.cash_forecast_model` OPTIONS(model_type='ARIMA_PLUS', time_series_timestamp_col='posting_date', time_series_data_col='net_cash_flow', time_series_id_col='currency', horizon=90, auto_arima=TRUE) AS SELECT posting_date, currency, SUM(CASE WHEN transaction_type='INFLOW' THEN amount ELSE -amount END) AS net_cash_flow FROM `{project}.{dataset}.cash_journal` GROUP BY posting_date, currency"
+  }
+}

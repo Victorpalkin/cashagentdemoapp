@@ -1,0 +1,68 @@
+main:
+  params: [args]
+  steps:
+    - init:
+        assign:
+          - project_id: ${args.project_id}
+          - dataset_id: ${args.dataset_id}
+          - request_id: ${args.request_id}
+          - action_type: ${args.action_type}
+          - amount: ${args.amount}
+          - currency: ${args.currency}
+          - description: ${args.description}
+
+    - log_request:
+        call: sys.log
+        args:
+          text: ${"Approval workflow started for " + request_id + " - " + action_type + " " + string(amount) + " " + currency}
+          severity: INFO
+
+    - check_approval:
+        call: googleapis.bigquery.v2.jobs.query
+        args:
+          projectId: ${project_id}
+          body:
+            query: ${"SELECT status FROM `" + project_id + "." + dataset_id + ".approval_requests` WHERE request_id = '" + request_id + "'"}
+            useLegacySql: false
+        result: query_result
+
+    - evaluate_status:
+        switch:
+          - condition: ${query_result.rows[0].f[0].v == "APPROVED"}
+            next: execute_action
+          - condition: ${query_result.rows[0].f[0].v == "REJECTED"}
+            next: handle_rejection
+          - condition: ${query_result.rows[0].f[0].v == "PENDING"}
+            next: wait_for_approval
+
+    - wait_for_approval:
+        call: sys.sleep
+        args:
+          seconds: 300
+        next: check_approval
+
+    - execute_action:
+        call: sys.log
+        args:
+          text: ${"Approval granted for " + request_id + ". Proceeding with execution."}
+          severity: INFO
+        next: log_completion
+
+    - handle_rejection:
+        call: sys.log
+        args:
+          text: ${"Approval rejected for " + request_id + ". Workflow ending."}
+          severity: WARNING
+        next: log_completion
+
+    - log_completion:
+        call: sys.log
+        args:
+          text: ${"Approval workflow completed for " + request_id}
+          severity: INFO
+        next: end
+
+    - end:
+        return:
+          request_id: ${request_id}
+          final_status: "completed"

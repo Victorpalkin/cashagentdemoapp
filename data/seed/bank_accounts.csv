@@ -1,0 +1,8 @@
+bank_account_id,bank_name,account_type,currency,current_balance,gl_account,last_updated
+BA001,Chase,checking,USD,5200000,1010,2026-03-16
+BA002,Chase,savings,USD,2100000,1020,2026-03-16
+BA003,Bank of America,checking,USD,3800000,1030,2026-03-16
+BA004,Deutsche Bank,checking,EUR,4500000,1040,2026-03-16
+BA005,BNP Paribas,checking,EUR,2300000,1050,2026-03-16
+BA006,Barclays,checking,GBP,1900000,1060,2026-03-16
+BA007,Barclays,money_market,GBP,1200000,1070,2026-03-16
