@@ -160,7 +160,9 @@ cd ..
 adk web
 ```
 
-Open the ADK web UI and try: "What's our current cash position?"
+Open the ADK web UI and try:
+- "What's our current cash position?"
+- "Compare the ML forecast with the agent-enriched forecast" (tests the enriched forecast showing ML-only vs agent-adjusted side-by-side)
 
 ### Step 9: Deploy Agent to Vertex AI Agent Engine
 

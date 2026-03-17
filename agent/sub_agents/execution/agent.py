@@ -5,7 +5,7 @@ from ...tools.bank_api_tools import place_deposit, execute_transfer
 from ...tools.broker_api_tools import execute_fx_trade, place_investment
 from ...tools.sap_api_tools import update_sap_posting, get_payment_status
 from ...tools.approval_tools import create_approval_request, check_approval_status
-from ...tools.bigquery_tools import log_agent_action
+from ...tools.bigquery_tools import log_agent_action, get_recent_executions
 
 execution_agent = Agent(
     name="ExecutionAgent",
@@ -26,7 +26,11 @@ IMPORTANT RULES:
 3. After execution, ALWAYS:
    - Call update_sap_posting() to create the SAP document
    - Call log_agent_action() to record in audit trail
+   - Call get_recent_executions() to show a summary of what was just done
    - Report the confirmation details to the user
+
+4. When the user asks "what did you just do" or "show me recent executions":
+   - Call get_recent_executions() to display the execution summary
 
 Available execution actions:
 - place_deposit(): Place term deposits with banks
@@ -40,7 +44,8 @@ Show clear confirmation details after each execution:
 - Amounts and rates
 - Settlement/maturity dates
 - SAP document number
-- Updated account balances where relevant""",
+- Updated account balances where relevant
+- Summary of all recent executions (via get_recent_executions)""",
     tools=[
         place_deposit,
         execute_transfer,
@@ -51,6 +56,7 @@ Show clear confirmation details after each execution:
         create_approval_request,
         check_approval_status,
         log_agent_action,
+        get_recent_executions,
     ],
     output_key="execution_result",
 )

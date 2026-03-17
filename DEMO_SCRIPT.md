@@ -4,6 +4,20 @@
 
 ---
 
+## Three Key Storylines
+
+This demo proves three things:
+
+1. **Agents enrich the ML model** -- The BQML ARIMA+ model forecasts cash flow from historical patterns, but it can't see AR probability data, AP schedules, or payment runs. The agent brings this context, creating an "enriched forecast" that shows what the ML model misses (e.g., ACME Corp's EUR 2.3M receivable at only 45% probability).
+
+2. **Enrichment improves cash forecasting** -- Side-by-side, the enriched forecast reveals shortfalls and risks invisible to ML alone. Every forecast query shows both views with the delta highlighted, so the audience sees the concrete improvement.
+
+3. **Agents execute exchanges with the bank** -- The agent doesn't just analyze -- it acts. It executes FX trades, places deposits, and posts to SAP, all with policy-enforced approval workflows. After execution, it shows a summary of what it just did, closing the loop from insight to action.
+
+These three storylines thread through every act of the demo.
+
+---
+
 ## Always-Fresh Demo
 
 Data refreshes daily at 2 AM UTC via Cloud Scheduler. The autonomous agent runner generates recommendations, detects anomalies, and logs activity every few hours. This means:
@@ -105,17 +119,29 @@ Before diving into the interactive demo, highlight the autonomous capabilities:
 
 > **Show me the 30-day cash flow forecast**
 
-**What happens**: Root agent delegates to `CashForecastAgent`, which calls BQML ARIMA+ model and cross-references AR/AP open items.
+**What happens**: Root agent delegates to `CashForecastAgent`, which calls `get_enriched_forecast()` to produce a side-by-side comparison of the ML-only baseline vs the agent-enriched forecast.
 
-**Expected response** — Weekly breakdown of expected inflows vs outflows by currency, highlighting:
-- Total AR (receivables) expected over 30 days: ~$6.5M USD (probability-weighted), ~€3.4M EUR, ~£551K GBP
-- Total AP (payables) + scheduled payment runs: ~$14.6M USD, ~€4.4M EUR, ~£2.7M GBP
-- **Weekly cash flow patterns** visible in the BQML forecast: Tuesday-Wednesday inflow peaks, Monday outflow spikes, Friday quiet days
-- **USD pressure in Week 3**: Large payment runs ($2.8M on day 9 + $1.5M payroll on day 16) create temporary cash pressure, partially offset by incoming AR collections
+**Expected response** — Two-view forecast by currency:
+
+**ML-Only Baseline** (BQML ARIMA+):
+- Statistical prediction based on historical `cash_journal` patterns
+- Shows weekly seasonality (Tuesday-Wednesday inflow peaks, Monday outflow spikes)
+- Cannot see AR probability data, specific AP schedules, or payment runs
+
+**Agent-Enriched Forecast**:
+- Adjusts for probability-weighted AR (e.g., ACME Corp EUR 2.3M at 45% probability reduces expected EUR inflow by ~1.27M)
+- Incorporates known AP obligations and scheduled payment runs
+- **USD pressure in Week 3**: Large payment runs ($2.8M + $1.5M payroll) create pressure the ML model underestimates
+- **EUR risk**: Enriched view shows lower expected EUR inflows due to ACME Corp probability adjustment
+
+**Key Divergences** highlighted:
+- Where ML and enriched forecasts differ by >100K
+- Risk factors: low-probability receivables the ML model treats as certain
 
 **Talking points**:
+- **Storyline 1**: "Notice the agent isn't just reading the BQML output -- it's enriching it with AR probability data and AP schedules that the statistical model can't see"
+- **Storyline 2**: "The enriched forecast reveals a EUR shortfall risk that's completely invisible in the ML-only view"
 - BQML ARIMA+ model trained on `cash_journal` historical data — no ML infra needed
-- The forecast chart shows realistic weekly seasonality (business cycles, month-end effects)
 - AR items are probability-weighted (not all receivables are equally certain)
 - Tease: "Let's see if there are any anomalies we should worry about"
 
@@ -150,10 +176,10 @@ Before diving into the interactive demo, highlight the autonomous capabilities:
 
 **What happens**: Root agent delegates to `RecommendationAgent`, which analyzes position + forecast + policies and returns a prioritized action list.
 
-**Expected response** — 3 key recommendations:
+**Expected response** — 3 key recommendations, each grounded in the enriched forecast delta:
 
 1. **HIGH: Accelerate ACME Corp collection** (EUR 2.3M at risk)
-   - Rationale: 45% probability on a EUR 2.3M receivable due tomorrow
+   - Rationale: "The ML model predicts adequate EUR cash flow, but adjusted for ACME Corp's 45% collection probability, the enriched forecast reduces expected EUR inflow by ~1.27M"
    - Policy ref: Treasury Policy Section 2.3 (reserve monitoring)
 
 2. **MEDIUM: Place EUR term deposit** (EUR surplus)
@@ -162,10 +188,11 @@ Before diving into the interactive demo, highlight the autonomous capabilities:
    - Note: Amount > $500K requires VP Treasury approval (Approval Matrix Section 2.1)
 
 3. **MEDIUM: Hedge GBP FX exposure** (net GBP ~£1.4M)
-   - Rationale: Net GBP exposure is ~£1.4M (AP £1.9M minus probability-weighted AR £551K), well above the GBP 500K mandatory hedging threshold. BAE Systems £800K payment is the largest single driver.
+   - Rationale: "The enriched forecast shows net GBP outflows of ~£1.4M (AP £1.9M minus probability-weighted AR £551K), well above the GBP 500K mandatory hedging threshold — a risk invisible in the ML-only view"
    - Policy ref: FX Hedging Policy Section 2.1
 
 **Talking points**:
+- **Storyline 2**: "Notice how each recommendation cites the delta between ML-only and enriched forecasts — this is the value the agent adds on top of pure ML"
 - Every recommendation cites specific policy sections — not hallucinated rules
 - Policies are searched via semantic search over markdown documents
 - Priorities are data-driven: the ACME risk dwarfs the others
@@ -216,6 +243,24 @@ Before diving into the interactive demo, highlight the autonomous capabilities:
 - **Three-system integration** in one agent action: Bank API + SAP + audit log
 - Mock services simulate real banking and ERP APIs (FastAPI on Cloud Run)
 - Every action is fully auditable
+
+---
+
+### Prompt 6b: Execution Summary
+
+> **Show me what you just did**
+
+**What happens**: Root agent delegates to `ExecutionAgent`, which calls `get_recent_executions()` to display a summary of recent agent actions.
+
+**Expected response**:
+- List of recent executions: transfers, deposits, trades
+- Each entry shows: timestamp, action type, tool used, input/output summary
+- Closes the loop: forecast revealed a problem -> agent recommended an action -> agent executed it -> here's the proof
+
+**Talking points**:
+- **Storyline 3**: "The agent didn't just tell us what to do — it did it, and here's the receipt"
+- Full audit trail: every action is logged with timestamps and details
+- End-to-end loop: analyze -> recommend -> execute -> confirm
 
 ---
 
@@ -362,6 +407,7 @@ Copy-paste these prompts in order:
 4. What are your recommendations?
 5. Execute the EUR term deposit for the surplus
 6. Transfer $200,000 from Chase checking to Chase savings
+6b. Show me what you just did
 7. Show me pending approval requests
    [manually approve in BQ]
 8. Now execute the approved EUR deposit

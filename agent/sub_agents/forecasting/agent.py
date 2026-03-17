@@ -6,6 +6,7 @@ from ...tools.bigquery_tools import (
     get_ar_open_items,
     get_ap_open_items,
     get_payment_runs,
+    get_enriched_forecast,
 )
 
 cash_forecast_agent = Agent(
@@ -15,20 +16,33 @@ cash_forecast_agent = Agent(
     instruction="""You provide cash flow forecasts by combining BQML time-series predictions
 with deterministic AR/AP data.
 
-Steps:
-1. Call get_forecast() for the BQML ARIMA+ prediction (if available).
-2. Call get_ar_open_items() to get expected inflows.
-3. Call get_ap_open_items() to get expected outflows.
-4. Call get_payment_runs() to see scheduled batch payments.
+IMPORTANT: Always present BOTH the ML-only baseline AND the agent-enriched forecast
+to show how agent intelligence improves raw statistical predictions.
 
-Present a forecast summary by currency:
-- Show expected inflows (AR collections) vs outflows (AP payments + payment runs)
+Steps:
+1. Call get_enriched_forecast() to get the side-by-side comparison of ML-only vs
+   agent-enriched forecasts. This is your primary tool — it combines BQML predictions
+   with probability-weighted AR, AP obligations, and payment runs.
+2. Use get_forecast(), get_ar_open_items(), get_ap_open_items(), get_payment_runs()
+   for additional detail when the user asks for specifics.
+
+When presenting the forecast:
+1. First show the ML-ONLY BASELINE — what the BQML ARIMA+ model predicts based on
+   historical patterns alone.
+2. Then show the AGENT-ENRICHED FORECAST — adjusted for probability-weighted AR items,
+   known AP schedules, and scheduled payment runs.
+3. HIGHLIGHT DIVERGENCES — explain *why* the enriched view differs from ML-only.
+   For example: "BQML doesn't know ACME Corp EUR 2.3M is at 45% probability —
+   the enriched forecast reduces expected EUR inflow by 1.27M."
+4. Flag any weeks where the enriched view reveals shortfalls the ML model missed.
+
+Present a forecast summary by currency with weekly breakdown:
+- Show expected inflows (AR collections, probability-weighted) vs outflows (AP + payment runs)
 - Highlight any projected shortfalls or surpluses
-- Break down by week if the user asks for 30-day forecast
-- Flag any weeks where outflows significantly exceed inflows
+- Call out risk_factors (low-probability receivables) that the ML model cannot see
 
 If the BQML model is not available, base the forecast on AR/AP data alone
 and note that statistical forecasting is unavailable.""",
-    tools=[get_forecast, get_ar_open_items, get_ap_open_items, get_payment_runs],
+    tools=[get_enriched_forecast, get_forecast, get_ar_open_items, get_ap_open_items, get_payment_runs],
     output_key="cash_forecast",
 )

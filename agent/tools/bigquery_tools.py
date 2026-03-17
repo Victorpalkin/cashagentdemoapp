@@ -209,6 +209,272 @@ def get_forecast(horizon_days: int = 30) -> dict:
         }
 
 
+def get_enriched_forecast(horizon_days: int = 30) -> dict:
+    """Returns side-by-side comparison of ML-only vs agent-enriched cash forecast.
+
+    Combines BQML ARIMA+ statistical forecast with probability-weighted AR items,
+    AP obligations, and scheduled payment runs to show how agent intelligence
+    improves the raw ML prediction.
+
+    Args:
+        horizon_days: Number of days to forecast (default 30).
+
+    Returns:
+        dict with ml_forecast, enriched_forecast, key_divergences, and summary.
+    """
+    import datetime
+
+    client = bigquery.Client(project=PROJECT_ID)
+    today = datetime.date.today()
+
+    # 1. Get BQML forecast (statistical baseline)
+    ml_forecast_query = f"""
+        SELECT
+            forecast_timestamp AS forecast_date,
+            forecast_value AS net_cash_flow,
+            currency
+        FROM ML.FORECAST(
+            MODEL `{PROJECT_ID}.{DATASET_ID}.cash_forecast_model`,
+            STRUCT({horizon_days} AS horizon, 0.95 AS confidence_level)
+        )
+        ORDER BY currency, forecast_timestamp
+    """
+    try:
+        ml_rows = [dict(r) for r in client.query(ml_forecast_query).result()]
+    except Exception:
+        ml_rows = []
+
+    # 2. Get current bank balances by currency
+    balance_query = f"""
+        SELECT currency, SUM(current_balance) AS total_balance
+        FROM {_table('bank_accounts')}
+        GROUP BY currency
+    """
+    balances = {r["currency"]: float(r["total_balance"])
+                for r in client.query(balance_query).result()}
+
+    # 3. Get AR items with probability weighting
+    ar_query = f"""
+        SELECT customer_name, amount, currency, due_date, probability
+        FROM {_table('ar_open_items')}
+        WHERE status = 'OPEN'
+        ORDER BY due_date
+    """
+    ar_items = [dict(r) for r in client.query(ar_query).result()]
+
+    # 4. Get AP items
+    ap_query = f"""
+        SELECT vendor_name, amount, currency, due_date
+        FROM {_table('ap_open_items')}
+        WHERE status = 'OPEN'
+        ORDER BY due_date
+    """
+    ap_items = [dict(r) for r in client.query(ap_query).result()]
+
+    # 5. Get scheduled payment runs
+    pr_query = f"""
+        SELECT total_amount, currency, scheduled_date
+        FROM {_table('payment_runs')}
+        WHERE status = 'SCHEDULED'
+        ORDER BY scheduled_date
+    """
+    payment_runs = [dict(r) for r in client.query(pr_query).result()]
+
+    # Helper: assign items to weekly buckets
+    def week_number(d):
+        if hasattr(d, "date"):
+            d = d.date()
+        delta = (d - today).days
+        if delta < 0:
+            return 0
+        return delta // 7 + 1
+
+    num_weeks = (horizon_days // 7) + 1
+
+    # Aggregate ML forecast by currency and week
+    ml_by_ccy_week = {}
+    for row in ml_rows:
+        ccy = row["currency"]
+        wk = week_number(row["forecast_date"])
+        if wk < 1 or wk > num_weeks:
+            continue
+        key = (ccy, wk)
+        ml_by_ccy_week[key] = ml_by_ccy_week.get(key, 0) + float(row["net_cash_flow"])
+
+    # Aggregate AR (probability-weighted) by currency and week
+    ar_by_ccy_week = {}
+    risk_factors = []
+    for item in ar_items:
+        ccy = item["currency"]
+        wk = week_number(item["due_date"])
+        if wk < 1 or wk > num_weeks:
+            continue
+        prob = float(item["probability"])
+        amt = float(item["amount"])
+        weighted = amt * prob
+        key = (ccy, wk)
+        ar_by_ccy_week[key] = ar_by_ccy_week.get(key, 0) + weighted
+        if prob < 0.7:
+            risk_factors.append({
+                "customer": item["customer_name"],
+                "currency": ccy,
+                "amount": amt,
+                "probability": prob,
+                "weighted_amount": round(weighted, 2),
+                "at_risk": round(amt - weighted, 2),
+                "week": wk,
+                "due_date": str(item["due_date"]),
+                "impact": f"BQML doesn't know {item['customer_name']} {ccy} {amt:,.0f} "
+                          f"is at {prob*100:.0f}% probability - enriched forecast "
+                          f"reduces expected inflow by {amt - weighted:,.0f}",
+            })
+
+    # Aggregate AP by currency and week
+    ap_by_ccy_week = {}
+    for item in ap_items:
+        ccy = item["currency"]
+        wk = week_number(item["due_date"])
+        if wk < 1 or wk > num_weeks:
+            continue
+        key = (ccy, wk)
+        ap_by_ccy_week[key] = ap_by_ccy_week.get(key, 0) + float(item["amount"])
+
+    # Aggregate payment runs by currency and week
+    pr_by_ccy_week = {}
+    for item in payment_runs:
+        ccy = item["currency"]
+        wk = week_number(item["scheduled_date"])
+        if wk < 1 or wk > num_weeks:
+            continue
+        key = (ccy, wk)
+        pr_by_ccy_week[key] = pr_by_ccy_week.get(key, 0) + float(item["total_amount"])
+
+    # Build week-by-week comparison per currency
+    currencies = sorted(set(
+        [r["currency"] for r in ml_rows]
+        + [i["currency"] for i in ar_items]
+        + [i["currency"] for i in ap_items]
+        + list(balances.keys())
+    ))
+
+    ml_forecast_result = []
+    enriched_forecast_result = []
+    key_divergences = []
+
+    for ccy in currencies:
+        ml_running = balances.get(ccy, 0)
+        enriched_running = balances.get(ccy, 0)
+
+        for wk in range(1, num_weeks + 1):
+            key = (ccy, wk)
+            ml_net = ml_by_ccy_week.get(key, 0)
+            ar_in = ar_by_ccy_week.get(key, 0)
+            ap_out = ap_by_ccy_week.get(key, 0)
+            pr_out = pr_by_ccy_week.get(key, 0)
+            enriched_net = ar_in - ap_out - pr_out
+
+            ml_running += ml_net
+            enriched_running += enriched_net
+
+            ml_entry = {
+                "currency": ccy,
+                "week": wk,
+                "ml_net_flow": round(ml_net, 2),
+                "ml_cumulative_balance": round(ml_running, 2),
+            }
+            enriched_entry = {
+                "currency": ccy,
+                "week": wk,
+                "ar_inflows_weighted": round(ar_in, 2),
+                "ap_outflows": round(ap_out, 2),
+                "payment_runs": round(pr_out, 2),
+                "enriched_net_flow": round(enriched_net, 2),
+                "enriched_cumulative_balance": round(enriched_running, 2),
+            }
+
+            ml_forecast_result.append(ml_entry)
+            enriched_forecast_result.append(enriched_entry)
+
+            delta = round(enriched_net - ml_net, 2)
+            if abs(delta) > 100000:
+                key_divergences.append({
+                    "currency": ccy,
+                    "week": wk,
+                    "ml_net_flow": round(ml_net, 2),
+                    "enriched_net_flow": round(enriched_net, 2),
+                    "delta": delta,
+                    "enriched_balance": round(enriched_running, 2),
+                    "ml_balance": round(ml_running, 2),
+                })
+
+    has_ml = len(ml_rows) > 0
+    summary_parts = []
+    if not has_ml:
+        summary_parts.append(
+            "BQML model unavailable - enriched forecast based on AR/AP data only."
+        )
+    summary_parts.append(
+        f"Compared ML-only vs agent-enriched forecast for {len(currencies)} "
+        f"currencies over {num_weeks} weeks."
+    )
+    if risk_factors:
+        summary_parts.append(
+            f"Found {len(risk_factors)} low-probability receivables that the "
+            f"ML model cannot account for."
+        )
+    if key_divergences:
+        summary_parts.append(
+            f"Identified {len(key_divergences)} significant divergences "
+            f"(>100K) between ML and enriched forecasts."
+        )
+
+    return {
+        "ml_forecast": ml_forecast_result,
+        "enriched_forecast": enriched_forecast_result,
+        "key_divergences": key_divergences,
+        "risk_factors": risk_factors,
+        "current_balances": balances,
+        "summary": " ".join(summary_parts),
+    }
+
+
+def get_recent_executions(limit: int = 10) -> dict:
+    """Returns recent agent execution actions (trades, deposits, transfers).
+
+    Provides a concise summary of what the agent has recently done,
+    filtered to execution and recommendation actions.
+
+    Args:
+        limit: Maximum number of entries to return (default 10).
+
+    Returns:
+        dict with recent execution entries.
+    """
+    client = bigquery.Client(project=PROJECT_ID)
+    query = f"""
+        SELECT timestamp, agent_name, action, tool_name,
+               input_summary, output_summary
+        FROM {_table('agent_audit_log')}
+        WHERE action IN ('EXECUTE', 'RECOMMEND', 'APPROVE')
+        ORDER BY timestamp DESC
+        LIMIT @limit
+    """
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[bigquery.ScalarQueryParameter("limit", "INT64", limit)]
+    )
+    rows = client.query(query, job_config=job_config).result()
+    entries = [dict(row) for row in rows]
+    return {
+        "executions": entries,
+        "count": len(entries),
+        "summary": (
+            f"{len(entries)} recent execution/recommendation actions found."
+            if entries
+            else "No recent executions found."
+        ),
+    }
+
+
 def get_transaction_history(
     days: int = 90, currency: str = ""
 ) -> dict:
