@@ -43,14 +43,21 @@ def _bq_client():
 def get_cash_position():
     client = _bq_client()
     query = f"""
+        WITH latest_fx AS (
+            SELECT from_currency, to_currency, exchange_rate
+            FROM {_table('fx_rates')}
+            WHERE rate_date = (
+                SELECT MAX(rate_date) FROM {_table('fx_rates')}
+                WHERE rate_date <= CURRENT_DATE()
+            )
+        )
         SELECT b.bank_account_id, b.bank_name, b.account_type,
                b.currency, b.current_balance, b.last_updated,
                fx.exchange_rate AS usd_rate
         FROM {_table('bank_accounts')} b
         JOIN {_table('gl_accounts')} g ON b.gl_account = g.gl_account
-        LEFT JOIN {_table('fx_rates')} fx
+        LEFT JOIN latest_fx fx
             ON fx.from_currency = b.currency AND fx.to_currency = 'USD'
-            AND fx.rate_date = (SELECT MAX(rate_date) FROM {_table('fx_rates')} WHERE rate_date <= CURRENT_DATE())
         ORDER BY b.currency, b.bank_name
     """
     rows = client.query(query).result()
@@ -68,12 +75,19 @@ def get_cash_position():
 def get_bank_balances():
     client = _bq_client()
     query = f"""
+        WITH latest_fx AS (
+            SELECT from_currency, to_currency, exchange_rate
+            FROM {_table('fx_rates')}
+            WHERE rate_date = (
+                SELECT MAX(rate_date) FROM {_table('fx_rates')}
+                WHERE rate_date <= CURRENT_DATE()
+            )
+        )
         SELECT b.currency, SUM(b.current_balance) AS total_balance,
                fx.exchange_rate AS usd_rate
         FROM {_table('bank_accounts')} b
-        LEFT JOIN {_table('fx_rates')} fx
+        LEFT JOIN latest_fx fx
             ON fx.from_currency = b.currency AND fx.to_currency = 'USD'
-            AND fx.rate_date = (SELECT MAX(rate_date) FROM {_table('fx_rates')} WHERE rate_date <= CURRENT_DATE())
         GROUP BY b.currency, fx.exchange_rate
         ORDER BY b.currency
     """
