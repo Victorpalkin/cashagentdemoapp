@@ -50,7 +50,7 @@ def get_cash_position():
         JOIN {_table('gl_accounts')} g ON b.gl_account = g.gl_account
         LEFT JOIN {_table('fx_rates')} fx
             ON fx.from_currency = b.currency AND fx.to_currency = 'USD'
-            AND fx.rate_date = CURRENT_DATE()
+            AND fx.rate_date = (SELECT MAX(rate_date) FROM {_table('fx_rates')} WHERE rate_date <= CURRENT_DATE())
         ORDER BY b.currency, b.bank_name
     """
     rows = client.query(query).result()
@@ -73,7 +73,7 @@ def get_bank_balances():
         FROM {_table('bank_accounts')} b
         LEFT JOIN {_table('fx_rates')} fx
             ON fx.from_currency = b.currency AND fx.to_currency = 'USD'
-            AND fx.rate_date = CURRENT_DATE()
+            AND fx.rate_date = (SELECT MAX(rate_date) FROM {_table('fx_rates')} WHERE rate_date <= CURRENT_DATE())
         GROUP BY b.currency, fx.exchange_rate
         ORDER BY b.currency
     """
@@ -162,7 +162,10 @@ def get_fx_rates():
     query = f"""
         SELECT from_currency, to_currency, exchange_rate, rate_date
         FROM {_table('fx_rates')}
-        WHERE rate_date = CURRENT_DATE()
+        WHERE rate_date = (
+            SELECT MAX(rate_date) FROM {_table('fx_rates')}
+            WHERE rate_date <= CURRENT_DATE()
+        )
         ORDER BY from_currency, to_currency
     """
     rows = client.query(query).result()
