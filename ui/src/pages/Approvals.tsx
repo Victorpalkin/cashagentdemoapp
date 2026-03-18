@@ -1,13 +1,65 @@
 import { useState } from 'react'
 import {
-  Box, Typography, Tabs, Tab, Table, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, Paper, CircularProgress, Alert, Dialog, DialogTitle,
-  DialogContent, DialogActions, TextField, Button,
+  Box, Typography, Tabs, Tab, Card, CardContent, Chip, CircularProgress, Alert,
+  Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Divider,
 } from '@mui/material'
+import {
+  AccountBalance, CurrencyExchange, Speed, PlayArrow, CheckCircle, Gavel,
+} from '@mui/icons-material'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import ApprovalCard from '../components/ApprovalCard'
 import StatusBadge from '../components/StatusBadge'
-import { getApprovals, approveRequest, rejectRequest } from '../api/bigquery'
+import { getApprovals, approveRequest, rejectRequest, ApprovalRequest } from '../api/bigquery'
+
+const ACTION_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
+  PLACE_DEPOSIT: {
+    label: 'Place Term Deposit',
+    icon: <AccountBalance fontSize="small" />,
+    color: '#0070F2',
+  },
+  HEDGE_FX: {
+    label: 'FX Forward Hedge',
+    icon: <CurrencyExchange fontSize="small" />,
+    color: '#36A41D',
+  },
+  ACCELERATE_COLLECTION: {
+    label: 'Accelerate Collection',
+    icon: <Speed fontSize="small" />,
+    color: '#E76500',
+  },
+}
+
+const getExecutionPlan = (actionType: string, amount: number, currency: string): string[] => {
+  const formatted = new Intl.NumberFormat('en-US', {
+    style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 0,
+  }).format(amount)
+  switch (actionType) {
+    case 'PLACE_DEPOSIT':
+      return [
+        `Transfer ${formatted} from operating account to term deposit`,
+        `Deposit placed with Deutsche Bank at ~4.2% annual rate`,
+        `Term: 30 days, maturity auto-credited back to operating account`,
+        `Confirmation ID and maturity date recorded in execution log`,
+      ]
+    case 'HEDGE_FX':
+      return [
+        `Execute FX forward contract: sell ${formatted} for USD`,
+        `Trade placed with broker at prevailing forward rate`,
+        `Settlement in 21 business days`,
+        `Locks in exchange rate, eliminating FX risk on this exposure`,
+        `Trade confirmation and rate recorded in execution log`,
+      ]
+    case 'ACCELERATE_COLLECTION':
+      return [
+        `Flag receivable for immediate follow-up by collections team`,
+        `Send automated payment reminder to customer`,
+        `Escalate to VP Treasury for direct counterparty engagement`,
+        `Monitor payment status daily until resolved`,
+      ]
+    default:
+      return [`Execute ${actionType.replace(/_/g, ' ').toLowerCase()} for ${formatted}`]
+  }
+}
 
 const Approvals = () => {
   const [activeTab, setActiveTab] = useState(0)
@@ -72,6 +124,124 @@ const Approvals = () => {
     })
   }
 
+  const renderHistoryCard = (approval: ApprovalRequest) => {
+    const actionCfg = ACTION_CONFIG[approval.action_type] || {
+      label: approval.action_type.replace(/_/g, ' '),
+      icon: <PlayArrow fontSize="small" />,
+      color: '#666',
+    }
+    const executionSteps = getExecutionPlan(approval.action_type, approval.amount, approval.currency)
+    const isApproved = approval.status === 'APPROVED'
+
+    return (
+      <Card
+        key={approval.request_id}
+        elevation={0}
+        sx={{
+          mb: 2,
+          border: '1px solid #E0E0E0',
+          opacity: approval.status === 'REJECTED' ? 0.75 : 1,
+        }}
+      >
+        <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
+          {/* Header */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+              <Chip
+                icon={actionCfg.icon as React.ReactElement}
+                label={actionCfg.label}
+                sx={{
+                  fontWeight: 600,
+                  bgcolor: `${actionCfg.color}14`,
+                  color: actionCfg.color,
+                  border: `1px solid ${actionCfg.color}40`,
+                  '& .MuiChip-icon': { color: actionCfg.color },
+                }}
+              />
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                {formatCurrency(approval.amount, approval.currency)}
+              </Typography>
+            </Box>
+            <StatusBadge status={approval.status} />
+          </Box>
+
+          {/* Description */}
+          <Typography variant="body1" sx={{ mb: 2, fontWeight: 500 }}>
+            {approval.description}
+          </Typography>
+
+          {/* Reasoning */}
+          <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1, borderLeft: '3px solid', borderColor: 'primary.main' }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: 1 }}>
+              Agent Reasoning
+            </Typography>
+            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+              {approval.agent_reasoning}
+            </Typography>
+          </Box>
+
+          {/* Execution Plan */}
+          <Box sx={{ mb: 2, p: 2, bgcolor: isApproved ? '#F0FFF0' : '#FFF5F5', borderRadius: 1, borderLeft: '3px solid', borderColor: isApproved ? 'success.main' : 'error.main' }}>
+            <Typography variant="subtitle2" sx={{
+              fontWeight: 700, mb: 1, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: 1,
+              color: isApproved ? 'success.dark' : 'error.dark',
+              display: 'flex', alignItems: 'center', gap: 0.5,
+            }}>
+              {isApproved ? (
+                <><CheckCircle sx={{ fontSize: 14 }} /> Actions Executed</>
+              ) : (
+                <><Gavel sx={{ fontSize: 14 }} /> Actions Proposed (Rejected)</>
+              )}
+            </Typography>
+            <Box component="ol" sx={{ m: 0, pl: 2.5 }}>
+              {executionSteps.map((step, i) => (
+                <Typography
+                  component="li" variant="body2" key={i}
+                  sx={{
+                    mb: 0.5, lineHeight: 1.6,
+                    textDecoration: !isApproved ? 'line-through' : 'none',
+                    color: !isApproved ? 'text.secondary' : 'text.primary',
+                  }}
+                >
+                  {step}
+                </Typography>
+              ))}
+            </Box>
+          </Box>
+
+          {/* Decision details */}
+          {(approval.approved_by || approval.rejection_reason) && (
+            <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+              {approval.approved_by && (
+                <Typography variant="body2" sx={{ mb: 0.5 }}>
+                  <strong>{isApproved ? 'Approved' : 'Rejected'} by:</strong> {approval.approved_by}
+                  {approval.approved_at && <> on {formatTimestamp(approval.approved_at)}</>}
+                </Typography>
+              )}
+              {approval.rejection_reason && (
+                <Typography variant="body2">
+                  <strong>Reason:</strong> {approval.rejection_reason}
+                </Typography>
+              )}
+            </Box>
+          )}
+
+          <Divider sx={{ my: 1.5 }} />
+
+          {/* Footer */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+              {approval.request_id}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Requested {formatTimestamp(approval.requested_at)}
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    )
+  }
+
   if (isLoading) {
     return (
       <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -132,52 +302,17 @@ const Approvals = () => {
       )}
 
       {activeTab === 1 && (
-        <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #E0E0E0' }}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 600 }}>Request ID</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Action Type</TableCell>
-                <TableCell sx={{ fontWeight: 600 }} align="right">Amount</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Timestamp</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Decided By</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Reason</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {historyApprovals.map(approval => (
-                <TableRow key={approval.request_id} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
-                  <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                    {approval.request_id}
-                  </TableCell>
-                  <TableCell>{approval.action_type}</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 600 }}>
-                    {formatCurrency(approval.amount, approval.currency)}
-                  </TableCell>
-                  <TableCell sx={{ maxWidth: 400 }}>
-                    <Typography variant="body2" noWrap>
-                      {approval.description}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>{formatTimestamp(approval.requested_at)}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={approval.status} />
-                  </TableCell>
-                  <TableCell>
-                    {approval.approved_by || '-'}
-                  </TableCell>
-                  <TableCell sx={{ maxWidth: 200 }}>
-                    <Typography variant="body2" noWrap>
-                      {approval.rejection_reason || '-'}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <Box>
+          {historyApprovals.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 8 }}>
+              <Typography variant="h6" color="text.secondary">
+                No approval history yet
+              </Typography>
+            </Box>
+          ) : (
+            historyApprovals.map(renderHistoryCard)
+          )}
+        </Box>
       )}
 
       {/* Rejection Reason Dialog */}

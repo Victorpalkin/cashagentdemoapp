@@ -50,8 +50,8 @@ const Shell = () => {
   const getActiveTab = () => {
     const path = location.pathname
     if (path.startsWith('/dashboard')) return 0
-    if (path.startsWith('/approvals')) return 1
-    if (path.startsWith('/recommendations')) return 2
+    if (path.startsWith('/recommendations')) return 1
+    if (path.startsWith('/approvals')) return 2
     if (path.startsWith('/executions')) return 3
     if (path.startsWith('/audit')) return 4
     if (path.startsWith('/chat')) return 5
@@ -59,7 +59,7 @@ const Shell = () => {
   }
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    const paths = ['/dashboard', '/approvals', '/recommendations', '/executions', '/audit', '/chat']
+    const paths = ['/dashboard', '/recommendations', '/approvals', '/executions', '/audit', '/chat']
     navigate(paths[newValue])
   }
 
@@ -108,8 +108,8 @@ const Shell = () => {
               }}
             >
               <Tab label="Dashboard" />
-              <Tab label="Approvals" />
               <Tab label="Recommendations" />
+              <Tab label="Approvals" />
               <Tab label="Executions" />
               <Tab label="Audit Trail" />
               <Tab label="Agent Chat" />
