@@ -2,7 +2,11 @@
 
 import datetime
 import json
+import logging
 import os
+import random
+import urllib.request
+import urllib.error
 
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,6 +14,20 @@ from google.cloud import bigquery
 
 PROJECT_ID = os.environ.get("PROJECT_ID", "cash-agent-demo")
 DATASET_ID = os.environ.get("DATASET_ID", "cash_agent_demo")
+AGENT_RUNNER_URL = os.environ.get(
+    "AGENT_RUNNER_URL",
+    "https://agent-runner-558326705804.us-central1.run.app",
+)
+BANK_API_URL = os.environ.get(
+    "BANK_API_URL",
+    "https://bank-api-mock-558326705804.us-central1.run.app",
+)
+BROKER_API_URL = os.environ.get(
+    "BROKER_API_URL",
+    "https://broker-api-mock-558326705804.us-central1.run.app",
+)
+
+logger = logging.getLogger("ui_api")
 
 app = FastAPI(title="Cash Agent UI API")
 
@@ -78,7 +96,35 @@ def cash_position():
         currency_totals[cur]["balance"] += entry["current_balance"]
         currency_totals[cur]["usdEquivalent"] += entry["usd_equivalent"]
 
+    # Compute weekly change from cash_journal
+    change_query = f"""
+        SELECT currency,
+            SUM(CASE WHEN posting_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
+                THEN CASE WHEN transaction_type='INFLOW' THEN amount ELSE -amount END ELSE 0 END) AS this_week,
+            SUM(CASE WHEN posting_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
+                AND posting_date < DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
+                THEN CASE WHEN transaction_type='INFLOW' THEN amount ELSE -amount END ELSE 0 END) AS last_week
+        FROM {_table('cash_journal')}
+        WHERE posting_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
+        GROUP BY currency
+    """
+    change_pcts: dict[str, float] = {}
+    try:
+        for row in client.query(change_query).result():
+            this_week = float(row["this_week"] or 0)
+            last_week = float(row["last_week"] or 0)
+            if abs(last_week) > 0:
+                change_pcts[row["currency"]] = round(
+                    (this_week - last_week) / abs(last_week) * 100, 1
+                )
+            elif this_week != 0:
+                change_pcts[row["currency"]] = round(this_week / 1000, 1)
+    except Exception:
+        pass
+
     totals = list(currency_totals.values())
+    for t in totals:
+        t["changePercent"] = change_pcts.get(t["currency"], 0)
     grand_total = sum(t["usdEquivalent"] for t in totals)
     return {
         "balances": balances,
@@ -258,6 +304,37 @@ def approve_request(request_id: str, approved_by: str = Query(default="VP Treasu
         ]
     )
     client.query(query, job_config=job_config).result()
+
+    # Execute the approved action via mock APIs
+    try:
+        # Look up the recommendation details for this approval
+        lookup_query = f"""
+            SELECT action_type, amount, currency, description
+            FROM {_table('agent_recommendations')}
+            WHERE approval_request_id = @request_id
+            LIMIT 1
+        """
+        lookup_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("request_id", "STRING", request_id)
+            ]
+        )
+        rows = list(client.query(lookup_query, job_config=lookup_config).result())
+        if rows:
+            rec = dict(rows[0])
+            exec_result = _execute_action(
+                rec["action_type"], float(rec["amount"]),
+                rec["currency"], rec.get("description", "")
+            )
+            _log_action(
+                client, "ExecutionAgent", "EXECUTE",
+                rec["action_type"].lower(),
+                f"Approved: {rec['currency']} {float(rec['amount']):,.0f}",
+                json.dumps(exec_result, default=str),
+            )
+    except Exception as e:
+        logger.warning(f"Post-approval execution failed: {e}")
+
     return {"status": "approved", "request_id": request_id, "approved_by": approved_by}
 
 
@@ -287,6 +364,67 @@ def reject_request(
     )
     client.query(query, job_config=job_config).result()
     return {"status": "rejected", "request_id": request_id, "reason": reason}
+
+
+# ---- Execution Helpers ----
+
+def _execute_action(action_type: str, amount: float, currency: str, description: str) -> dict:
+    """Call mock bank/broker API to execute a financial action."""
+    try:
+        if action_type == "PLACE_DEPOSIT":
+            data = json.dumps({
+                "bank_name": "Deutsche Bank",
+                "currency": currency,
+                "amount": amount,
+                "term_days": 30,
+                "rate_pct": 4.2,
+            }).encode()
+            req = urllib.request.Request(
+                f"{BANK_API_URL}/deposits",
+                data=data,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                return json.loads(resp.read().decode())
+        elif action_type == "HEDGE_FX":
+            data = json.dumps({
+                "buy_currency": "USD",
+                "sell_currency": currency,
+                "buy_amount": amount,
+                "trade_type": "forward",
+                "settlement_days": 21,
+            }).encode()
+            req = urllib.request.Request(
+                f"{BROKER_API_URL}/fx-trades",
+                data=data,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                return json.loads(resp.read().decode())
+        else:
+            return {
+                "status": "noted",
+                "action": action_type,
+                "confirmation_id": f"ACT-{random.randint(100000, 999999)}",
+                "description": description,
+            }
+    except Exception as e:
+        logger.error(f"Execution failed: {e}")
+        return {"status": "error", "error": str(e)}
+
+
+def _log_action(client, agent_name: str, action: str, tool_name: str,
+                input_summary: str, output_summary: str):
+    table_ref = f"{PROJECT_ID}.{DATASET_ID}.agent_audit_log"
+    client.insert_rows_json(table_ref, [{
+        "agent_name": agent_name,
+        "action": action,
+        "tool_name": tool_name,
+        "input_summary": input_summary,
+        "output_summary": output_summary,
+    }])
 
 
 # ---- FX Rates ----
@@ -339,6 +477,56 @@ def dismiss_recommendation(recommendation_id: str):
     return {"status": "dismissed", "recommendation_id": recommendation_id}
 
 
+# ---- Executions ----
+
+@app.get("/api/executions")
+def executions(limit: int = Query(default=50)):
+    client = bigquery.Client(project=PROJECT_ID)
+    query = f"""
+        SELECT timestamp, agent_name, tool_name, input_summary, output_summary
+        FROM {_table('agent_audit_log')}
+        WHERE action = 'EXECUTE'
+        ORDER BY timestamp DESC
+        LIMIT @limit
+    """
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[bigquery.ScalarQueryParameter("limit", "INT64", limit)]
+    )
+    rows = client.query(query, job_config=job_config).result()
+    entries = []
+    for row in rows:
+        entry = dict(row)
+        for k, v in entry.items():
+            if isinstance(v, (datetime.date, datetime.datetime)):
+                entry[k] = v.isoformat()
+        # Parse output_summary as JSON for structured details
+        try:
+            entry["details"] = json.loads(entry.get("output_summary", "{}"))
+        except (json.JSONDecodeError, TypeError):
+            entry["details"] = {}
+        entries.append(entry)
+    return {"executions": entries}
+
+
+# ---- Run Agent Review ----
+
+@app.post("/api/run-review")
+def run_review():
+    """Proxy to agent-runner's daily review."""
+    try:
+        req = urllib.request.Request(
+            f"{AGENT_RUNNER_URL}/run/daily-review",
+            method="POST",
+            headers={"Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            return json.loads(resp.read().decode())
+    except urllib.error.URLError as e:
+        return {"error": f"Agent runner unavailable: {str(e)}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 # ---- Reset Demo ----
 
 @app.post("/api/reset-demo")
@@ -359,14 +547,7 @@ def reset_demo(full: bool = Query(default=False)):
 
     if full:
         # Full reset: call agent-runner service to regenerate seed data
-        import urllib.request
-        import urllib.error
-
-        agent_runner_url = os.environ.get(
-            "AGENT_RUNNER_URL",
-            "https://agent-runner-558326705804.us-central1.run.app",
-        )
-        refresh_url = f"{agent_runner_url}/run/refresh-data"
+        refresh_url = f"{AGENT_RUNNER_URL}/run/refresh-data"
 
         try:
             req = urllib.request.Request(refresh_url, method="POST")

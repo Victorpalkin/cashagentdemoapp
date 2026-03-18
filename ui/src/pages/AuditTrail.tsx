@@ -17,8 +17,14 @@ import AuditLogTable from '../components/AuditLogTable'
 import { getAuditLog } from '../api/bigquery'
 
 const AuditTrail = () => {
-  const [dateFrom, setDateFrom] = useState('2026-03-01')
-  const [dateTo, setDateTo] = useState('2026-03-31')
+  const [dateFrom, setDateFrom] = useState(() => {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+  })
+  const [dateTo, setDateTo] = useState(() => {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+  })
   const [selectedAgent, setSelectedAgent] = useState('all')
   const [selectedAction, setSelectedAction] = useState('all')
 

@@ -19,15 +19,6 @@ const priorityColor = (priority: string): 'error' | 'warning' | 'info' => {
   }
 }
 
-const statusMapping = (status: string) => {
-  switch (status) {
-    case 'PENDING_APPROVAL': return 'PENDING'
-    case 'RECOMMENDED': return 'MEDIUM'
-    case 'AUTO_EXECUTED': return 'APPROVED'
-    case 'DISMISSED': return 'REJECTED'
-    default: return 'PENDING'
-  }
-}
 
 const Recommendations = () => {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
@@ -156,10 +147,7 @@ const Recommendations = () => {
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <StatusBadge status={statusMapping(rec.status) as any} />
-                      <Typography variant="caption" color="text.secondary">
-                        {rec.status.replace(/_/g, ' ')}
-                      </Typography>
+                      <StatusBadge status={rec.status as any} />
                     </Box>
                   </Box>
 

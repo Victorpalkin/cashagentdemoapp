@@ -6,13 +6,20 @@ interface ForecastChartProps {
   forecasts: ForecastDataPoint[]
   isLoading: boolean
   error?: string
+  currentBalances?: Record<string, number>
 }
 
-const ForecastChart = ({ forecasts, isLoading, error }: ForecastChartProps) => {
+const CURRENCY_SYMBOLS: Record<string, string> = { USD: '$', EUR: '\u20AC', GBP: '\u00A3' }
+
+const ForecastChart = ({ forecasts, isLoading, error, currentBalances }: ForecastChartProps) => {
   const minimumReserve = 8000000
 
   const formatYAxis = (value: number) => {
-    return `$${(value / 1000000).toFixed(1)}M`
+    const sign = value < 0 ? '-' : ''
+    const abs = Math.abs(value)
+    if (abs >= 1000000) return `${sign}$${(abs / 1000000).toFixed(1)}M`
+    if (abs >= 1000) return `${sign}$${(abs / 1000).toFixed(0)}K`
+    return `${sign}$${abs.toFixed(0)}`
   }
 
   const formatDate = (dateStr: string) => {
@@ -20,25 +27,41 @@ const ForecastChart = ({ forecasts, isLoading, error }: ForecastChartProps) => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
 
-  // Group forecast data by date, pivoting currencies into columns
+  // Group forecast data by date, computing cumulative balances per currency
   const chartData = (() => {
     if (!forecasts.length) return []
 
-    const dateMap: Record<string, Record<string, number>> = {}
+    // Sort forecasts by currency then date
+    const byCurrency: Record<string, { date: string; flow: number }[]> = {}
     for (const f of forecasts) {
       const dateKey = f.forecast_date.split('T')[0]
-      if (!dateMap[dateKey]) dateMap[dateKey] = { dateRaw: Date.parse(dateKey) as unknown as number }
-      dateMap[dateKey][f.currency] = f.net_cash_flow
-      dateMap[dateKey][`${f.currency}_high`] = f.upper_bound
-      dateMap[dateKey][`${f.currency}_low`] = f.lower_bound
+      if (!byCurrency[f.currency]) byCurrency[f.currency] = []
+      byCurrency[f.currency].push({ date: dateKey, flow: f.net_cash_flow })
     }
 
-    return Object.entries(dateMap)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, values]) => ({
-        date: formatDate(date),
-        ...values,
-      }))
+    // Compute cumulative balances
+    const cumulativeByCurrency: Record<string, Record<string, number>> = {}
+    for (const [currency, entries] of Object.entries(byCurrency)) {
+      entries.sort((a, b) => a.date.localeCompare(b.date))
+      let running = currentBalances?.[currency] ?? 0
+      cumulativeByCurrency[currency] = {}
+      for (const entry of entries) {
+        running += entry.flow
+        cumulativeByCurrency[currency][entry.date] = running
+      }
+    }
+
+    // Pivot into chart rows
+    const allDates = [...new Set(forecasts.map(f => f.forecast_date.split('T')[0]))].sort()
+    return allDates.map(date => {
+      const row: Record<string, any> = { date: formatDate(date) }
+      for (const currency of Object.keys(cumulativeByCurrency)) {
+        if (cumulativeByCurrency[currency][date] !== undefined) {
+          row[currency] = Math.round(cumulativeByCurrency[currency][date])
+        }
+      }
+      return row
+    })
   })()
 
   const currencies = [...new Set(forecasts.map(f => f.currency))].sort()
@@ -48,7 +71,7 @@ const ForecastChart = ({ forecasts, isLoading, error }: ForecastChartProps) => {
     <Card>
       <CardContent sx={{ p: 3 }}>
         <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
-          30-Day Cash Forecast
+          30-Day Projected Cash Balance
         </Typography>
 
         {isLoading ? (
@@ -70,7 +93,11 @@ const ForecastChart = ({ forecasts, isLoading, error }: ForecastChartProps) => {
               <XAxis dataKey="date" tick={{ fontSize: 12 }} interval={4} />
               <YAxis tick={{ fontSize: 12 }} tickFormatter={formatYAxis} />
               <Tooltip
-                formatter={(value: number) => `$${value.toLocaleString()}`}
+                formatter={(value: number, name: string) => {
+                  const cur = name.split(' ')[0]
+                  const symbol = CURRENCY_SYMBOLS[cur] || '$'
+                  return `${symbol}${value.toLocaleString()}`
+                }}
                 contentStyle={{ borderRadius: 8, border: '1px solid #E0E0E0' }}
               />
               <Legend wrapperStyle={{ paddingTop: 20 }} iconType="line" />
@@ -90,7 +117,7 @@ const ForecastChart = ({ forecasts, isLoading, error }: ForecastChartProps) => {
                   stroke={colorMap[cur] || '#999'}
                   strokeWidth={2}
                   dot={false}
-                  name={`${cur} Forecast`}
+                  name={`${cur} Balance`}
                 />
               ))}
             </LineChart>

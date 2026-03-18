@@ -142,6 +142,8 @@ const Approvals = () => {
                 <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Timestamp</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Decided By</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Reason</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -162,6 +164,14 @@ const Approvals = () => {
                   <TableCell>{formatTimestamp(approval.requested_at)}</TableCell>
                   <TableCell>
                     <StatusBadge status={approval.status} />
+                  </TableCell>
+                  <TableCell>
+                    {approval.approved_by || '-'}
+                  </TableCell>
+                  <TableCell sx={{ maxWidth: 200 }}>
+                    <Typography variant="body2" noWrap>
+                      {approval.rejection_reason || '-'}
+                    </Typography>
                   </TableCell>
                 </TableRow>
               ))}

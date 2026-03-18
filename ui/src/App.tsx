@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard'
 import Approvals from './pages/Approvals'
 import Recommendations from './pages/Recommendations'
 import AuditTrail from './pages/AuditTrail'
+import Executions from './pages/Executions'
 import AgentChat from './pages/AgentChat'
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/approvals" element={<Approvals />} />
           <Route path="/recommendations" element={<Recommendations />} />
+          <Route path="/executions" element={<Executions />} />
           <Route path="/audit" element={<AuditTrail />} />
           <Route path="/chat" element={<AgentChat />} />
         </Routes>

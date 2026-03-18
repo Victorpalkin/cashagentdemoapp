@@ -11,8 +11,8 @@ import {
   Refresh as RefreshIcon,
 } from '@mui/icons-material'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { resetDemo } from '../api/bigquery'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { resetDemo, getApprovals } from '../api/bigquery'
 
 const Shell = () => {
   const navigate = useNavigate()
@@ -24,6 +24,13 @@ const Shell = () => {
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false, message: '', severity: 'success',
   })
+
+  const { data: approvals = [] } = useQuery({
+    queryKey: ['approvals'],
+    queryFn: () => getApprovals(),
+    refetchInterval: 10000,
+  })
+  const pendingCount = approvals.filter(a => a.status === 'PENDING').length
 
   const resetMutation = useMutation({
     mutationFn: (full: boolean) => resetDemo(full),
@@ -45,13 +52,14 @@ const Shell = () => {
     if (path.startsWith('/dashboard')) return 0
     if (path.startsWith('/approvals')) return 1
     if (path.startsWith('/recommendations')) return 2
-    if (path.startsWith('/audit')) return 3
-    if (path.startsWith('/chat')) return 4
+    if (path.startsWith('/executions')) return 3
+    if (path.startsWith('/audit')) return 4
+    if (path.startsWith('/chat')) return 5
     return 0
   }
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    const paths = ['/dashboard', '/approvals', '/recommendations', '/audit', '/chat']
+    const paths = ['/dashboard', '/approvals', '/recommendations', '/executions', '/audit', '/chat']
     navigate(paths[newValue])
   }
 
@@ -102,6 +110,7 @@ const Shell = () => {
               <Tab label="Dashboard" />
               <Tab label="Approvals" />
               <Tab label="Recommendations" />
+              <Tab label="Executions" />
               <Tab label="Audit Trail" />
               <Tab label="Agent Chat" />
             </Tabs>
@@ -121,8 +130,8 @@ const Shell = () => {
                 <SettingsIcon />
               )}
             </IconButton>
-            <IconButton color="inherit" size="small">
-              <Badge badgeContent={3} color="error">
+            <IconButton color="inherit" size="small" onClick={() => { if (pendingCount > 0) navigate('/approvals') }}>
+              <Badge badgeContent={pendingCount > 0 ? pendingCount : undefined} color="error">
                 <NotificationsIcon />
               </Badge>
             </IconButton>

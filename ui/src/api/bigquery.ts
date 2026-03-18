@@ -151,7 +151,8 @@ export const getObligations = async (): Promise<Obligation[]> => {
 
   for (const item of apResp.items) {
     const dueDate = new Date(item.due_date)
-    let status: Obligation['status'] = 'MEDIUM'
+    const daysUntil = Math.floor((dueDate.getTime() - today.getTime()) / 86400000)
+    let status: Obligation['status'] = daysUntil <= 3 ? 'HIGH' : daysUntil <= 7 ? 'MEDIUM' : 'LOW'
     if (dueDate < today) status = 'OVERDUE'
 
     obligations.push({
@@ -216,6 +217,61 @@ export const getRecommendations = async (): Promise<Recommendation[]> => {
 export const dismissRecommendation = async (recommendationId: string): Promise<void> => {
   const res = await fetch(`${API_BASE}/api/recommendations/${recommendationId}/dismiss`, { method: 'POST' })
   if (!res.ok) throw new Error(`Dismiss failed: ${res.status}`)
+}
+
+// ---- FX Rates ----
+
+export interface FxRate {
+  from_currency: string
+  to_currency: string
+  exchange_rate: number
+  rate_date: string
+}
+
+export const getFxRates = async (): Promise<FxRate[]> => {
+  const resp = await apiFetch<{ rates: FxRate[] }>('/api/fx-rates')
+  return resp.rates
+}
+
+// ---- Payment Runs ----
+
+export interface PaymentRun {
+  payment_run_id: string
+  scheduled_date: string
+  total_amount: number
+  currency: string
+  item_count: number
+  status: string
+  description: string
+}
+
+export const getPaymentRuns = async (): Promise<PaymentRun[]> => {
+  const resp = await apiFetch<{ payment_runs: PaymentRun[] }>('/api/payment-runs')
+  return resp.payment_runs
+}
+
+// ---- Executions ----
+
+export interface Execution {
+  timestamp: string
+  agent_name: string
+  tool_name: string
+  input_summary: string
+  output_summary: string
+  details: Record<string, any>
+}
+
+export const getExecutions = async (limit: number = 50): Promise<Execution[]> => {
+  const resp = await apiFetch<{ executions: Execution[] }>(`/api/executions?limit=${limit}`)
+  return resp.executions
+}
+
+// ---- Run Agent Review ----
+
+export const runDailyReview = async (): Promise<{ recommendations_created: number; steps: any[]; errors?: string[] }> => {
+  const res = await fetch(`${API_BASE}/api/run-review`, { method: 'POST' })
+  if (!res.ok) throw new Error(`Run review failed: ${res.status}`)
+  return res.json()
 }
 
 // ---- Reset Demo ----

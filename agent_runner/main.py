@@ -7,6 +7,7 @@ import os
 import random
 import traceback
 
+import requests
 from fastapi import FastAPI
 from google.cloud import bigquery
 import vertexai
@@ -15,6 +16,14 @@ from vertexai.generative_models import GenerativeModel
 PROJECT_ID = os.environ.get("PROJECT_ID", "cash-agent-demo")
 DATASET_ID = os.environ.get("DATASET_ID", "cash_agent_demo")
 REGION = os.environ.get("REGION", "us-central1")
+BANK_API_URL = os.environ.get(
+    "BANK_API_URL",
+    "https://bank-api-mock-558326705804.us-central1.run.app",
+)
+BROKER_API_URL = os.environ.get(
+    "BROKER_API_URL",
+    "https://broker-api-mock-558326705804.us-central1.run.app",
+)
 
 app = FastAPI(title="Cash Agent Runner")
 logger = logging.getLogger("agent_runner")
@@ -215,6 +224,46 @@ def insert_recommendation(rec):
     return not errors
 
 
+def execute_recommendation(action_type, amount, currency, description):
+    """Call mock bank/broker API to execute a financial action."""
+    try:
+        if action_type == "PLACE_DEPOSIT":
+            resp = requests.post(f"{BANK_API_URL}/deposits", json={
+                "bank_name": "Deutsche Bank",
+                "currency": currency,
+                "amount": amount,
+                "term_days": 30,
+                "rate_pct": 4.2,
+            }, timeout=10)
+            result = resp.json()
+        elif action_type == "HEDGE_FX":
+            resp = requests.post(f"{BROKER_API_URL}/fx-trades", json={
+                "buy_currency": "USD",
+                "sell_currency": currency,
+                "buy_amount": amount,
+                "trade_type": "forward",
+                "settlement_days": 21,
+            }, timeout=10)
+            result = resp.json()
+        else:
+            result = {
+                "status": "noted",
+                "action": action_type,
+                "confirmation_id": f"ACT-{random.randint(100000, 999999)}",
+                "description": description,
+            }
+
+        log_agent_action(
+            "autonomous_runner", "EXECUTE", action_type.lower(),
+            f"{currency} {amount:,.0f} - {description}",
+            json.dumps(result, default=str),
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Execution failed: {e}")
+        return {"status": "error", "error": str(e)}
+
+
 def _serialize_for_prompt(data):
     """Make data JSON-serializable for Gemini prompt."""
     def _convert(obj):
@@ -365,6 +414,16 @@ Return ONLY the JSON array, no other text."""
                     "approval_request_id": approval_id or "",
                 }
                 insert_recommendation(row)
+
+                # Auto-execute low-value recommendations immediately
+                if status == "AUTO_EXECUTED":
+                    execute_recommendation(
+                        rec.get("action_type", "UNKNOWN"),
+                        amount,
+                        rec.get("currency", "USD"),
+                        rec.get("description", ""),
+                    )
+
                 rec_count += 1
 
                 log_agent_action(
