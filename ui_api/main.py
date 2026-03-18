@@ -131,7 +131,7 @@ def cash_position():
 
     totals = list(currency_totals.values())
     for t in totals:
-        t["changePercent"] = change_pcts.get(t["currency"], 0)
+        t["changePercent"] = max(-15.0, min(15.0, change_pcts.get(t["currency"], 0)))
     grand_total = sum(t["usdEquivalent"] for t in totals)
     return {
         "balances": balances,

@@ -169,7 +169,7 @@ const Dashboard = () => {
                         </Box>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                           <Typography variant="caption" color="success.main">
-                            AR: {formatCompact(ar, cur)}
+                            AR (wtd): {formatCompact(ar, cur)}
                           </Typography>
                           <Typography variant="caption" color="error.main">
                             AP: {formatCompact(ap, cur)}

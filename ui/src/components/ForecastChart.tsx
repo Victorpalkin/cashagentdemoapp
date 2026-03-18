@@ -32,19 +32,21 @@ const ForecastChart = ({ forecasts, isLoading, error, currentBalances }: Forecas
     if (!forecasts.length) return []
 
     // Sort forecasts by currency then date
+    const today = new Date().toISOString().split('T')[0]
     const byCurrency: Record<string, { date: string; flow: number }[]> = {}
     for (const f of forecasts) {
       const dateKey = f.forecast_date.split('T')[0]
+      if (dateKey <= today) continue // skip past/today — already reflected in current balances
       if (!byCurrency[f.currency]) byCurrency[f.currency] = []
       byCurrency[f.currency].push({ date: dateKey, flow: f.net_cash_flow })
     }
 
-    // Compute cumulative balances
+    // Compute cumulative balances starting from today's current balance
     const cumulativeByCurrency: Record<string, Record<string, number>> = {}
     for (const [currency, entries] of Object.entries(byCurrency)) {
       entries.sort((a, b) => a.date.localeCompare(b.date))
       let running = currentBalances?.[currency] ?? 0
-      cumulativeByCurrency[currency] = {}
+      cumulativeByCurrency[currency] = { [today]: running } // anchor at today
       for (const entry of entries) {
         running += entry.flow
         cumulativeByCurrency[currency][entry.date] = running
@@ -52,7 +54,8 @@ const ForecastChart = ({ forecasts, isLoading, error, currentBalances }: Forecas
     }
 
     // Pivot into chart rows
-    const allDates = [...new Set(forecasts.map(f => f.forecast_date.split('T')[0]))].sort()
+    const futureDates = [...new Set(forecasts.map(f => f.forecast_date.split('T')[0]).filter(d => d > today))].sort()
+    const allDates = [today, ...futureDates]
     return allDates.map(date => {
       const row: Record<string, any> = { date: formatDate(date) }
       for (const currency of Object.keys(cumulativeByCurrency)) {
