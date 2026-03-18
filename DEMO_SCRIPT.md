@@ -4,386 +4,162 @@
 
 ---
 
-## Three Key Storylines
+## The Story
 
-This demo proves three things:
-
-1. **Agents enrich the ML model** -- The BQML ARIMA+ model forecasts cash flow from historical patterns, but it can't see AR probability data, AP schedules, or payment runs. The agent brings this context, creating an "enriched forecast" that shows what the ML model misses (e.g., ACME Corp's EUR 2.3M receivable at only 45% probability).
-
-2. **Enrichment improves cash forecasting** -- Side-by-side, the enriched forecast reveals shortfalls and risks invisible to ML alone. Every forecast query shows both views with the delta highlighted, so the audience sees the concrete improvement.
-
-3. **Agents execute exchanges with the bank** -- The agent doesn't just analyze -- it acts. It executes FX trades, places deposits, and posts to SAP, all with policy-enforced approval workflows. After execution, it shows a summary of what it just did, closing the loop from insight to action.
-
-These three storylines thread through every act of the demo.
-
----
-
-## Always-Fresh Demo
-
-Data refreshes daily at 2 AM UTC via Cloud Scheduler. The autonomous agent runner generates recommendations, detects anomalies, and logs activity every few hours. This means:
-
-- **Dates are always relative to today** -- no stale data
-- **BQML model is retrained nightly** on fresh historical data
-- **Dashboard shows recent agent activity** from autonomous runs
-- **Recommendations tab is pre-populated** with agent-generated suggestions
-- **No need to run `reset_demo.sh` before demos** (though you can use the UI's gear icon for quick/full reset)
+It's Tuesday morning. Sarah Chen, VP of Treasury at a multinational corporation, opens the Cash Agent Dashboard to start her day. The AI treasury agent has been working overnight -- scanning for anomalies, generating recommendations, and monitoring cash positions across three currencies. Sarah's job is to review what the agent found, decide what to act on, and stress-test the plan.
 
 ---
 
 ## Pre-Demo Setup
 
-1. **Option A -- Use the UI Reset** (recommended):
-   Open the Management UI, click the gear icon (top-right), and choose "Quick Reset" to clear operational tables. Or "Full Reset" to also regenerate seed data with today's dates.
-
-2. **Option B -- Command line**:
-   ```bash
-   bash reset_demo.sh          # Quick: truncate operational tables
-   bash reset_demo.sh --full   # Full: also reload seed data
-   ```
-
-3. **Populate recommendations**: On the Dashboard, click **"Run Agent Review"** to trigger the autonomous agent. This generates fresh recommendations, anomaly alerts, and approval requests based on today's data.
-
-4. **Start the agent** (choose one):
-   ```bash
-   # Local (preferred for demos -- fastest response)
-   cd agent && adk web
-
-   # Or use the deployed chat app
-   open https://chat-app-rgw57p2taa-uc.a.run.app
-   ```
-
-5. **Open the Management UI** in a second browser tab (side-by-side with agent chat):
-   ```
-   https://cash-agent-ui-rgw57p2taa-uc.a.run.app
-   ```
-   The UI connects to BigQuery via the ui-api service and shows live data.
-
-6. **Verify data is loaded**: Check the Dashboard -- you should see currency balance cards, the forecast chart, and the Recommendations tab should show 2-4 agent-generated suggestions.
+1. Open the Management UI. Click the **gear icon** (top-right) and choose **Quick Reset** (or **Full Reset** to regenerate seed data with today's dates).
+2. On the Dashboard, click **Run Agent Review** -- this populates recommendations, anomaly alerts, and agent activity.
+3. Open the **Agent Chat** in a second browser tab (side-by-side with the UI). Use `adk web` locally or the deployed chat app.
 
 ---
 
-## Autonomous Agent Operations
+## Beat 1 -- Morning Review
 
-Before diving into the interactive demo, highlight the autonomous capabilities:
+*Sarah opens the Dashboard to see where things stand.*
 
-> "This isn't just a chatbot -- the agent runs autonomously on a schedule. Let me show you what it's already done today."
+**What she sees in the UI** (Dashboard tab -- "Treasury Overview"):
 
-1. **Dashboard**: Point to the "Recent Agent Activity" section -- it shows autonomous forecast updates, anomaly scans, and position checks from the agent runner's scheduled execution. You can also trigger the agent live by clicking **Run Agent Review** on the Dashboard.
+- Three **Cash Position Cards** across the top: ~$11.1M USD, ~EUR 6.8M, ~GBP 3.1M -- totaling roughly **$22.4M** in the **Currency Summary** card below.
+- The **FX Rates** card shows current EUR/USD (~1.08) and GBP/USD (~1.27) rates.
+- The **Receivables vs Payables** card breaks down net AR/AP by currency with color-coded chips.
+- The **Forecast Chart** shows the BQML ARIMA+ projection with confidence intervals.
+- The **Scheduled Payment Runs** card lists upcoming outflows -- she spots a $2.8M vendor run and a $1.5M payroll run in the next two weeks.
+- The **Recent Agent Activity** log shows the agent has already been at work: overnight forecast updates, anomaly scans, and position checks.
 
-2. **Recommendations tab**: Click the Recommendations tab -- the autonomous agent has already generated 2-4 recommendations based on today's data. Each recommendation shows always-visible rationale and numbered **Actions Upon Approval** steps. Auto-executed items (< $100K) show "Actions Taken" instead.
+She notices the agent ran its last review a few hours ago. She clicks **Run Agent Review** to get a fresh analysis with the latest data.
 
-3. **Approvals tab**: If any recommendation exceeds $500K, the agent has already created an approval request -- visible in the Approvals tab. Each pending approval shows **full agent reasoning** and a numbered **execution plan** showing exactly what will happen upon approval.
+**What she asks the agent** (optional confirmation):
 
-**Talking points**:
-- Agents don't just respond to prompts -- they work autonomously on schedule
-- Cloud Scheduler triggers the agent runner every 2-4 hours
-- Human-in-the-loop is preserved: high-value actions require approval even when running autonomously
-- All autonomous actions are fully auditable
+> What's our current cash position across all bank accounts?
 
----
+The agent confirms the same numbers: 7 accounts, 3 currencies, ~$22.4M total. The real-time BigQuery queries match the Dashboard exactly.
 
-## Act 1 -- Discovery: "What do we have?"
-
-### Prompt 1: Cash Position
-
-> **What's our current cash position across all bank accounts?**
-
-**What happens**: Root agent delegates to `CashPositionAgent`, which queries BigQuery `bank_accounts` and `fx_rates` tables.
-
-**Expected response** -- 7 accounts grouped by currency:
-
-| Currency | Bank | Account Type | Balance |
-|----------|------|-------------|---------|
-| USD | Chase | Checking | $5,200,000 |
-| USD | Chase | Savings | $2,100,000 |
-| USD | Bank of America | Checking | $3,800,000 |
-| EUR | Deutsche Bank | Checking | EUR 4,500,000 |
-| EUR | BNP Paribas | Checking | EUR 2,300,000 |
-| GBP | Barclays | Checking | GBP 1,900,000 |
-| GBP | Barclays | Money Market | GBP 1,200,000 |
-
-**Totals**: USD $11.1M, EUR 6.8M (~$7.3M), GBP 3.1M (~$3.9M) = **~$22.4M total**
-
-**Talking points**:
-- Multi-agent delegation -- root agent selected CashPositionAgent based on intent
-- Real-time BigQuery queries, not cached reports
-- Automatic FX conversion to USD equivalent using live rates (EUR/USD ~1.08, GBP/USD ~1.27)
-
-**UI interaction**: Switch to the Dashboard tab -- notice the same ~$22.4M total the agent just reported, with live currency breakdown cards and the forecast chart. The Dashboard already shows data from the autonomous agent's recent review.
+**Key talking points**: The Dashboard is powered by the same BigQuery data the agent queries. The agent runs autonomously on a Cloud Scheduler cadence (every 2-4 hours), so the Dashboard always reflects recent analysis -- not stale reports.
 
 ---
 
-### Prompt 2: Forecast
+## Beat 2 -- Risk Discovery
 
-> **Show me the 30-day cash flow forecast**
+*Something catches Sarah's eye in the Recent Recommendations card.*
 
-**What happens**: Root agent delegates to `CashForecastAgent`, which calls `get_enriched_forecast()` to produce a side-by-side comparison of the ML-only baseline vs the agent-enriched forecast.
+**What she sees in the UI** (Dashboard tab):
 
-**Expected response** -- Two-view forecast by currency:
+- The **Recent Recommendations** card at the bottom of the Dashboard shows a **HIGH**-priority alert with a red chip. Something about ACME Corp.
+- She scrolls down to the **Obligations Table** and spots the ACME Corp row -- EUR 2,300,000 receivable flagged with an abnormally low probability indicator.
 
-**ML-Only Baseline** (BQML ARIMA+):
-- Statistical prediction based on historical `cash_journal` patterns
-- Shows weekly seasonality (Tuesday-Wednesday inflow peaks, Monday outflow spikes)
-- Cannot see AR probability data, specific AP schedules, or payment runs
+She clicks the **Recommendations** tab to get the full picture.
 
-**Agent-Enriched Forecast**:
-- Adjusts for probability-weighted AR (e.g., ACME Corp EUR 2.3M at 45% probability reduces expected EUR inflow by ~1.27M)
-- Incorporates known AP obligations and scheduled payment runs
-- **USD pressure in Week 3**: Large payment runs ($2.8M + $1.5M payroll) create pressure the ML model underestimates
-- **EUR risk**: Enriched view shows lower expected EUR inflows due to ACME Corp probability adjustment
+**What she sees** (Recommendations tab -- "Agent Recommendations"):
 
-**Key Divergences** highlighted:
-- Where ML and enriched forecasts differ by >100K
-- Risk factors: low-probability receivables the ML model treats as certain
+Three recommendations grouped by priority, each with full **Agent Rationale** (always visible, never truncated) and numbered **Actions Upon Approval** steps:
 
-**Talking points**:
-- **Storyline 1**: "Notice the agent isn't just reading the BQML output -- it's enriching it with AR probability data and AP schedules that the statistical model can't see"
-- **Storyline 2**: "The enriched forecast reveals a EUR shortfall risk that's completely invisible in the ML-only view"
-- BQML ARIMA+ model trained on `cash_journal` historical data -- no ML infra needed
-- AR items are probability-weighted (not all receivables are equally certain)
-- Tease: "Let's see if there are any anomalies we should worry about"
+1. **HIGH -- Accelerate Collection**: ACME Corp EUR 2.3M at only 45% probability (vs typical 85-97%). The rationale explains the enriched forecast reduces expected EUR inflow by ~EUR 1.27M compared to what the ML model alone predicts.
+2. **MEDIUM -- Place Term Deposit**: EUR surplus at ~153% of 30-day obligations, exceeding the 120% threshold. Amount > $500K, so it requires VP Treasury approval per Approval Matrix Section 2.1.
+3. **MEDIUM -- FX Forward Hedge**: Net GBP exposure of ~GBP 1.4M exceeds the GBP 500K mandatory hedging threshold.
 
-**UI interaction**: The Dashboard's forecast chart shows the same BQML ARIMA+ projection with confidence intervals and clear weekly patterns.
+**What she asks the agent**:
+
+> Check for any anomalies in our receivables and payables
+
+The agent explains the ACME risk in plain language: a major Phase 3 enterprise delivery with collection confidence far below normal. It quantifies the impact -- EUR 2.3M at risk equals roughly $2.5M USD.
+
+**Key talking points**: The BQML ARIMA+ model forecasts cash flow from historical patterns, but it can't see AR probability data or AP schedules. The agent enriches the forecast with this context -- every recommendation cites the delta between ML-only and agent-enriched views. Policy references (Treasury Policy Section 2.3, FX Hedging Policy Section 2.1) come from semantic search over actual policy documents, not hallucinated rules.
 
 ---
 
-## Act 2 -- Risk Detection: "What should worry us?"
+## Beat 3 -- Taking Action
 
-### Prompt 3: Anomaly Detection
+*Sarah decides to act on the EUR term deposit. But first, a quick transfer.*
 
-> **Check for any anomalies in our receivables and payables**
+**What she asks the agent**:
 
-**What happens**: Root agent delegates to `AnomalyDetectionAgent`, which runs statistical analysis and scans AR/AP items.
+> Transfer $200,000 from Chase checking to Chase savings
 
-**Expected response** -- Key anomaly found:
-- **HIGH severity**: ACME Corp (C-020) -- EUR 2,300,000 receivable at only **45% probability** (vs typical 85-97%). Due tomorrow. This is a major enterprise delivery (Phase 3) with abnormally low collection confidence.
+The $200K amount falls in the $100K-$500K band, so the agent asks for confirmation. Sarah says "Yes" and the agent executes: it calls the Bank API for the transfer, posts the accounting entry to SAP, and logs everything to the audit trail. It reports back a confirmation number, updated balances, and an SAP document number.
 
-**Talking points**:
-- The autonomous agent's anomaly scan already flagged this -- check the Audit Trail
-- Statistical basis: 45% probability is a clear outlier vs the 85-97% range of other receivables
-- Quantified impact: EUR 2.3M at risk = $2.5M USD
-- The agent doesn't just find numbers -- it explains *why* something is anomalous
+**What she sees** (Executions tab -- "Execution History"):
 
-**UI interaction**: In the Dashboard, the Obligations table highlights the ACME Corp row with a warning indicator (low probability flag).
+- Summary cards at the top show counts: **Deposits**, **FX Trades**, **Other Actions**.
+- The execution table shows the completed transfer with columns for Time, Type ("Transfer"), Confirmation ID, Counterparty ("Chase"), Amount ($200,000), and Status ("Completed").
 
----
+Now she turns to the bigger action.
 
-### Prompt 4: Recommendations
+> Execute the EUR term deposit for the surplus
 
-> **What are your recommendations?**
+The agent recognizes the amount exceeds $500K. Instead of executing, it creates a **formal approval request** and tells Sarah it's been submitted for VP Treasury approval.
 
-**What happens**: Root agent delegates to `RecommendationAgent`, which analyzes position + forecast + policies and returns a prioritized action list.
+**What she sees** (Approvals tab -- "Agent Approvals"):
 
-**Expected response** -- 3 key recommendations, each grounded in the enriched forecast delta:
+- The **Pending** sub-tab shows the new approval request (the UI polls every 5 seconds).
+- The card displays the action type ("Place Term Deposit"), the amount, and a full **Agent Reasoning** section explaining why the deposit is warranted.
+- Below that, numbered **execution steps** show exactly what will happen upon approval.
 
-1. **HIGH: Accelerate ACME Corp collection** (EUR 2.3M at risk)
-   - Rationale: "The ML model predicts adequate EUR cash flow, but adjusted for ACME Corp's 45% collection probability, the enriched forecast reduces expected EUR inflow by ~1.27M"
-   - Policy ref: Treasury Policy Section 2.3 (reserve monitoring)
-
-2. **MEDIUM: Place EUR term deposit** (EUR surplus)
-   - Rationale: EUR 6.8M balance = ~153% of 30-day EUR obligations, exceeding the 120% surplus threshold
-   - Policy ref: Treasury Policy Section 3.1 (surplus > 120% threshold)
-   - Note: Amount > $500K requires VP Treasury approval (Approval Matrix Section 2.1)
-
-3. **MEDIUM: Hedge GBP FX exposure** (net GBP ~1.4M)
-   - Rationale: "The enriched forecast shows net GBP outflows of ~1.4M, well above the GBP 500K mandatory hedging threshold -- a risk invisible in the ML-only view"
-   - Policy ref: FX Hedging Policy Section 2.1
-
-**Talking points**:
-- **Storyline 2**: "Notice how each recommendation cites the delta between ML-only and enriched forecasts -- this is the value the agent adds on top of pure ML"
-- Every recommendation cites specific policy sections -- not hallucinated rules
-- Policies are searched via semantic search over markdown documents
-- Priorities are data-driven: the ACME risk dwarfs the others
-
-**UI interaction**: Switch to the **Recommendations** tab -- the same recommendations appear with always-visible rationale and numbered action steps.
+**Key talking points**: Three-tier authorization keeps the agent safe. Under $100K: auto-executed. $100K-$500K: user confirms in chat. Over $500K: formal approval workflow with full reasoning. Three external systems are integrated in a single agent action: Bank API, SAP ERP, and the audit log.
 
 ---
 
-## Act 3 -- Action: "Do something about it"
+## Beat 4 -- Governance
 
-### Prompt 5: Trigger Approval Workflow (> $500K)
+*Sarah reviews and approves the deposit.*
 
-> **Execute the EUR term deposit for the surplus**
+**What she sees** (Approvals tab):
 
-**What happens**: Root agent delegates to `ExecutionAgent`. Amount exceeds $500K threshold, so the agent creates a **formal approval request** instead of executing.
+She reads the agent's reasoning on the pending EUR deposit. The numbered execution plan makes it clear what will happen: transfer funds, place the deposit at ~4.2% annual rate, 30-day term, confirmation recorded. She clicks **Approve**.
 
-**Expected response**:
-- Agent creates an approval request in `approval_requests` table
-- Status: PENDING
-- Required approver: VP Treasury (per Approval Matrix Section 2.1)
-- The agent **does NOT execute** the deposit -- it tells the user the request has been created
+The action auto-executes. No need to go back to the agent chat -- approval triggers execution directly.
 
-**Talking points**:
-- **Human-in-the-loop**: The agent knows the $500K policy threshold and enforces it
-- Three-tier authorization model:
-  - Under $100K: automated execution
-  - $100K-$500K: user confirmation required
-  - Over $500K: formal approval workflow
-- The agent is an *assistant*, not an autonomous actor
+**What she sees** (Executions tab):
 
-**UI interaction**: Switch to the **Approvals** tab -- the pending approval request appears in real-time (the UI polls every 5 seconds). Each pending approval shows full agent reasoning and a numbered execution plan.
+She switches to Executions. The deposit appears in the table with a contract ID, counterparty (Deutsche Bank), rate (4.2%), maturity date, and "Completed" status.
+
+**What she sees** (Audit Trail tab):
+
+The complete chain is visible: recommendation created, approval requested, approved, executed. Every step is timestamped with the agent's reasoning preserved.
+
+**Key talking points**: The complete lifecycle runs from analysis through execution: recommend, request approval, approve, auto-execute, record. The agent respects the approval gate -- it won't execute without authorization, even during autonomous overnight runs. Everything is auditable.
 
 ---
 
-### Prompt 6: Direct Execution ($100K-$500K band)
+## Beat 5 -- Stress Testing
 
-> **Transfer $200,000 from Chase checking to Chase savings**
+*Sarah wants to understand the downside risk before her board call.*
 
-**What happens**: $200K is in the $100K-$500K band. The agent asks for **user confirmation**, then executes upon approval.
+**What she asks the agent**:
 
-**Expected response**:
-1. Agent asks: "This transfer is $200,000. Please confirm you'd like to proceed."
-2. After you confirm ("Yes" / "Proceed"):
-   - Calls Bank API (`execute_transfer`) -> gets confirmation number
-   - Calls SAP API (`update_sap_posting`) -> creates accounting entry
-   - Calls `log_agent_action()` -> writes to audit trail
-   - Reports: confirmation ID, updated balances, SAP document number
+> What if ACME Corp doesn't pay and EUR/USD drops 5%?
 
-**Talking points**:
-- **Three-system integration** in one agent action: Bank API + SAP + audit log
-- Mock services simulate real banking and ERP APIs (FastAPI on Cloud Run)
-- Every action is fully auditable
+The agent runs a compound scenario simulation: ACME non-payment removes ~EUR 1.035M of expected inflow (EUR 2.3M x 45% probability), and the EUR/USD drop from 1.08 to 1.026 reduces the USD value of all EUR holdings. Combined impact: approximately **$2.6M negative delta**.
 
-**UI interaction**: Switch to the **Executions** tab to see the completed transfer with confirmation ID, counterparty, settlement date, and status.
+The Dashboard remains open as the base-case reference -- Sarah can compare the scenario results against the live position.
+
+**Key talking points**: Compound scenarios (customer credit risk + FX risk) are modeled together in a pure Python scenario engine -- no separate simulation service needed. The quantified impact helps Sarah walk into her board meeting with a clear risk picture.
 
 ---
 
-### Prompt 6b: Execution Summary
+## Dual-Screen Setup
 
-> **Show me what you just did**
-
-**What happens**: Root agent delegates to `ExecutionAgent`, which calls `get_recent_executions()` to display a summary of recent agent actions.
-
-**Expected response**:
-- List of recent executions: transfers, deposits, trades
-- Each entry shows: timestamp, action type, tool used, input/output summary
-- Closes the loop: forecast revealed a problem -> agent recommended an action -> agent executed it -> here's the proof
-
-**Talking points**:
-- **Storyline 3**: "The agent didn't just tell us what to do -- it did it, and here's the receipt"
-- Full audit trail: every action is logged with timestamps and details
-- End-to-end loop: analyze -> recommend -> execute -> confirm
-
-**UI interaction**: The same data is visible in the **Executions** tab, showing all completed trades and transfers.
-
----
-
-## Act 4 -- Governance: "Who approves what?"
-
-### Prompt 7: Check Approvals
-
-> **Show me pending approval requests**
-
-**What happens**: Agent queries `approval_requests` table for PENDING items.
-
-**Expected response**: The EUR deposit approval from Act 3, showing:
-- Action: Place EUR term deposit
-- Amount and currency
-- Status: PENDING
-- Required approver: VP Treasury
-- Agent's rationale and policy citations
-
-**Talking points**:
-- Full audit trail of agent reasoning
-- Approval queue is a standard BigQuery table -- could integrate with any workflow system
-
----
-
-### Manual Step: Approve the Request
-
-Switch to the **Approvals** tab in the Management UI. Each pending approval shows **full agent reasoning** and a numbered **execution plan** showing exactly what will happen upon approval. Click **Approve** on the pending EUR deposit request.
-
-**What happens upon approval**: The action executes automatically -- the UI calls the bank/broker API and posts to SAP. Switch to the **Executions** tab to see the trade confirmation with contract ID, maturity date, rate, and SAP document number.
-
-**Talking points**:
-- Complete lifecycle: recommend -> request approval -> approve -> auto-execute -> record
-- No need to go back to the agent chat to trigger execution -- approval triggers it
-- Agent respects the approval gate -- won't execute without it
-- All three external systems updated atomically
-
----
-
-## Act 5 (Bonus) -- What-If: "What could go wrong?"
-
-### Prompt 8: Scenario Simulation
-
-> **What if ACME Corp doesn't pay and EUR/USD drops 5%?**
-
-**What happens**: Root agent delegates to `ScenarioSimulationAgent`, which models the compound scenario.
-
-**Expected response** -- Base case vs scenario comparison:
-
-| | Base Case | Scenario | Delta |
-|---|-----------|----------|-------|
-| EUR position | ~EUR X.XM | ~EUR X.XM | -EUR 2.3M |
-| USD equivalent | ~$X.XM | ~$X.XM | ~-$2.6M |
-
-- ACME non-payment removes EUR 1.035M expected inflow (2.3M * 0.45 probability)
-- EUR/USD drop from 1.08 -> 1.026 reduces USD value of all EUR holdings
-- Combined impact: approximately **$2.6M negative delta**
-
-**Talking points**:
-- Pure Python scenario engine -- no separate simulation service needed
-- Compound scenarios (customer risk + FX risk) modeled together
-- Quantified impact helps treasury make informed decisions
-
----
-
-## Dual-Screen Demo Setup
-
-For maximum impact, present with **two browser windows side by side**:
+For maximum impact, present with two browser windows side by side:
 
 | Left Screen | Right Screen |
 |-------------|-------------|
-| Agent Chat (`adk web` or chat-app) | Management UI (cash-agent-ui) |
+| Agent Chat (`adk web` or deployed chat app) | Management UI |
 
-This lets the audience see the agent's analysis appear in real-time while the Management UI reflects the same live BigQuery data. Key moments:
+Key moments where both screens shine:
 
-1. **Act 1**: Agent reports cash position -> Dashboard shows the same totals and forecast chart
-2. **Act 2**: Agent detects ACME anomaly -> Obligations table highlights the row with a warning icon
-3. **Act 3**: Agent creates approval request -> **Approvals** tab shows it with full reasoning and execution plan
-4. **Act 4**: Click Approve in the UI -> action auto-executes -> check **Executions** tab for trade confirmation
-5. **Act 5**: Agent runs scenario simulation -> Dashboard remains as the reference for base-case comparison
-
-**Tab order**: Dashboard -> Recommendations -> Approvals -> Executions -> Audit Trail -> Agent Chat
+1. **Beat 1**: Agent reports cash position -- Dashboard shows the same totals
+2. **Beat 2**: Agent explains ACME anomaly -- Obligations Table flags the row
+3. **Beat 3**: Agent creates approval request -- Approvals tab shows it with full reasoning
+4. **Beat 4**: Click Approve in the UI -- Executions tab shows the trade confirmation
+5. **Beat 5**: Agent runs scenario -- Dashboard serves as the base-case reference
 
 ---
 
-## Wrap-Up Talking Points
-
-### Architecture Highlights
-- **Agentic architecture**: 1 root agent + 6 specialized sub-agents, 15+ tools
-- **Autonomous operations**: Scheduled agent runner for continuous monitoring and recommendations
-- **Policy grounding**: Semantic search over 3 markdown policy documents (treasury, FX hedging, approval matrix)
-- **Human-in-the-loop**: Three-tier threshold model (auto / confirm / approve) -- even for autonomous runs
-- **Google Cloud native**: ADK, Vertex AI, BQML ARIMA+, BigQuery, Cloud Run, Cloud Scheduler
-
-### Why This Matters
-- **Not a chatbot** -- an agent that can analyze, recommend, *and execute* real financial operations
-- **Autonomous + interactive**: Runs on schedule AND responds to prompts
-- **Policy-compliant by design** -- every action is checked against corporate policies
-- **Auditable** -- full trail of agent reasoning, approvals, and execution confirmations
-- **Composable** -- sub-agents can be swapped, added, or promoted independently
-- **Always-fresh data** -- daily seed data refresh keeps the demo current
-
-### Google Cloud Components Used
-| Component | Role |
-|-----------|------|
-| ADK (Agent Development Kit) | Agent framework, orchestration |
-| Vertex AI | LLM inference (Gemini) |
-| BigQuery | Data warehouse, operational tables |
-| BQML ARIMA+ | Time-series cash flow forecasting |
-| Cloud Run | Mock services, UI, UI API, Chat App, Agent Runner |
-| Cloud Scheduler | Autonomous agent execution + daily data refresh |
-| Artifact Registry | Docker image management |
-
----
-
-## Appendix
-
-### Quick-Reference Prompt List
-
-Copy-paste these prompts in order:
+## Quick-Reference Prompt List
 
 ```
 1. What's our current cash position across all bank accounts?
@@ -392,33 +168,15 @@ Copy-paste these prompts in order:
 4. What are your recommendations?
 5. Execute the EUR term deposit for the surplus
 6. Transfer $200,000 from Chase checking to Chase savings
-6b. Show me what you just did
-7. Show me pending approval requests
+7. Show me what you just did
+8. Show me pending approval requests
    [approve in UI -> auto-executes -> check Executions tab]
-8. What if ACME Corp doesn't pay and EUR/USD drops 5%?
+9. What if ACME Corp doesn't pay and EUR/USD drops 5%?
 ```
 
-### Key Data Points
+---
 
-| Data Point | Value | Source |
-|-----------|-------|--------|
-| Total cash position | ~$22.4M USD equivalent | bank_accounts |
-| USD holdings | $11.1M (3 accounts) | bank_accounts |
-| EUR holdings | EUR 6.8M (2 accounts) | bank_accounts |
-| GBP holdings | GBP 3.1M (2 accounts) | bank_accounts |
-| EUR/USD rate | ~1.08 | fx_rates |
-| GBP/USD rate | ~1.27 | fx_rates |
-| ACME Corp receivable | EUR 2,300,000 at 45% probability | ar_open_items |
-| BAE Systems payable | GBP 800,000 | ap_open_items |
-| Surplus threshold | 120% of 30-day obligations | Treasury Policy 3.1 |
-| Net GBP exposure | ~GBP 1,377,000 (AP 1.9M - weighted AR 551K) | ar/ap_open_items |
-| FX hedge threshold (GBP) | GBP 500,000 | FX Hedging Policy 2.1 |
-| EUR surplus ratio | ~153% of 30-day obligations | bank_accounts vs ap/payment_runs |
-| Auto-execute limit | < $100K | Approval Matrix 3.1 |
-| Confirm limit | $100K-$500K | Approval Matrix 3.2 |
-| Formal approval limit | > $500K | Approval Matrix 3.3 |
-
-### Architecture Diagram
+## Appendix: Architecture
 
 ```
                         +------------------+
@@ -442,14 +200,42 @@ Copy-paste these prompts in order:
                                      +-------+
 ```
 
+### Google Cloud Components
+
+| Component | Role |
+|-----------|------|
+| ADK (Agent Development Kit) | Agent framework, orchestration |
+| Vertex AI | LLM inference (Gemini) |
+| BigQuery | Data warehouse, operational tables |
+| BQML ARIMA+ | Time-series cash flow forecasting |
+| Cloud Run | Mock services, UI, UI API, Chat App, Agent Runner |
+| Cloud Scheduler | Autonomous agent execution + daily data refresh |
+| Artifact Registry | Docker image management |
+
+### Key Data Points
+
+| Data Point | Value |
+|-----------|-------|
+| Total cash position | ~$22.4M USD equivalent |
+| USD holdings | $11.1M (3 accounts) |
+| EUR holdings | EUR 6.8M (2 accounts) |
+| GBP holdings | GBP 3.1M (2 accounts) |
+| EUR/USD rate | ~1.08 |
+| GBP/USD rate | ~1.27 |
+| ACME Corp receivable | EUR 2,300,000 at 45% probability |
+| Surplus threshold | 120% of 30-day obligations |
+| Auto-execute limit | < $100K |
+| Confirm limit | $100K-$500K |
+| Formal approval limit | > $500K |
+
 ### Troubleshooting
 
 | Issue | Fix |
 |-------|-----|
-| Agent returns errors about missing tables | Run `bash reset_demo.sh --full` to reload seed data |
-| "No FX rates found" | FX rates table uses date-based lookup; use "Full Reset" from the gear icon to regenerate with today's dates |
-| Approval workflow not triggering | Ensure `approval_requests` table exists; run `--full` reset |
-| BQML forecast unavailable | Model may need retraining; see `deploy.sh` step 6 |
+| Agent returns errors about missing tables | Use Full Reset from gear icon or run `bash reset_demo.sh --full` |
+| "No FX rates found" | FX rates use date-based lookup; Full Reset regenerates with today's dates |
+| Approval workflow not triggering | Ensure amount exceeds $500K; run Full Reset if tables are missing |
+| BQML forecast unavailable | Model may need retraining; see `deploy.sh` |
 | Slow responses on `adk web` | First query initializes connections; subsequent queries are faster |
-| Mock service errors | Check Cloud Run services are running: `gcloud run services list` |
-| Recommendations empty after reset | Click **Run Agent Review** on the Dashboard to populate |
+| Mock service errors | Check Cloud Run services: `gcloud run services list` |
+| Recommendations empty after reset | Click **Run Agent Review** on the Dashboard |
