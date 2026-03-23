@@ -4,11 +4,23 @@ resource "google_cloud_run_v2_service" "sap_api_mock" {
   location = var.region
 
   template {
+    scaling {
+      max_instance_count = 1
+    }
+
     containers {
       image = "${var.region}-docker.pkg.dev/${var.project_id}/cash-agent-demo/sap-api-mock"
 
       ports {
         container_port = 8080
+      }
+
+      resources {
+        cpu_idle = true
+        limits = {
+          cpu    = "1"
+          memory = "256Mi"
+        }
       }
     }
   }
@@ -22,11 +34,23 @@ resource "google_cloud_run_v2_service" "bank_api_mock" {
   location = var.region
 
   template {
+    scaling {
+      max_instance_count = 1
+    }
+
     containers {
       image = "${var.region}-docker.pkg.dev/${var.project_id}/cash-agent-demo/bank-api-mock"
 
       ports {
         container_port = 8080
+      }
+
+      resources {
+        cpu_idle = true
+        limits = {
+          cpu    = "1"
+          memory = "256Mi"
+        }
       }
     }
   }
@@ -40,11 +64,23 @@ resource "google_cloud_run_v2_service" "broker_api_mock" {
   location = var.region
 
   template {
+    scaling {
+      max_instance_count = 1
+    }
+
     containers {
       image = "${var.region}-docker.pkg.dev/${var.project_id}/cash-agent-demo/broker-api-mock"
 
       ports {
         container_port = 8080
+      }
+
+      resources {
+        cpu_idle = true
+        limits = {
+          cpu    = "1"
+          memory = "256Mi"
+        }
       }
     }
   }
@@ -58,11 +94,23 @@ resource "google_cloud_run_v2_service" "ui_api" {
   location = var.region
 
   template {
+    scaling {
+      max_instance_count = 1
+    }
+
     containers {
       image = "${var.region}-docker.pkg.dev/${var.project_id}/cash-agent-demo/ui-api"
 
       ports {
         container_port = 8080
+      }
+
+      resources {
+        cpu_idle = true
+        limits = {
+          cpu    = "1"
+          memory = "256Mi"
+        }
       }
 
       env {
@@ -93,11 +141,23 @@ resource "google_cloud_run_v2_service" "cash_agent_ui" {
   location = var.region
 
   template {
+    scaling {
+      max_instance_count = 1
+    }
+
     containers {
       image = "${var.region}-docker.pkg.dev/${var.project_id}/cash-agent-demo/cash-agent-ui"
 
       ports {
         container_port = 8080
+      }
+
+      resources {
+        cpu_idle = true
+        limits = {
+          cpu    = "1"
+          memory = "128Mi"
+        }
       }
     }
   }
@@ -111,11 +171,23 @@ resource "google_cloud_run_v2_service" "chat_app" {
   location = var.region
 
   template {
+    scaling {
+      max_instance_count = 1
+    }
+
     containers {
       image = "${var.region}-docker.pkg.dev/${var.project_id}/cash-agent-demo/chat-app"
 
       ports {
         container_port = 8080
+      }
+
+      resources {
+        cpu_idle = true
+        limits = {
+          cpu    = "1"
+          memory = "256Mi"
+        }
       }
 
       env {
@@ -151,11 +223,23 @@ resource "google_cloud_run_v2_service" "agent_runner" {
   location = var.region
 
   template {
+    scaling {
+      max_instance_count = 1
+    }
+
     containers {
       image = "${var.region}-docker.pkg.dev/${var.project_id}/cash-agent-demo/agent-runner"
 
       ports {
         container_port = 8080
+      }
+
+      resources {
+        cpu_idle = true
+        limits = {
+          cpu    = "1"
+          memory = "512Mi"
+        }
       }
 
       env {
