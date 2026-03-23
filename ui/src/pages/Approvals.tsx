@@ -9,7 +9,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import ApprovalCard from '../components/ApprovalCard'
 import StatusBadge from '../components/StatusBadge'
-import { getApprovals, approveRequest, rejectRequest, ApprovalRequest } from '../api/bigquery'
+import { getApprovals, approveRequest, rejectRequest, ApprovalRequest, ApprovalOverrides } from '../api/bigquery'
 
 const ACTION_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   PLACE_DEPOSIT: {
@@ -77,7 +77,8 @@ const Approvals = () => {
   })
 
   const approveMutation = useMutation({
-    mutationFn: (requestId: string) => approveRequest(requestId),
+    mutationFn: ({ requestId, overrides }: { requestId: string; overrides?: ApprovalOverrides }) =>
+      approveRequest(requestId, overrides),
     onSuccess: () => {
       setMutatingId(null)
       setMutationError(null)
@@ -103,10 +104,10 @@ const Approvals = () => {
     },
   })
 
-  const handleApprove = (requestId: string) => {
+  const handleApprove = (requestId: string, overrides?: ApprovalOverrides) => {
     setMutatingId(requestId)
     setMutationError(null)
-    approveMutation.mutate(requestId)
+    approveMutation.mutate({ requestId, overrides })
   }
 
   const handleRejectClick = (requestId: string) => {

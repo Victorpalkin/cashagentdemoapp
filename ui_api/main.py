@@ -8,7 +8,7 @@ import random
 import urllib.request
 import urllib.error
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from google.cloud import bigquery
@@ -294,36 +294,59 @@ def approvals(status: str = Query(default="")):
 
 
 @app.post("/api/approvals/{request_id}/approve")
-def approve_request(request_id: str, approved_by: str = Query(default="VP Treasury (UI)")):
+def approve_request(
+    request_id: str,
+    approved_by: str = Query(default="VP Treasury (UI)"),
+    body: dict | None = Body(default=None),
+):
     try:
         client = bigquery.Client(project=PROJECT_ID)
         now = datetime.datetime.now().isoformat()
+
+        # Build SET clause with optional overrides
+        set_parts = [
+            "status = 'APPROVED'",
+            "approved_by = @approved_by",
+            "approved_at = @approved_at",
+        ]
+        params = [
+            bigquery.ScalarQueryParameter("request_id", "STRING", request_id),
+            bigquery.ScalarQueryParameter("approved_by", "STRING", approved_by),
+            bigquery.ScalarQueryParameter("approved_at", "STRING", now),
+        ]
+
+        overrides = body or {}
+        if "action_type" in overrides:
+            set_parts.append("action_type = @action_type")
+            params.append(bigquery.ScalarQueryParameter("action_type", "STRING", overrides["action_type"]))
+        if "amount" in overrides:
+            set_parts.append("amount = @amount")
+            params.append(bigquery.ScalarQueryParameter("amount", "FLOAT64", float(overrides["amount"])))
+        if "currency" in overrides:
+            set_parts.append("currency = @currency")
+            params.append(bigquery.ScalarQueryParameter("currency", "STRING", overrides["currency"]))
+        if "description" in overrides:
+            set_parts.append("description = @description")
+            params.append(bigquery.ScalarQueryParameter("description", "STRING", overrides["description"]))
+
         query = f"""
             UPDATE `{PROJECT_ID}.{DATASET_ID}.approval_requests`
-            SET status = 'APPROVED',
-                approved_by = @approved_by,
-                approved_at = @approved_at
+            SET {', '.join(set_parts)}
             WHERE request_id = @request_id AND status = 'PENDING'
         """
-        job_config = bigquery.QueryJobConfig(
-            query_parameters=[
-                bigquery.ScalarQueryParameter("request_id", "STRING", request_id),
-                bigquery.ScalarQueryParameter("approved_by", "STRING", approved_by),
-                bigquery.ScalarQueryParameter("approved_at", "STRING", now),
-            ]
-        )
+        job_config = bigquery.QueryJobConfig(query_parameters=params)
         client.query(query, job_config=job_config).result()
     except Exception as e:
         logger.error(f"Approve failed for {request_id}: {e}")
         return JSONResponse(status_code=500, content={"error": f"Approve failed: {e}"})
 
-    # Execute the approved action via mock APIs
+    # Execute the approved action using data from approval_requests directly
+    exec_result = None
     try:
-        # Look up the recommendation details for this approval
         lookup_query = f"""
             SELECT action_type, amount, currency, description
-            FROM {_table('agent_recommendations')}
-            WHERE approval_request_id = @request_id
+            FROM `{PROJECT_ID}.{DATASET_ID}.approval_requests`
+            WHERE request_id = @request_id
             LIMIT 1
         """
         lookup_config = bigquery.QueryJobConfig(
@@ -347,7 +370,7 @@ def approve_request(request_id: str, approved_by: str = Query(default="VP Treasu
     except Exception as e:
         logger.warning(f"Post-approval execution failed: {e}")
 
-    return {"status": "approved", "request_id": request_id, "approved_by": approved_by}
+    return {"status": "approved", "request_id": request_id, "approved_by": approved_by, "execution": exec_result}
 
 
 @app.post("/api/approvals/{request_id}/reject")
@@ -434,13 +457,15 @@ def _execute_action(action_type: str, amount: float, currency: str, description:
 def _log_action(client, agent_name: str, action: str, tool_name: str,
                 input_summary: str, output_summary: str):
     table_ref = f"{PROJECT_ID}.{DATASET_ID}.agent_audit_log"
-    client.insert_rows_json(table_ref, [{
+    errors = client.insert_rows_json(table_ref, [{
         "agent_name": agent_name,
         "action": action,
         "tool_name": tool_name,
         "input_summary": input_summary,
         "output_summary": output_summary,
     }])
+    if errors:
+        logger.error(f"Failed to insert audit log rows: {errors}")
 
 
 # ---- FX Rates ----

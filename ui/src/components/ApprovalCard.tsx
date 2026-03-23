@@ -1,8 +1,13 @@
-import { Card, CardContent, Typography, Box, Button, Chip, Divider, CircularProgress, Alert } from '@mui/material'
+import { useState } from 'react'
+import {
+  Card, CardContent, Typography, Box, Button, Chip, Divider, CircularProgress, Alert,
+  TextField, Select, MenuItem, FormControl, InputLabel,
+} from '@mui/material'
 import {
   CheckCircle, Cancel, AccountBalance, CurrencyExchange, Speed,
-  PlayArrow, Gavel,
+  PlayArrow, Gavel, Edit as EditIcon,
 } from '@mui/icons-material'
+import type { ApprovalOverrides } from '../api/bigquery'
 
 interface ApprovalCardProps {
   requestId: string
@@ -12,7 +17,7 @@ interface ApprovalCardProps {
   description: string
   reasoning: string
   timestamp: string
-  onApprove: (requestId: string) => void
+  onApprove: (requestId: string, overrides?: ApprovalOverrides) => void
   onReject: (requestId: string) => void
   isLoading?: boolean
   error?: string | null
@@ -35,6 +40,14 @@ const ACTION_CONFIG: Record<string, { label: string; icon: React.ReactNode; colo
     color: '#E76500',
   },
 }
+
+const ACTION_OPTIONS = [
+  { value: 'PLACE_DEPOSIT', label: 'Place Term Deposit' },
+  { value: 'HEDGE_FX', label: 'FX Forward Hedge' },
+  { value: 'ACCELERATE_COLLECTION', label: 'Accelerate Collection' },
+]
+
+const CURRENCY_OPTIONS = ['USD', 'EUR', 'GBP']
 
 const formatCurrency = (amount: number, currency: string): string => {
   return new Intl.NumberFormat('en-US', {
@@ -98,36 +111,116 @@ const ApprovalCard = ({
   isLoading = false,
   error = null,
 }: ApprovalCardProps) => {
-  const actionCfg = ACTION_CONFIG[actionType] || {
-    label: actionType.replace(/_/g, ' '),
+  const [editing, setEditing] = useState(false)
+  const [editedActionType, setEditedActionType] = useState(actionType)
+  const [editedAmount, setEditedAmount] = useState(amount)
+  const [editedCurrency, setEditedCurrency] = useState(currency)
+
+  const displayActionType = editing ? editedActionType : actionType
+  const displayAmount = editing ? editedAmount : amount
+  const displayCurrency = editing ? editedCurrency : currency
+
+  const actionCfg = ACTION_CONFIG[displayActionType] || {
+    label: displayActionType.replace(/_/g, ' '),
     icon: <PlayArrow fontSize="small" />,
     color: '#666',
   }
-  const executionSteps = getExecutionPlan(actionType, amount, currency)
+  const executionSteps = getExecutionPlan(displayActionType, displayAmount, displayCurrency)
+
+  const hasEdits = editedActionType !== actionType || editedAmount !== amount || editedCurrency !== currency
+
+  const handleEdit = () => {
+    setEditedActionType(actionType)
+    setEditedAmount(amount)
+    setEditedCurrency(currency)
+    setEditing(true)
+  }
+
+  const handleCancelEdit = () => {
+    setEditing(false)
+  }
+
+  const handleApprove = () => {
+    if (editing && hasEdits) {
+      const overrides: ApprovalOverrides = {}
+      if (editedActionType !== actionType) overrides.action_type = editedActionType
+      if (editedAmount !== amount) overrides.amount = editedAmount
+      if (editedCurrency !== currency) overrides.currency = editedCurrency
+      onApprove(requestId, overrides)
+    } else {
+      onApprove(requestId)
+    }
+    setEditing(false)
+  }
 
   return (
-    <Card sx={{ mb: 2, border: '2px solid', borderColor: 'warning.main' }}>
+    <Card sx={{ mb: 2, border: '2px solid', borderColor: editing ? 'info.main' : 'warning.main' }}>
       <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
         {/* Header */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-            <Chip
-              icon={actionCfg.icon as React.ReactElement}
-              label={actionCfg.label}
-              sx={{
-                fontWeight: 600,
-                bgcolor: `${actionCfg.color}14`,
-                color: actionCfg.color,
-                border: `1px solid ${actionCfg.color}40`,
-                '& .MuiChip-icon': { color: actionCfg.color },
-              }}
-            />
-            <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main' }}>
-              {formatCurrency(amount, currency)}
-            </Typography>
+            {editing ? (
+              <>
+                <FormControl size="small" sx={{ minWidth: 200 }}>
+                  <InputLabel>Action Type</InputLabel>
+                  <Select
+                    value={editedActionType}
+                    label="Action Type"
+                    onChange={(e) => setEditedActionType(e.target.value)}
+                  >
+                    {ACTION_OPTIONS.map(opt => (
+                      <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <TextField
+                  size="small"
+                  label="Amount"
+                  type="number"
+                  value={editedAmount}
+                  onChange={(e) => setEditedAmount(Number(e.target.value))}
+                  sx={{ width: 160 }}
+                  inputProps={{ min: 0, step: 10000 }}
+                />
+                <FormControl size="small" sx={{ minWidth: 100 }}>
+                  <InputLabel>Currency</InputLabel>
+                  <Select
+                    value={editedCurrency}
+                    label="Currency"
+                    onChange={(e) => setEditedCurrency(e.target.value)}
+                  >
+                    {CURRENCY_OPTIONS.map(c => (
+                      <MenuItem key={c} value={c}>{c}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </>
+            ) : (
+              <>
+                <Chip
+                  icon={actionCfg.icon as React.ReactElement}
+                  label={actionCfg.label}
+                  sx={{
+                    fontWeight: 600,
+                    bgcolor: `${actionCfg.color}14`,
+                    color: actionCfg.color,
+                    border: `1px solid ${actionCfg.color}40`,
+                    '& .MuiChip-icon': { color: actionCfg.color },
+                  }}
+                />
+                <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                  {formatCurrency(displayAmount, displayCurrency)}
+                </Typography>
+              </>
+            )}
           </Box>
           <Box sx={{ textAlign: 'right' }}>
-            <Chip label="PENDING APPROVAL" color="warning" size="small" sx={{ fontWeight: 600 }} />
+            <Chip
+              label={editing ? 'EDITING' : 'PENDING APPROVAL'}
+              color={editing ? 'info' : 'warning'}
+              size="small"
+              sx={{ fontWeight: 600 }}
+            />
             <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
               {formatTimestamp(timestamp)}
             </Typography>
@@ -152,7 +245,7 @@ const ApprovalCard = ({
         {/* Execution Plan */}
         <Box sx={{ mb: 2, p: 2, bgcolor: '#F0F7FF', borderRadius: 1, borderLeft: '3px solid', borderColor: 'info.main' }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: 'info.dark', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Gavel sx={{ fontSize: 14 }} /> Actions Upon Approval
+            <Gavel sx={{ fontSize: 14 }} /> Actions Upon Approval {editing && hasEdits && '(Updated)'}
           </Typography>
           <Box component="ol" sx={{ m: 0, pl: 2.5 }}>
             {executionSteps.map((step, i) => (
@@ -175,26 +268,61 @@ const ApprovalCard = ({
             {requestId}
           </Typography>
           <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button
-              variant="contained"
-              color="success"
-              startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : <CheckCircle />}
-              onClick={() => onApprove(requestId)}
-              disabled={isLoading}
-              sx={{ minWidth: 140 }}
-            >
-              Approve
-            </Button>
-            <Button
-              variant="outlined"
-              color="error"
-              startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : <Cancel />}
-              onClick={() => onReject(requestId)}
-              disabled={isLoading}
-              sx={{ minWidth: 140 }}
-            >
-              Reject
-            </Button>
+            {editing ? (
+              <>
+                <Button
+                  variant="outlined"
+                  onClick={handleCancelEdit}
+                  disabled={isLoading}
+                  sx={{ minWidth: 100 }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="contained"
+                  color="success"
+                  startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : <CheckCircle />}
+                  onClick={handleApprove}
+                  disabled={isLoading}
+                  sx={{ minWidth: 180 }}
+                >
+                  {hasEdits ? 'Approve as Edited' : 'Approve'}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<EditIcon />}
+                  onClick={handleEdit}
+                  disabled={isLoading}
+                  sx={{ minWidth: 100 }}
+                >
+                  Edit
+                </Button>
+                <Button
+                  variant="contained"
+                  color="success"
+                  startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : <CheckCircle />}
+                  onClick={handleApprove}
+                  disabled={isLoading}
+                  sx={{ minWidth: 140 }}
+                >
+                  Approve
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : <Cancel />}
+                  onClick={() => onReject(requestId)}
+                  disabled={isLoading}
+                  sx={{ minWidth: 140 }}
+                >
+                  Reject
+                </Button>
+              </>
+            )}
           </Box>
         </Box>
       </CardContent>

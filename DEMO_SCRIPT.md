@@ -105,23 +105,25 @@ The agent recognizes the amount exceeds $500K. Instead of executing, it creates 
 
 ## Beat 4 -- Governance
 
-*Sarah reviews and approves the deposit.*
+*Sarah reviews and adjusts the deposit before approving.*
 
 **What she sees** (Approvals tab):
 
-She reads the agent's reasoning on the pending EUR deposit. The numbered execution plan makes it clear what will happen: transfer funds, place the deposit at ~4.2% annual rate, 30-day term, confirmation recorded. She clicks **Approve**.
+She reads the agent's reasoning on the pending EUR deposit. The numbered execution plan makes it clear what will happen: transfer funds, place the deposit at ~4.2% annual rate, 30-day term, confirmation recorded.
 
-The action auto-executes. No need to go back to the agent chat -- approval triggers execution directly.
+She clicks **Edit** to adjust the amount -- the agent recommended the full surplus, but she wants to round it down to a clean number (e.g., EUR 500,000). The action type, amount, and currency fields become editable inline, and the execution plan updates live to reflect her changes. She clicks **Approve as Edited**.
+
+The action auto-executes with the edited values. No need to go back to the agent chat -- approval triggers execution directly.
 
 **What she sees** (Executions tab):
 
-She switches to Executions. The deposit appears in the table with a contract ID, counterparty (Deutsche Bank), rate (4.2%), maturity date, and "Completed" status.
+She switches to Executions. The deposit appears in the table with the **edited amount**, a contract ID, counterparty (Deutsche Bank), rate (4.2%), maturity date, and "Completed" status.
 
 **What she sees** (Audit Trail tab):
 
-The complete chain is visible: recommendation created, approval requested, approved, executed. Every step is timestamped with the agent's reasoning preserved.
+The complete chain is visible: recommendation created, approval requested, approved (with edits), executed. Every step is timestamped with the agent's reasoning preserved.
 
-**Key talking points**: The complete lifecycle runs from analysis through execution: recommend, request approval, approve, auto-execute, record. The agent respects the approval gate -- it won't execute without authorization, even during autonomous overnight runs. Everything is auditable.
+**Key talking points**: The complete lifecycle runs from analysis through execution: recommend, request approval, review and optionally edit, approve, auto-execute, record. The agent respects the approval gate -- it won't execute without authorization, even during autonomous overnight runs. The **Edit** capability demonstrates human-in-the-loop override: the agent recommends, but the human can adjust the action type, amount, or currency before approving. Everything is auditable.
 
 ---
 

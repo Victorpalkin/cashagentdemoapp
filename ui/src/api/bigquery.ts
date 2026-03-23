@@ -176,8 +176,21 @@ export const getApprovals = async (status?: string): Promise<ApprovalRequest[]> 
   return resp.approvals
 }
 
-export const approveRequest = async (requestId: string): Promise<void> => {
-  const res = await fetch(`${API_BASE}/api/approvals/${requestId}/approve`, { method: 'POST' })
+export interface ApprovalOverrides {
+  action_type?: string
+  amount?: number
+  currency?: string
+}
+
+export const approveRequest = async (requestId: string, overrides?: ApprovalOverrides): Promise<void> => {
+  const hasOverrides = overrides && Object.keys(overrides).length > 0
+  const res = await fetch(`${API_BASE}/api/approvals/${requestId}/approve`, {
+    method: 'POST',
+    ...(hasOverrides ? {
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(overrides),
+    } : {}),
+  })
   if (!res.ok) {
     const body = await res.json().catch(() => null)
     throw new Error(body?.error || `Approve failed: ${res.status}`)
