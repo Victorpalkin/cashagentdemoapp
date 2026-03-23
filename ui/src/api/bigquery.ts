@@ -178,7 +178,10 @@ export const getApprovals = async (status?: string): Promise<ApprovalRequest[]> 
 
 export const approveRequest = async (requestId: string): Promise<void> => {
   const res = await fetch(`${API_BASE}/api/approvals/${requestId}/approve`, { method: 'POST' })
-  if (!res.ok) throw new Error(`Approve failed: ${res.status}`)
+  if (!res.ok) {
+    const body = await res.json().catch(() => null)
+    throw new Error(body?.error || `Approve failed: ${res.status}`)
+  }
 }
 
 export const rejectRequest = async (requestId: string, reason: string): Promise<void> => {
@@ -186,7 +189,10 @@ export const rejectRequest = async (requestId: string, reason: string): Promise<
     `${API_BASE}/api/approvals/${requestId}/reject?reason=${encodeURIComponent(reason)}`,
     { method: 'POST' }
   )
-  if (!res.ok) throw new Error(`Reject failed: ${res.status}`)
+  if (!res.ok) {
+    const body = await res.json().catch(() => null)
+    throw new Error(body?.error || `Reject failed: ${res.status}`)
+  }
 }
 
 export const getAuditLog = async (limit: number = 50): Promise<AuditLog[]> => {

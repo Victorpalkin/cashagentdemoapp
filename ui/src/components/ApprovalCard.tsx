@@ -1,4 +1,4 @@
-import { Card, CardContent, Typography, Box, Button, Chip, Divider } from '@mui/material'
+import { Card, CardContent, Typography, Box, Button, Chip, Divider, CircularProgress, Alert } from '@mui/material'
 import {
   CheckCircle, Cancel, AccountBalance, CurrencyExchange, Speed,
   PlayArrow, Gavel,
@@ -14,6 +14,8 @@ interface ApprovalCardProps {
   timestamp: string
   onApprove: (requestId: string) => void
   onReject: (requestId: string) => void
+  isLoading?: boolean
+  error?: string | null
 }
 
 const ACTION_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
@@ -93,6 +95,8 @@ const ApprovalCard = ({
   timestamp,
   onApprove,
   onReject,
+  isLoading = false,
+  error = null,
 }: ApprovalCardProps) => {
   const actionCfg = ACTION_CONFIG[actionType] || {
     label: actionType.replace(/_/g, ' '),
@@ -161,6 +165,10 @@ const ApprovalCard = ({
 
         <Divider sx={{ my: 2 }} />
 
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+        )}
+
         {/* Footer: ID + action buttons */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
@@ -170,8 +178,9 @@ const ApprovalCard = ({
             <Button
               variant="contained"
               color="success"
-              startIcon={<CheckCircle />}
+              startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : <CheckCircle />}
               onClick={() => onApprove(requestId)}
+              disabled={isLoading}
               sx={{ minWidth: 140 }}
             >
               Approve
@@ -179,8 +188,9 @@ const ApprovalCard = ({
             <Button
               variant="outlined"
               color="error"
-              startIcon={<Cancel />}
+              startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : <Cancel />}
               onClick={() => onReject(requestId)}
+              disabled={isLoading}
               sx={{ minWidth: 140 }}
             >
               Reject

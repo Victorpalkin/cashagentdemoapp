@@ -10,6 +10,7 @@ import urllib.error
 
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from google.cloud import bigquery
 
 PROJECT_ID = os.environ.get("PROJECT_ID", "cash-agent-demo")
@@ -294,23 +295,27 @@ def approvals(status: str = Query(default="")):
 
 @app.post("/api/approvals/{request_id}/approve")
 def approve_request(request_id: str, approved_by: str = Query(default="VP Treasury (UI)")):
-    client = bigquery.Client(project=PROJECT_ID)
-    now = datetime.datetime.now().isoformat()
-    query = f"""
-        UPDATE `{PROJECT_ID}.{DATASET_ID}.approval_requests`
-        SET status = 'APPROVED',
-            approved_by = @approved_by,
-            approved_at = @approved_at
-        WHERE request_id = @request_id AND status = 'PENDING'
-    """
-    job_config = bigquery.QueryJobConfig(
-        query_parameters=[
-            bigquery.ScalarQueryParameter("request_id", "STRING", request_id),
-            bigquery.ScalarQueryParameter("approved_by", "STRING", approved_by),
-            bigquery.ScalarQueryParameter("approved_at", "STRING", now),
-        ]
-    )
-    client.query(query, job_config=job_config).result()
+    try:
+        client = bigquery.Client(project=PROJECT_ID)
+        now = datetime.datetime.now().isoformat()
+        query = f"""
+            UPDATE `{PROJECT_ID}.{DATASET_ID}.approval_requests`
+            SET status = 'APPROVED',
+                approved_by = @approved_by,
+                approved_at = @approved_at
+            WHERE request_id = @request_id AND status = 'PENDING'
+        """
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("request_id", "STRING", request_id),
+                bigquery.ScalarQueryParameter("approved_by", "STRING", approved_by),
+                bigquery.ScalarQueryParameter("approved_at", "STRING", now),
+            ]
+        )
+        client.query(query, job_config=job_config).result()
+    except Exception as e:
+        logger.error(f"Approve failed for {request_id}: {e}")
+        return JSONResponse(status_code=500, content={"error": f"Approve failed: {e}"})
 
     # Execute the approved action via mock APIs
     try:
@@ -351,25 +356,29 @@ def reject_request(
     rejected_by: str = Query(default="VP Treasury (UI)"),
     reason: str = Query(default=""),
 ):
-    client = bigquery.Client(project=PROJECT_ID)
-    now = datetime.datetime.now().isoformat()
-    query = f"""
-        UPDATE `{PROJECT_ID}.{DATASET_ID}.approval_requests`
-        SET status = 'REJECTED',
-            approved_by = @rejected_by,
-            approved_at = @rejected_at,
-            rejection_reason = @reason
-        WHERE request_id = @request_id AND status = 'PENDING'
-    """
-    job_config = bigquery.QueryJobConfig(
-        query_parameters=[
-            bigquery.ScalarQueryParameter("request_id", "STRING", request_id),
-            bigquery.ScalarQueryParameter("rejected_by", "STRING", rejected_by),
-            bigquery.ScalarQueryParameter("rejected_at", "STRING", now),
-            bigquery.ScalarQueryParameter("reason", "STRING", reason),
-        ]
-    )
-    client.query(query, job_config=job_config).result()
+    try:
+        client = bigquery.Client(project=PROJECT_ID)
+        now = datetime.datetime.now().isoformat()
+        query = f"""
+            UPDATE `{PROJECT_ID}.{DATASET_ID}.approval_requests`
+            SET status = 'REJECTED',
+                approved_by = @rejected_by,
+                approved_at = @rejected_at,
+                rejection_reason = @reason
+            WHERE request_id = @request_id AND status = 'PENDING'
+        """
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("request_id", "STRING", request_id),
+                bigquery.ScalarQueryParameter("rejected_by", "STRING", rejected_by),
+                bigquery.ScalarQueryParameter("rejected_at", "STRING", now),
+                bigquery.ScalarQueryParameter("reason", "STRING", reason),
+            ]
+        )
+        client.query(query, job_config=job_config).result()
+    except Exception as e:
+        logger.error(f"Reject failed for {request_id}: {e}")
+        return JSONResponse(status_code=500, content={"error": f"Reject failed: {e}"})
     return {"status": "rejected", "request_id": request_id, "reason": reason}
 
 

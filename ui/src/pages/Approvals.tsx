@@ -66,6 +66,8 @@ const Approvals = () => {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
   const [rejectingId, setRejectingId] = useState('')
   const [rejectReason, setRejectReason] = useState('')
+  const [mutatingId, setMutatingId] = useState<string | null>(null)
+  const [mutationError, setMutationError] = useState<string | null>(null)
   const queryClient = useQueryClient()
 
   const { data: approvals = [], isLoading, isError } = useQuery({
@@ -76,25 +78,41 @@ const Approvals = () => {
 
   const approveMutation = useMutation({
     mutationFn: (requestId: string) => approveRequest(requestId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['approvals'] }),
+    onSuccess: () => {
+      setMutatingId(null)
+      setMutationError(null)
+      queryClient.invalidateQueries({ queryKey: ['approvals'] })
+    },
+    onError: (err: Error) => {
+      setMutationError(err.message)
+    },
   })
 
   const rejectMutation = useMutation({
     mutationFn: ({ requestId, reason }: { requestId: string; reason: string }) =>
       rejectRequest(requestId, reason),
     onSuccess: () => {
+      setMutatingId(null)
+      setMutationError(null)
       queryClient.invalidateQueries({ queryKey: ['approvals'] })
       setRejectDialogOpen(false)
       setRejectReason('')
     },
+    onError: (err: Error) => {
+      setMutationError(err.message)
+    },
   })
 
   const handleApprove = (requestId: string) => {
+    setMutatingId(requestId)
+    setMutationError(null)
     approveMutation.mutate(requestId)
   }
 
   const handleRejectClick = (requestId: string) => {
     setRejectingId(requestId)
+    setMutatingId(requestId)
+    setMutationError(null)
     setRejectDialogOpen(true)
   }
 
@@ -295,6 +313,8 @@ const Approvals = () => {
                 timestamp={approval.requested_at}
                 onApprove={handleApprove}
                 onReject={handleRejectClick}
+                isLoading={mutatingId === approval.request_id && (approveMutation.isPending || rejectMutation.isPending)}
+                error={mutatingId === approval.request_id ? mutationError : null}
               />
             ))
           )}
