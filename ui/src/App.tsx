@@ -7,6 +7,7 @@ import Recommendations from './pages/Recommendations'
 import AuditTrail from './pages/AuditTrail'
 import Executions from './pages/Executions'
 import AgentChat from './pages/AgentChat'
+import Architecture from './pages/Architecture'
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <Route path="/executions" element={<Executions />} />
           <Route path="/audit" element={<AuditTrail />} />
           <Route path="/chat" element={<AgentChat />} />
+          <Route path="/architecture" element={<Architecture />} />
         </Routes>
       </Box>
     </Box>
