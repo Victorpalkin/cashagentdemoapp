@@ -7,7 +7,7 @@ AI-powered treasury cash management with Google Cloud.
 ## What It Does
 
 - **Multi-currency cash management** -- monitors $22M+ across USD, EUR, and GBP accounts with real-time FX conversion and position tracking
-- **ML-enriched forecasting** -- combines BQML ARIMA+ time-series predictions with agent analysis of AR probabilities, AP schedules, and payment runs to surface risks invisible to ML alone
+- **ML-enriched forecasting** -- combines TimesFM foundation model predictions (via AI.FORECAST) with agent analysis of AR probabilities, AP schedules, and payment runs to surface risks invisible to ML alone
 - **Policy-grounded recommendations** -- generates prioritized actions (deposits, FX hedges, collection alerts) citing specific corporate policy sections, with full rationale
 - **Human-in-the-loop execution** -- three-tier authorization (auto-execute < $100K, confirm < $500K, formal approval > $500K) for trades, transfers, and SAP postings
 
@@ -40,7 +40,7 @@ AI-powered treasury cash management with Google Cloud.
 | ADK (Agent Development Kit) | Agent framework and multi-agent orchestration |
 | Vertex AI (Gemini) | LLM inference for all agents |
 | BigQuery | Data warehouse and operational tables |
-| BQML ARIMA+ | Time-series cash flow forecasting model |
+| TimesFM (AI.FORECAST) | Zero-training time-series forecasting and anomaly detection |
 | Cloud Run | UI, API, agent runner, and mock banking/ERP services |
 | Cloud Scheduler | Autonomous agent execution and daily data refresh |
 
@@ -88,4 +88,4 @@ See [DEMO_SCRIPT.md](DEMO_SCRIPT.md) for a guided 15-20 minute walkthrough frame
 
 ## Key Technologies
 
-ADK, Vertex AI (Gemini), BQML ARIMA+, BigQuery, Cloud Run, Cloud Scheduler, React, FastAPI
+ADK, Vertex AI (Gemini), TimesFM (AI.FORECAST), BigQuery, Cloud Run, Cloud Scheduler, React, FastAPI

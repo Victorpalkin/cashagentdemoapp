@@ -146,7 +146,7 @@ def generate_fx_rates(today):
 def _day_seasonality(d):
     """Return multipliers for (inflow_amount, outflow_amount, inflow_count, outflow_count).
 
-    Creates weekly and monthly patterns that ARIMA+ can detect:
+    Creates weekly and monthly patterns that TimesFM can detect:
     - Monday: heavy outflow day (vendor batch payments)
     - Tuesday-Wednesday: peak inflow days (customer payments settle)
     - Thursday: moderate

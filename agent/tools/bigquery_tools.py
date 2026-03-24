@@ -173,8 +173,16 @@ def get_payment_runs() -> dict:
     return {"payment_runs": [dict(row) for row in rows]}
 
 
+def _cash_journal_subquery() -> str:
+    """Returns the subquery for daily net cash flow by currency."""
+    return f"""SELECT posting_date, currency,
+               SUM(CASE WHEN transaction_type='INFLOW' THEN amount ELSE -amount END) AS net_cash_flow
+        FROM `{PROJECT_ID}.{DATASET_ID}.cash_journal`
+        GROUP BY posting_date, currency"""
+
+
 def get_forecast(horizon_days: int = 30) -> dict:
-    """Returns BQML ARIMA+ cash flow forecast by currency.
+    """Returns TimesFM cash flow forecast by currency using AI.FORECAST.
 
     Args:
         horizon_days: Number of days to forecast (default 30).
@@ -187,14 +195,17 @@ def get_forecast(horizon_days: int = 30) -> dict:
         SELECT
             forecast_timestamp AS forecast_date,
             forecast_value AS net_cash_flow,
-            standard_error,
             confidence_level,
             prediction_interval_lower_bound AS lower_bound,
             prediction_interval_upper_bound AS upper_bound,
             currency
-        FROM ML.FORECAST(
-            MODEL `{PROJECT_ID}.{DATASET_ID}.cash_forecast_model`,
-            STRUCT({horizon_days} AS horizon, 0.95 AS confidence_level)
+        FROM AI.FORECAST(
+            ({_cash_journal_subquery()}),
+            data_col => 'net_cash_flow',
+            timestamp_col => 'posting_date',
+            id_cols => ['currency'],
+            horizon => {horizon_days},
+            confidence_level => 0.95
         )
         ORDER BY currency, forecast_timestamp
     """
@@ -204,15 +215,14 @@ def get_forecast(horizon_days: int = 30) -> dict:
         return {"forecasts": forecasts, "horizon_days": horizon_days}
     except Exception as e:
         return {
-            "error": f"Forecast model not available: {str(e)}",
-            "suggestion": "Run the BQML model creation notebook first.",
+            "error": f"Forecast not available: {str(e)}",
         }
 
 
 def get_enriched_forecast(horizon_days: int = 30) -> dict:
     """Returns side-by-side comparison of ML-only vs agent-enriched cash forecast.
 
-    Combines BQML ARIMA+ statistical forecast with probability-weighted AR items,
+    Combines TimesFM statistical forecast with probability-weighted AR items,
     AP obligations, and scheduled payment runs to show how agent intelligence
     improves the raw ML prediction.
 
@@ -227,15 +237,19 @@ def get_enriched_forecast(horizon_days: int = 30) -> dict:
     client = bigquery.Client(project=PROJECT_ID)
     today = datetime.date.today()
 
-    # 1. Get BQML forecast (statistical baseline)
+    # 1. Get TimesFM forecast (statistical baseline)
     ml_forecast_query = f"""
         SELECT
             forecast_timestamp AS forecast_date,
             forecast_value AS net_cash_flow,
             currency
-        FROM ML.FORECAST(
-            MODEL `{PROJECT_ID}.{DATASET_ID}.cash_forecast_model`,
-            STRUCT({horizon_days} AS horizon, 0.95 AS confidence_level)
+        FROM AI.FORECAST(
+            ({_cash_journal_subquery()}),
+            data_col => 'net_cash_flow',
+            timestamp_col => 'posting_date',
+            id_cols => ['currency'],
+            horizon => {horizon_days},
+            confidence_level => 0.95
         )
         ORDER BY currency, forecast_timestamp
     """
@@ -508,14 +522,50 @@ def get_transaction_history(
 
 
 def detect_anomalies() -> dict:
-    """Analyzes cash journal and AR/AP data for anomalies and risks.
+    """Analyzes cash flow for anomalies using TimesFM AI.DETECT_ANOMALIES and business rules.
 
     Returns:
         dict with detected anomalies ranked by severity.
     """
     client = bigquery.Client(project=PROJECT_ID)
+    anomalies = []
 
-    # Check AR items with low probability
+    # 1. TimesFM-based anomaly detection on cash journal
+    ai_anomaly_query = f"""
+        SELECT *
+        FROM AI.DETECT_ANOMALIES(
+            ({_cash_journal_subquery()}
+             WHERE posting_date < DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)),
+            ({_cash_journal_subquery()}
+             WHERE posting_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)),
+            data_col => 'net_cash_flow',
+            timestamp_col => 'posting_date',
+            id_cols => ['currency'],
+            anomaly_prob_threshold => 0.95
+        )
+        WHERE is_anomaly = TRUE
+        ORDER BY anomaly_probability DESC
+    """
+    try:
+        ai_rows = [dict(r) for r in client.query(ai_anomaly_query).result()]
+        for item in ai_rows:
+            ts = item["time_series_timestamp"]
+            if hasattr(ts, "strftime"):
+                ts = ts.strftime("%Y-%m-%d")
+            anomalies.append({
+                "severity": "HIGH" if item["anomaly_probability"] > 0.99 else "MEDIUM",
+                "type": "TIMESFM_CASH_FLOW_ANOMALY",
+                "description": (
+                    f"{item['currency']} net cash flow of {item['time_series_data']:,.0f} "
+                    f"on {ts} is anomalous (probability {item['anomaly_probability']:.2%}, "
+                    f"expected range {item['lower_bound']:,.0f} to {item['upper_bound']:,.0f})"
+                ),
+                "details": item,
+            })
+    except Exception:
+        pass  # TimesFM anomaly detection unavailable, continue with rule-based checks
+
+    # 2. Check AR items with low probability
     risky_ar_query = f"""
         SELECT customer_name, amount, currency, due_date, probability
         FROM {_table('ar_open_items')}
@@ -524,7 +574,7 @@ def detect_anomalies() -> dict:
     """
     risky_ar = [dict(r) for r in client.query(risky_ar_query).result()]
 
-    # Check for unusual weekly AP concentration
+    # 3. Check for unusual weekly AP concentration
     ap_concentration_query = f"""
         WITH weekly_ap AS (
             SELECT
@@ -553,25 +603,6 @@ def detect_anomalies() -> dict:
         ORDER BY z_score DESC
     """
     ap_anomalies = [dict(r) for r in client.query(ap_concentration_query).result()]
-
-    # Check for late-paying customers (from history)
-    late_payers_query = f"""
-        SELECT
-            counterparty,
-            currency,
-            COUNT(*) AS payment_count,
-            AVG(amount) AS avg_amount
-        FROM {_table('cash_journal')}
-        WHERE transaction_type = 'INFLOW'
-            AND posting_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 365 DAY)
-        GROUP BY counterparty, currency
-        HAVING COUNT(*) >= 3
-        ORDER BY avg_amount DESC
-        LIMIT 10
-    """
-    frequent_payers = [dict(r) for r in client.query(late_payers_query).result()]
-
-    anomalies = []
 
     for item in risky_ar:
         anomalies.append({

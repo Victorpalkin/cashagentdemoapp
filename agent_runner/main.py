@@ -105,17 +105,28 @@ def get_bank_balances():
     return {"currency_totals": totals, "grand_total_usd": round(grand, 2)}
 
 
+def _cash_journal_subquery() -> str:
+    return f"""SELECT posting_date, currency,
+               SUM(CASE WHEN transaction_type='INFLOW' THEN amount ELSE -amount END) AS net_cash_flow
+        FROM `{PROJECT_ID}.{DATASET_ID}.cash_journal`
+        GROUP BY posting_date, currency"""
+
+
 def get_forecast(horizon_days=30):
     client = _bq_client()
     query = f"""
         SELECT forecast_timestamp AS forecast_date,
-               forecast_value AS net_cash_flow, standard_error,
+               forecast_value AS net_cash_flow,
                confidence_level,
                prediction_interval_lower_bound AS lower_bound,
                prediction_interval_upper_bound AS upper_bound, currency
-        FROM ML.FORECAST(
-            MODEL `{PROJECT_ID}.{DATASET_ID}.cash_forecast_model`,
-            STRUCT({horizon_days} AS horizon, 0.95 AS confidence_level))
+        FROM AI.FORECAST(
+            ({_cash_journal_subquery()}),
+            data_col => 'net_cash_flow',
+            timestamp_col => 'posting_date',
+            id_cols => ['currency'],
+            horizon => {horizon_days},
+            confidence_level => 0.95)
         ORDER BY currency, forecast_timestamp
     """
     try:
@@ -151,13 +162,50 @@ def get_ap_open_items():
 
 def detect_anomalies():
     client = _bq_client()
+    anomalies = []
+
+    # 1. TimesFM-based anomaly detection on cash journal
+    ai_anomaly_query = f"""
+        SELECT *
+        FROM AI.DETECT_ANOMALIES(
+            ({_cash_journal_subquery()}
+             WHERE posting_date < DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)),
+            ({_cash_journal_subquery()}
+             WHERE posting_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)),
+            data_col => 'net_cash_flow',
+            timestamp_col => 'posting_date',
+            id_cols => ['currency'],
+            anomaly_prob_threshold => 0.95
+        )
+        WHERE is_anomaly = TRUE
+        ORDER BY anomaly_probability DESC
+    """
+    try:
+        ai_rows = [dict(r) for r in client.query(ai_anomaly_query).result()]
+        for item in ai_rows:
+            ts = item["time_series_timestamp"]
+            if hasattr(ts, "strftime"):
+                ts = ts.strftime("%Y-%m-%d")
+            anomalies.append({
+                "severity": "HIGH" if item["anomaly_probability"] > 0.99 else "MEDIUM",
+                "type": "TIMESFM_CASH_FLOW_ANOMALY",
+                "description": (
+                    f"{item['currency']} net cash flow of {item['time_series_data']:,.0f} "
+                    f"on {ts} is anomalous (probability {item['anomaly_probability']:.2%}, "
+                    f"expected range {item['lower_bound']:,.0f} to {item['upper_bound']:,.0f})"
+                ),
+                "details": item,
+            })
+    except Exception:
+        pass  # TimesFM anomaly detection unavailable
+
+    # 2. Rule-based: risky AR items
     risky_ar = [dict(r) for r in client.query(f"""
         SELECT customer_name, amount, currency, due_date, probability
         FROM {_table('ar_open_items')}
         WHERE status = 'OPEN' AND probability < 0.6 ORDER BY amount DESC
     """).result()]
 
-    anomalies = []
     for item in risky_ar:
         due = item["due_date"]
         if hasattr(due, "isoformat"):
@@ -168,6 +216,8 @@ def detect_anomalies():
             "description": f"{item['customer_name']}: {item['currency']} {item['amount']:,.0f} due {due} with only {item['probability']*100:.0f}% probability",
             "details": item,
         })
+
+    anomalies.sort(key=lambda x: {"HIGH": 0, "MEDIUM": 1, "LOW": 2}[x["severity"]])
     return {"anomalies": anomalies, "count": len(anomalies)}
 
 
@@ -355,7 +405,7 @@ async def daily_review():
         ap_total = sum(item["amount"] for item in ap["items"])
         forecast_summary = f"AR: {ar['count']} items, AP: {ap['count']} items"
         if "error" not in forecast:
-            forecast_summary += f", BQML forecast: {len(forecast.get('forecasts', []))} data points"
+            forecast_summary += f", TimesFM forecast: {len(forecast.get('forecasts', []))} data points"
         log_agent_action("autonomous_runner", "ANALYZE", "get_forecast", "30-day forecast analysis", forecast_summary)
         results["steps"].append({"step": "forecast", "summary": forecast_summary})
 
@@ -506,39 +556,17 @@ Return ONLY the JSON array, no other text."""
 
 @app.post("/run/forecast")
 async def run_forecast():
-    """Refresh forecast data."""
+    """Run forecast using TimesFM via AI.FORECAST (no model training needed)."""
     results = {"steps": []}
 
     try:
-        # Retrain BQML model
-        client = _bq_client()
-        retrain_sql = f"""
-            CREATE OR REPLACE MODEL `{PROJECT_ID}.{DATASET_ID}.cash_forecast_model`
-            OPTIONS(
-                model_type='ARIMA_PLUS',
-                time_series_timestamp_col='posting_date',
-                time_series_data_col='net_cash_flow',
-                time_series_id_col='currency',
-                horizon=90,
-                auto_arima=TRUE
-            ) AS
-            SELECT posting_date, currency,
-                   SUM(CASE WHEN transaction_type='INFLOW' THEN amount ELSE -amount END) AS net_cash_flow
-            FROM `{PROJECT_ID}.{DATASET_ID}.cash_journal`
-            GROUP BY posting_date, currency
-        """
-        client.query(retrain_sql).result()
-        log_agent_action("autonomous_runner", "EXECUTE", "retrain_bqml_model", "ARIMA+ model retrain", "Model retrained successfully")
-        results["steps"].append({"step": "retrain_model", "status": "success"})
-
-        # Run forecast
         forecast = get_forecast(30)
         summary = f"{len(forecast.get('forecasts', []))} forecast data points" if "error" not in forecast else forecast["error"]
         log_agent_action("autonomous_runner", "QUERY", "get_forecast", "30-day forecast", summary)
         results["steps"].append({"step": "forecast", "summary": summary})
 
     except Exception as e:
-        logger.error(f"Forecast refresh failed: {e}")
+        logger.error(f"Forecast failed: {e}")
         results["error"] = str(e)
 
     return results

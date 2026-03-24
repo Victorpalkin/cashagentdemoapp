@@ -116,25 +116,9 @@ for TABLE in gl_accounts bank_accounts cash_journal ap_open_items ar_open_items 
 done
 ```
 
-### Step 7: Create BQML Forecast Model
+### Step 7: Forecasting
 
-```bash
-bq query --use_legacy_sql=false "
-CREATE OR REPLACE MODEL \`${PROJECT_ID}.${DATASET}.cash_forecast_model\`
-OPTIONS(
-  model_type='ARIMA_PLUS',
-  time_series_timestamp_col='posting_date',
-  time_series_data_col='net_cash_flow',
-  time_series_id_col='currency',
-  horizon=90,
-  auto_arima=TRUE
-) AS
-SELECT posting_date, currency,
-  SUM(CASE WHEN transaction_type='INFLOW' THEN amount ELSE -amount END) AS net_cash_flow
-FROM \`${PROJECT_ID}.${DATASET}.cash_journal\`
-GROUP BY posting_date, currency
-"
-```
+No model creation needed — the demo uses TimesFM via `AI.FORECAST`, a foundation model that requires no training. Forecasts are generated on-the-fly from the `cash_journal` table.
 
 Model training takes 3-5 minutes.
 

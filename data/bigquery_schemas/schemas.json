@@ -136,10 +136,9 @@
       ]
     }
   },
-  "ml_model": {
-    "name": "cash_forecast_model",
-    "type": "ARIMA_PLUS",
-    "description": "Time-series forecast of daily net cash flow by currency",
-    "create_sql": "CREATE OR REPLACE MODEL `{project}.{dataset}.cash_forecast_model` OPTIONS(model_type='ARIMA_PLUS', time_series_timestamp_col='posting_date', time_series_data_col='net_cash_flow', time_series_id_col='currency', horizon=90, auto_arima=TRUE) AS SELECT posting_date, currency, SUM(CASE WHEN transaction_type='INFLOW' THEN amount ELSE -amount END) AS net_cash_flow FROM `{project}.{dataset}.cash_journal` GROUP BY posting_date, currency"
+  "forecasting": {
+    "method": "TimesFM via AI.FORECAST",
+    "description": "Time-series forecast of daily net cash flow by currency using BigQuery AI.FORECAST (no model training needed)",
+    "example_sql": "SELECT * FROM AI.FORECAST((SELECT posting_date, currency, SUM(CASE WHEN transaction_type='INFLOW' THEN amount ELSE -amount END) AS net_cash_flow FROM `{project}.{dataset}.cash_journal` GROUP BY posting_date, currency), data_col => 'net_cash_flow', timestamp_col => 'posting_date', id_cols => ['currency'], horizon => 30, confidence_level => 0.95)"
   }
 }

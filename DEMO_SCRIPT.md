@@ -27,7 +27,7 @@ It's Tuesday morning. Sarah Chen, VP of Treasury at a multinational corporation,
 - Three **Cash Position Cards** across the top: ~$11.1M USD, ~EUR 6.8M, ~GBP 3.1M -- totaling roughly **$22.4M** in the **Currency Summary** card below.
 - The **FX Rates** card shows current EUR/USD (~1.08) and GBP/USD (~1.27) rates.
 - The **Receivables vs Payables** card breaks down net AR/AP by currency with color-coded chips.
-- The **Forecast Chart** shows the BQML ARIMA+ projection with confidence intervals.
+- The **Forecast Chart** shows the TimesFM projection with confidence intervals.
 - The **Scheduled Payment Runs** card lists upcoming outflows -- she spots a $2.8M vendor run and a $1.5M payroll run in the next two weeks.
 - The **Recent Agent Activity** log shows the agent has already been at work: overnight forecast updates, anomaly scans, and position checks.
 
@@ -68,7 +68,7 @@ Three recommendations grouped by priority, each with full **Agent Rationale** (a
 
 The agent explains the ACME risk in plain language: a major Phase 3 enterprise delivery with collection confidence far below normal. It quantifies the impact -- EUR 2.3M at risk equals roughly $2.5M USD.
 
-**Key talking points**: The BQML ARIMA+ model forecasts cash flow from historical patterns, but it can't see AR probability data or AP schedules. The agent enriches the forecast with this context -- every recommendation cites the delta between ML-only and agent-enriched views. Policy references (Treasury Policy Section 2.3, FX Hedging Policy Section 2.1) come from semantic search over actual policy documents, not hallucinated rules.
+**Key talking points**: The TimesFM foundation model forecasts cash flow from historical patterns via AI.FORECAST (no model training needed), but it can't see AR probability data or AP schedules. The agent enriches the forecast with this context -- every recommendation cites the delta between ML-only and agent-enriched views. Policy references (Treasury Policy Section 2.3, FX Hedging Policy Section 2.1) come from semantic search over actual policy documents, not hallucinated rules.
 
 ---
 
@@ -238,7 +238,7 @@ Key moments where both screens shine:
 | ADK (Agent Development Kit) | Agent framework, orchestration |
 | Vertex AI | LLM inference (Gemini) |
 | BigQuery | Data warehouse, operational tables |
-| BQML ARIMA+ | Time-series cash flow forecasting |
+| TimesFM (AI.FORECAST) | Zero-training time-series forecasting and anomaly detection |
 | Cloud Run | Mock services, UI, UI API, Chat App, Agent Runner |
 | Cloud Scheduler | Autonomous agent execution + daily data refresh |
 | Artifact Registry | Docker image management |

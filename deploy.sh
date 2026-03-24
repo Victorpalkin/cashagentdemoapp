@@ -176,27 +176,8 @@ for TABLE in "${TABLES[@]}"; do
   fi
 done
 
-# ---------- 6. Create BQML forecast model ----------
-info "Creating BQML ARIMA+ forecast model..."
-
-bq query --use_legacy_sql=false --project_id="$PROJECT_ID" "
-CREATE OR REPLACE MODEL \`${PROJECT_ID}.${DATASET_ID}.cash_forecast_model\`
-OPTIONS(
-  model_type='ARIMA_PLUS',
-  time_series_timestamp_col='posting_date',
-  time_series_data_col='net_cash_flow',
-  time_series_id_col='currency',
-  horizon=90,
-  auto_arima=TRUE
-) AS
-SELECT
-  posting_date,
-  currency,
-  SUM(CASE WHEN transaction_type='INFLOW' THEN amount ELSE -amount END) AS net_cash_flow
-FROM \`${PROJECT_ID}.${DATASET_ID}.cash_journal\`
-GROUP BY posting_date, currency
-"
-ok "BQML model created."
+# ---------- 6. Forecasting ----------
+info "Forecasting uses TimesFM via AI.FORECAST — no model creation needed."
 
 # ---------- 7. Print summary ----------
 echo ""

@@ -73,7 +73,7 @@ const Architecture = () => {
               <Typography variant="h6" sx={{ fontWeight: 600 }}>Forecast</Typography>
             </Box>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              BQML ARIMA+ model generates 30/60/90-day cash flow predictions across all currencies and accounts.
+              TimesFM foundation model generates 30/60/90-day cash flow predictions via AI.FORECAST — no model training needed.
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
               <Chip label="CashPositionAgent" size="small" variant="outlined" />
@@ -175,11 +175,11 @@ const Architecture = () => {
             <Box sx={flowNodeSx}>
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
                 <BqmlIcon color="primary" />
-                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>BQML ARIMA+</Typography>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>TimesFM</Typography>
               </Box>
-              <Typography variant="caption" color="text.secondary">Cash Flow Forecasting</Typography>
+              <Typography variant="caption" color="text.secondary">Cash Flow Forecasting &amp; Anomaly Detection</Typography>
               <Typography variant="caption" display="block" color="text.secondary">
-                Time-series model trained on historical cash positions, generates 30/60/90-day forecasts
+                Foundation model via AI.FORECAST / AI.DETECT_ANOMALIES — no training needed, generates 30/60/90-day forecasts
               </Typography>
             </Box>
 

@@ -146,18 +146,25 @@ def cash_position():
 @app.get("/api/forecast")
 def forecast(days: int = Query(default=30)):
     client = bigquery.Client(project=PROJECT_ID)
+    cash_journal_subquery = f"""SELECT posting_date, currency,
+               SUM(CASE WHEN transaction_type='INFLOW' THEN amount ELSE -amount END) AS net_cash_flow
+        FROM `{PROJECT_ID}.{DATASET_ID}.cash_journal`
+        GROUP BY posting_date, currency"""
     query = f"""
         SELECT
             forecast_timestamp AS forecast_date,
             forecast_value AS net_cash_flow,
-            standard_error,
             confidence_level,
             prediction_interval_lower_bound AS lower_bound,
             prediction_interval_upper_bound AS upper_bound,
             currency
-        FROM ML.FORECAST(
-            MODEL `{PROJECT_ID}.{DATASET_ID}.cash_forecast_model`,
-            STRUCT({int(days)} AS horizon, 0.95 AS confidence_level)
+        FROM AI.FORECAST(
+            ({cash_journal_subquery}),
+            data_col => 'net_cash_flow',
+            timestamp_col => 'posting_date',
+            id_cols => ['currency'],
+            horizon => {int(days)},
+            confidence_level => 0.95
         )
         ORDER BY currency, forecast_timestamp
     """

@@ -98,28 +98,6 @@ def refresh_all_data(project_id: str, dataset_id: str) -> dict:
             except Exception as e:
                 logger.warning(f"Could not truncate {table_name}: {e}")
 
-        # Retrain BQML model
-        try:
-            retrain_sql = f"""
-                CREATE OR REPLACE MODEL `{project_id}.{dataset_id}.cash_forecast_model`
-                OPTIONS(
-                    model_type='ARIMA_PLUS',
-                    time_series_timestamp_col='posting_date',
-                    time_series_data_col='net_cash_flow',
-                    time_series_id_col='currency',
-                    horizon=90,
-                    auto_arima=TRUE
-                ) AS
-                SELECT posting_date, currency,
-                       SUM(CASE WHEN transaction_type='INFLOW' THEN amount ELSE -amount END) AS net_cash_flow
-                FROM `{project_id}.{dataset_id}.cash_journal`
-                GROUP BY posting_date, currency
-            """
-            client.query(retrain_sql).result()
-            results["model_retrained"] = True
-            logger.info("BQML model retrained")
-        except Exception as e:
-            logger.error(f"Model retrain failed: {e}")
-            results["errors"].append(f"Model retrain: {str(e)}")
+        # No model training needed — TimesFM via AI.FORECAST is model-free
 
     return results
