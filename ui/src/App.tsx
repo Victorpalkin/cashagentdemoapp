@@ -8,6 +8,7 @@ import AuditTrail from './pages/AuditTrail'
 import Executions from './pages/Executions'
 import AgentChat from './pages/AgentChat'
 import AgentMemory from './pages/AgentMemory'
+import Anomalies from './pages/Anomalies'
 import Architecture from './pages/Architecture'
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/anomalies" element={<Anomalies />} />
           <Route path="/approvals" element={<Approvals />} />
           <Route path="/recommendations" element={<Recommendations />} />
           <Route path="/executions" element={<Executions />} />

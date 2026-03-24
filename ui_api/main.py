@@ -236,6 +236,51 @@ def payment_runs():
 @app.get("/api/anomalies")
 def anomalies():
     client = bigquery.Client(project=PROJECT_ID)
+    results = []
+
+    # 1. TimesFM-based anomaly detection on cash journal
+    try:
+        ai_anomaly_query = f"""
+            SELECT *
+            FROM AI.DETECT_ANOMALIES(
+                (SELECT posting_date, currency,
+                        SUM(CASE WHEN transaction_type='INFLOW' THEN amount ELSE -amount END) AS net_cash_flow
+                 FROM {_table('cash_journal')}
+                 WHERE posting_date < DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
+                 GROUP BY posting_date, currency),
+                (SELECT posting_date, currency,
+                        SUM(CASE WHEN transaction_type='INFLOW' THEN amount ELSE -amount END) AS net_cash_flow
+                 FROM {_table('cash_journal')}
+                 WHERE posting_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
+                 GROUP BY posting_date, currency),
+                data_col => 'net_cash_flow',
+                timestamp_col => 'posting_date',
+                id_cols => ['currency'],
+                anomaly_prob_threshold => 0.95
+            )
+            WHERE is_anomaly = TRUE
+            ORDER BY anomaly_probability DESC
+        """
+        ai_rows = _serialize(client.query(ai_anomaly_query).result())
+        for item in ai_rows:
+            ts = item.get("time_series_timestamp", "")
+            prob = float(item.get("anomaly_probability", 0))
+            results.append({
+                "severity": "HIGH" if prob > 0.99 else "MEDIUM",
+                "type": "TIMESFM_CASH_FLOW_ANOMALY",
+                "description": (
+                    f"{item.get('currency', '')} net cash flow of "
+                    f"{float(item.get('time_series_data', 0)):,.0f} on {ts} is anomalous "
+                    f"(probability {prob:.2%}, expected range "
+                    f"{float(item.get('lower_bound', 0)):,.0f} to "
+                    f"{float(item.get('upper_bound', 0)):,.0f})"
+                ),
+                "details": item,
+            })
+    except Exception:
+        pass  # TimesFM anomaly detection unavailable, continue with rule-based checks
+
+    # 2. Low-probability receivables
     risky_ar_query = f"""
         SELECT customer_name, amount, currency, due_date, probability
         FROM {_table('ar_open_items')}
@@ -243,7 +288,6 @@ def anomalies():
         ORDER BY amount DESC
     """
     risky_ar = _serialize(client.query(risky_ar_query).result())
-    results = []
     for item in risky_ar:
         results.append({
             "severity": "HIGH" if item["amount"] > 1000000 else "MEDIUM",
@@ -255,6 +299,52 @@ def anomalies():
             ),
             "details": item,
         })
+
+    # 3. AP concentration anomalies
+    try:
+        ap_concentration_query = f"""
+            WITH weekly_ap AS (
+                SELECT
+                    DATE_TRUNC(due_date, WEEK) AS week_start,
+                    SUM(amount) AS weekly_total,
+                    currency
+                FROM {_table('ap_open_items')}
+                WHERE status = 'OPEN'
+                GROUP BY week_start, currency
+            ),
+            historical_avg AS (
+                SELECT
+                    currency,
+                    AVG(weekly_total) AS avg_weekly,
+                    STDDEV(weekly_total) AS stddev_weekly
+                FROM weekly_ap
+                GROUP BY currency
+            )
+            SELECT
+                w.week_start, w.currency, w.weekly_total,
+                h.avg_weekly,
+                SAFE_DIVIDE(w.weekly_total - h.avg_weekly, h.stddev_weekly) AS z_score
+            FROM weekly_ap w
+            JOIN historical_avg h ON w.currency = h.currency
+            WHERE SAFE_DIVIDE(w.weekly_total - h.avg_weekly, h.stddev_weekly) > 1.5
+            ORDER BY z_score DESC
+        """
+        ap_rows = _serialize(client.query(ap_concentration_query).result())
+        for item in ap_rows:
+            results.append({
+                "severity": "MEDIUM",
+                "type": "AP_CONCENTRATION",
+                "description": (
+                    f"Week of {item['week_start']}: {item['currency']} "
+                    f"{float(item['weekly_total']):,.0f} in AP payments "
+                    f"({float(item['z_score']):.1f} std devs above average)"
+                ),
+                "details": item,
+            })
+    except Exception:
+        pass
+
+    results.sort(key=lambda x: {"HIGH": 0, "MEDIUM": 1, "LOW": 2}.get(x["severity"], 2))
     return {"anomalies": results, "count": len(results)}
 
 

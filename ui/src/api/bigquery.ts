@@ -238,6 +238,20 @@ export const dismissRecommendation = async (recommendationId: string): Promise<v
   if (!res.ok) throw new Error(`Dismiss failed: ${res.status}`)
 }
 
+// ---- Anomalies ----
+
+export interface Anomaly {
+  severity: 'HIGH' | 'MEDIUM'
+  type: string
+  description: string
+  details: Record<string, any>
+}
+
+export const getAnomalies = async (): Promise<Anomaly[]> => {
+  const resp = await apiFetch<{ anomalies: Anomaly[]; count: number }>('/api/anomalies')
+  return resp.anomalies
+}
+
 // ---- FX Rates ----
 
 export interface FxRate {

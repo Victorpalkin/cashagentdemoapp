@@ -50,18 +50,19 @@ const Shell = () => {
   const getActiveTab = () => {
     const path = location.pathname
     if (path.startsWith('/dashboard')) return 0
-    if (path.startsWith('/recommendations')) return 1
-    if (path.startsWith('/approvals')) return 2
-    if (path.startsWith('/executions')) return 3
-    if (path.startsWith('/audit')) return 4
-    if (path.startsWith('/memory')) return 5
-    if (path.startsWith('/chat')) return 6
-    if (path.startsWith('/architecture')) return 7
+    if (path.startsWith('/anomalies')) return 1
+    if (path.startsWith('/recommendations')) return 2
+    if (path.startsWith('/approvals')) return 3
+    if (path.startsWith('/executions')) return 4
+    if (path.startsWith('/audit')) return 5
+    if (path.startsWith('/memory')) return 6
+    if (path.startsWith('/chat')) return 7
+    if (path.startsWith('/architecture')) return 8
     return 0
   }
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    const paths = ['/dashboard', '/recommendations', '/approvals', '/executions', '/audit', '/memory', '/chat', '/architecture']
+    const paths = ['/dashboard', '/anomalies', '/recommendations', '/approvals', '/executions', '/audit', '/memory', '/chat', '/architecture']
     navigate(paths[newValue])
   }
 
@@ -110,6 +111,7 @@ const Shell = () => {
               }}
             >
               <Tab label="Dashboard" />
+              <Tab label="Anomalies" />
               <Tab label="Recommendations" />
               <Tab label="Approvals" />
               <Tab label="Executions" />
@@ -173,7 +175,7 @@ const Shell = () => {
         <DialogContent>
           <DialogContentText>
             {confirmDialog.full
-              ? 'This will regenerate all seed data with today\'s dates, reload BigQuery tables, retrain the BQML model, and clear operational tables. This may take ~30 seconds.'
+              ? 'This will regenerate all seed data with today\'s dates, reload BigQuery tables, and clear operational tables. This may take ~30 seconds.'
               : 'This will clear the approval requests, audit log, and recommendations tables. Seed data will remain unchanged.'}
           </DialogContentText>
         </DialogContent>
