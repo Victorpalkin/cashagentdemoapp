@@ -514,3 +514,59 @@ resource "google_bigquery_table" "agent_audit_log" {
     }
   ])
 }
+
+# Agent Memory Table
+resource "google_bigquery_table" "agent_memory" {
+  dataset_id          = google_bigquery_dataset.cash_agent_demo.dataset_id
+  table_id            = "agent_memory"
+  deletion_protection = false
+
+  schema = jsonencode([
+    {
+      name = "memory_id"
+      type = "STRING"
+      mode = "REQUIRED"
+    },
+    {
+      name                   = "created_at"
+      type                   = "TIMESTAMP"
+      mode                   = "REQUIRED"
+      default_value_expression = "CURRENT_TIMESTAMP()"
+    },
+    {
+      name = "source"
+      type = "STRING"
+      mode = "REQUIRED"
+    },
+    {
+      name = "category"
+      type = "STRING"
+      mode = "REQUIRED"
+    },
+    {
+      name = "content"
+      type = "STRING"
+      mode = "REQUIRED"
+    },
+    {
+      name = "related_action_type"
+      type = "STRING"
+      mode = "NULLABLE"
+    },
+    {
+      name = "related_entity"
+      type = "STRING"
+      mode = "NULLABLE"
+    },
+    {
+      name = "created_by"
+      type = "STRING"
+      mode = "REQUIRED"
+    },
+    {
+      name = "is_active"
+      type = "BOOLEAN"
+      mode = "REQUIRED"
+    }
+  ])
+}

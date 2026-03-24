@@ -121,6 +121,19 @@
         {"name": "input_summary", "type": "STRING", "mode": "NULLABLE"},
         {"name": "output_summary", "type": "STRING", "mode": "NULLABLE"}
       ]
+    },
+    "agent_memory": {
+      "schema": [
+        {"name": "memory_id", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "created_at", "type": "TIMESTAMP", "mode": "REQUIRED", "default_value_expression": "CURRENT_TIMESTAMP()"},
+        {"name": "source", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "category", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "content", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "related_action_type", "type": "STRING", "mode": "NULLABLE"},
+        {"name": "related_entity", "type": "STRING", "mode": "NULLABLE"},
+        {"name": "created_by", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "is_active", "type": "BOOLEAN", "mode": "REQUIRED"}
+      ]
     }
   },
   "ml_model": {

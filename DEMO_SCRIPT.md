@@ -127,6 +127,32 @@ The complete chain is visible: recommendation created, approval requested, appro
 
 ---
 
+## Beat 4.5 -- Agent Memory
+
+*Sarah rejects the ACME collection acceleration and teaches the agent why.*
+
+**What she does** (Approvals tab):
+
+She sees the ACME collection acceleration in the pending approvals. She clicks **Reject** and enters: "ACME has contractual 60-day payment terms. Low probability reflects timing, not credit risk."
+
+After rejecting, a dialog asks: **"Should the agent remember this?"** The rejection reason is pre-filled. She clicks **Yes, Remember**.
+
+**What she sees** (Memory tab):
+
+She clicks the **Memory** tab to see all agent memories:
+
+1. **Preference**: "Prefer Deutsche Bank over BNP Paribas for EUR term deposits" (seed memory)
+2. **Policy Override**: "For GBP FX hedges, use 30-day settlement" (seed memory)
+3. **Counterparty/Rejection**: "ACME has contractual 60-day payment terms..." (just created)
+
+**What happens next**:
+
+She clicks **Run Agent Review** on the Dashboard. The new recommendations no longer include the ACME collection acceleration. The rationale for other recommendations cites the agent's memory -- for example, the EUR deposit rationale mentions preferring Deutsche Bank per stored memory.
+
+**Key talking points**: The agent learns from human decisions. Every rejection or edit can become persistent memory that shapes future recommendations. This is organizational knowledge capture -- the agent adapts to the company's specific context, not just generic policies. Memory entries can also be added manually or deactivated when no longer relevant.
+
+---
+
 ## Beat 5 -- Stress Testing
 
 *Sarah wants to understand the downside risk before her board call.*
@@ -157,7 +183,8 @@ Key moments where both screens shine:
 2. **Beat 2**: Agent explains ACME anomaly -- Obligations Table flags the row
 3. **Beat 3**: Agent creates approval request -- Approvals tab shows it with full reasoning
 4. **Beat 4**: Click Approve in the UI -- Executions tab shows the trade confirmation
-5. **Beat 5**: Agent runs scenario -- Dashboard serves as the base-case reference
+5. **Beat 4.5**: Reject ACME in Approvals -- Memory tab shows the new entry
+6. **Beat 5**: Agent runs scenario -- Dashboard serves as the base-case reference
 
 ---
 
@@ -173,7 +200,9 @@ Key moments where both screens shine:
 7. Show me what you just did
 8. Show me pending approval requests
    [approve in UI -> auto-executes -> check Executions tab]
-9. What if ACME Corp doesn't pay and EUR/USD drops 5%?
+9. [Reject ACME approval -> "Remember this?" -> Yes -> check Memory tab]
+10. [Run Agent Review -> recommendations now reflect memory]
+11. What if ACME Corp doesn't pay and EUR/USD drops 5%?
 ```
 
 ---

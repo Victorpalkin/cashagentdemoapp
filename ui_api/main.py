@@ -405,6 +405,76 @@ def reject_request(
     return {"status": "rejected", "request_id": request_id, "reason": reason}
 
 
+# ---- Agent Memory ----
+
+@app.get("/api/memories")
+def list_memories():
+    client = bigquery.Client(project=PROJECT_ID)
+    query = f"""
+        SELECT memory_id, created_at, source, category, content,
+               related_action_type, related_entity, created_by, is_active
+        FROM {_table('agent_memory')}
+        WHERE is_active = TRUE
+        ORDER BY created_at DESC
+    """
+    rows = client.query(query).result()
+    return {"memories": _serialize(rows)}
+
+
+@app.post("/api/memories")
+def create_memory(body: dict = Body(...)):
+    try:
+        client = bigquery.Client(project=PROJECT_ID)
+        memory_id = f"MEM-{random.randint(100000, 999999)}"
+        now = datetime.datetime.now().isoformat()
+        query = f"""
+            INSERT INTO {_table('agent_memory')}
+            (memory_id, created_at, source, category, content,
+             related_action_type, related_entity, created_by, is_active)
+            VALUES
+            (@memory_id, @created_at, @source, @category, @content,
+             @related_action_type, @related_entity, @created_by, TRUE)
+        """
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("memory_id", "STRING", memory_id),
+                bigquery.ScalarQueryParameter("created_at", "STRING", now),
+                bigquery.ScalarQueryParameter("source", "STRING", body.get("source", "MANUAL")),
+                bigquery.ScalarQueryParameter("category", "STRING", body.get("category", "PREFERENCE")),
+                bigquery.ScalarQueryParameter("content", "STRING", body.get("content", "")),
+                bigquery.ScalarQueryParameter("related_action_type", "STRING", body.get("related_action_type")),
+                bigquery.ScalarQueryParameter("related_entity", "STRING", body.get("related_entity")),
+                bigquery.ScalarQueryParameter("created_by", "STRING", body.get("created_by", "VP Treasury (UI)")),
+            ]
+        )
+        client.query(query, job_config=job_config).result()
+    except Exception as e:
+        logger.error(f"Create memory failed: {e}")
+        return JSONResponse(status_code=500, content={"error": f"Create memory failed: {e}"})
+    return {"status": "created", "memory_id": memory_id}
+
+
+@app.post("/api/memories/{memory_id}/deactivate")
+def deactivate_memory(memory_id: str):
+    try:
+        client = bigquery.Client(project=PROJECT_ID)
+        query = f"""
+            UPDATE {_table('agent_memory')}
+            SET is_active = FALSE
+            WHERE memory_id = @memory_id
+        """
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("memory_id", "STRING", memory_id),
+            ]
+        )
+        client.query(query, job_config=job_config).result()
+    except Exception as e:
+        logger.error(f"Deactivate memory failed: {e}")
+        return JSONResponse(status_code=500, content={"error": f"Deactivate memory failed: {e}"})
+    return {"status": "deactivated", "memory_id": memory_id}
+
+
 # ---- Execution Helpers ----
 
 def _execute_action(action_type: str, amount: float, currency: str, description: str) -> dict:
@@ -579,7 +649,7 @@ def reset_demo(full: bool = Query(default=False)):
     results = {"status": "ok", "tables_truncated": [], "errors": []}
 
     # Always truncate operational tables
-    operational_tables = ["approval_requests", "agent_audit_log", "agent_recommendations"]
+    operational_tables = ["approval_requests", "agent_audit_log", "agent_recommendations", "agent_memory"]
     for table_name in operational_tables:
         try:
             client.query(
@@ -588,6 +658,23 @@ def reset_demo(full: bool = Query(default=False)):
             results["tables_truncated"].append(table_name)
         except Exception as e:
             results["errors"].append(f"{table_name}: {str(e)}")
+
+    # Insert seed memories
+    try:
+        seed_memories_sql = f"""
+            INSERT INTO {_table('agent_memory')}
+            (memory_id, source, category, content, related_action_type, related_entity, created_by, is_active)
+            VALUES
+            ('MEM-SEED-001', 'MANUAL', 'PREFERENCE',
+             'Prefer Deutsche Bank over BNP Paribas for EUR term deposits — our relationship manager offers 15-25bps above market.',
+             'PLACE_DEPOSIT', 'Deutsche Bank', 'VP Treasury (Sarah Chen)', TRUE),
+            ('MEM-SEED-002', 'MANUAL', 'POLICY_OVERRIDE',
+             'For GBP FX hedges, use 30-day settlement (not 21-day) to align with month-end reporting. CFO approved this deviation Q4 2025.',
+             'HEDGE_FX', 'GBP', 'VP Treasury (Sarah Chen)', TRUE)
+        """
+        client.query(seed_memories_sql).result()
+    except Exception as e:
+        results["errors"].append(f"agent_memory seed: {str(e)}")
 
     if full:
         # Full reset: call agent-runner service to regenerate seed data

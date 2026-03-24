@@ -7,6 +7,7 @@ import Recommendations from './pages/Recommendations'
 import AuditTrail from './pages/AuditTrail'
 import Executions from './pages/Executions'
 import AgentChat from './pages/AgentChat'
+import AgentMemory from './pages/AgentMemory'
 import Architecture from './pages/Architecture'
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
           <Route path="/recommendations" element={<Recommendations />} />
           <Route path="/executions" element={<Executions />} />
           <Route path="/audit" element={<AuditTrail />} />
+          <Route path="/memory" element={<AgentMemory />} />
           <Route path="/chat" element={<AgentChat />} />
           <Route path="/architecture" element={<Architecture />} />
         </Routes>

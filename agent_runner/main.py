@@ -292,6 +292,24 @@ def execute_recommendation(action_type, amount, currency, description):
         return {"status": "error", "error": str(e)}
 
 
+def get_agent_memories():
+    """Fetch active agent memories from BigQuery."""
+    client = _bq_client()
+    query = f"""
+        SELECT memory_id, source, category, content,
+               related_action_type, related_entity, created_by
+        FROM {_table('agent_memory')}
+        WHERE is_active = TRUE
+        ORDER BY created_at DESC
+    """
+    try:
+        rows = client.query(query).result()
+        return [dict(r) for r in rows]
+    except Exception as e:
+        logger.warning(f"Failed to fetch agent memories: {e}")
+        return []
+
+
 def _serialize_for_prompt(data):
     """Make data JSON-serializable for Gemini prompt."""
     def _convert(obj):
@@ -364,6 +382,17 @@ async def daily_review():
             "fx_rates": fx["rates"],
         })
 
+        # Fetch agent memories
+        memories = get_agent_memories()
+        memories_section = ""
+        if memories:
+            memories_section = f"""
+AGENT MEMORY (past decisions and preferences from VP Treasury — you MUST respect these):
+{json.dumps(memories, indent=2, default=str)}
+
+When generating recommendations, check each against these memories. If a memory contradicts what you would normally recommend, adjust accordingly and cite the relevant memory in your rationale.
+"""
+
         prompt = f"""You are an autonomous treasury cash management agent for a company whose FUNCTIONAL CURRENCY is USD. EUR and GBP are foreign currencies. Based on the following data, generate exactly 3 actionable recommendations.
 
 DATA:
@@ -375,7 +404,7 @@ POLICIES (from corporate treasury policy documents):
 - FX Hedging Policy Section 2.1: FX exposures in FOREIGN currencies (EUR, GBP — NOT USD) must be hedged when net obligation exceeds EUR 750,000 or GBP 500,000. "Net obligation" = AP total minus probability-weighted AR total in that currency.
 - Approval Matrix Section 3.3: Transactions > $500,000 USD equivalent require formal VP Treasury approval.
 - Approval Matrix Section 3.2: Transactions $100,000-$500,000 require user confirmation.
-
+{memories_section}
 ANALYSIS INSTRUCTIONS:
 1. Check anomalies first: any receivable with probability < 60% is HIGH priority for collection acceleration.
 2. Calculate 30-day obligations per currency = sum of AP items + scheduled payment runs in that currency. Compare bank balances to 120% of obligations to find surplus currencies. Surplus investment is MEDIUM priority.

@@ -293,6 +293,46 @@ export const runDailyReview = async (): Promise<{ recommendations_created: numbe
   return res.json()
 }
 
+// ---- Agent Memory ----
+
+export interface MemoryEntry {
+  memory_id: string
+  created_at: string
+  source: string
+  category: string
+  content: string
+  related_action_type: string | null
+  related_entity: string | null
+  created_by: string
+  is_active: boolean
+}
+
+export const getMemories = async (): Promise<MemoryEntry[]> => {
+  const resp = await apiFetch<{ memories: MemoryEntry[] }>('/api/memories')
+  return resp.memories
+}
+
+export const createMemory = async (data: {
+  content: string
+  category: string
+  source: string
+  related_action_type?: string
+  related_entity?: string
+}): Promise<{ status: string; memory_id: string }> => {
+  const res = await fetch(`${API_BASE}/api/memories`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error(`Create memory failed: ${res.status}`)
+  return res.json()
+}
+
+export const deactivateMemory = async (memoryId: string): Promise<void> => {
+  const res = await fetch(`${API_BASE}/api/memories/${memoryId}/deactivate`, { method: 'POST' })
+  if (!res.ok) throw new Error(`Deactivate failed: ${res.status}`)
+}
+
 // ---- Reset Demo ----
 
 export const resetDemo = async (full: boolean = false): Promise<{ status: string }> => {

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   Box, Typography, Tabs, Tab, Card, CardContent, Chip, CircularProgress, Alert,
-  Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Divider,
+  Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Divider, MenuItem,
 } from '@mui/material'
 import {
   AccountBalance, CurrencyExchange, Speed, PlayArrow, CheckCircle, Gavel,
@@ -9,7 +9,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import ApprovalCard from '../components/ApprovalCard'
 import StatusBadge from '../components/StatusBadge'
-import { getApprovals, approveRequest, rejectRequest, ApprovalRequest, ApprovalOverrides } from '../api/bigquery'
+import { getApprovals, approveRequest, rejectRequest, createMemory, ApprovalRequest, ApprovalOverrides } from '../api/bigquery'
 
 const ACTION_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   PLACE_DEPOSIT: {
@@ -68,6 +68,10 @@ const Approvals = () => {
   const [rejectReason, setRejectReason] = useState('')
   const [mutatingId, setMutatingId] = useState<string | null>(null)
   const [mutationError, setMutationError] = useState<string | null>(null)
+  const [rememberDialog, setRememberDialog] = useState<{
+    open: boolean; source: string; content: string;
+    relatedActionType: string; relatedEntity: string; category: string;
+  }>({ open: false, source: '', content: '', relatedActionType: '', relatedEntity: '', category: 'COUNTERPARTY' })
   const queryClient = useQueryClient()
 
   const { data: approvals = [], isLoading, isError } = useQuery({
@@ -79,10 +83,27 @@ const Approvals = () => {
   const approveMutation = useMutation({
     mutationFn: ({ requestId, overrides }: { requestId: string; overrides?: ApprovalOverrides }) =>
       approveRequest(requestId, overrides),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
+      const { overrides } = variables
       setMutatingId(null)
       setMutationError(null)
       queryClient.invalidateQueries({ queryKey: ['approvals'] })
+      if (overrides && Object.keys(overrides).length > 0) {
+        const parts: string[] = []
+        if (overrides.amount !== undefined) parts.push(`amount to ${overrides.amount.toLocaleString()}`)
+        if (overrides.action_type) parts.push(`action to ${overrides.action_type.replace(/_/g, ' ')}`)
+        if (overrides.currency) parts.push(`currency to ${overrides.currency}`)
+        const content = `Edited approval before approving: changed ${parts.join(', ')}.`
+        const approval = approvals.find(a => a.request_id === variables.requestId)
+        setRememberDialog({
+          open: true,
+          source: 'EDIT',
+          content,
+          relatedActionType: approval?.action_type || '',
+          relatedEntity: approval?.currency || '',
+          category: 'PREFERENCE',
+        })
+      }
     },
     onError: (err: Error) => {
       setMutationError(err.message)
@@ -92,11 +113,20 @@ const Approvals = () => {
   const rejectMutation = useMutation({
     mutationFn: ({ requestId, reason }: { requestId: string; reason: string }) =>
       rejectRequest(requestId, reason),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       setMutatingId(null)
       setMutationError(null)
       queryClient.invalidateQueries({ queryKey: ['approvals'] })
       setRejectDialogOpen(false)
+      const approval = approvals.find(a => a.request_id === variables.requestId)
+      setRememberDialog({
+        open: true,
+        source: 'REJECTION',
+        content: variables.reason || 'Rejected without specific reason.',
+        relatedActionType: approval?.action_type || '',
+        relatedEntity: approval?.description?.split(' ')[0] || '',
+        category: 'COUNTERPARTY',
+      })
       setRejectReason('')
     },
     onError: (err: Error) => {
@@ -360,6 +390,67 @@ const Approvals = () => {
             disabled={rejectMutation.isPending}
           >
             Reject
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Remember This? Dialog */}
+      <Dialog
+        open={rememberDialog.open}
+        onClose={() => setRememberDialog(d => ({ ...d, open: false }))}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Should the agent remember this?</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            This will be stored as agent memory and consulted when generating future recommendations.
+          </Typography>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="What should the agent remember?"
+            fullWidth
+            multiline
+            rows={3}
+            value={rememberDialog.content}
+            onChange={(e) => setRememberDialog(d => ({ ...d, content: e.target.value }))}
+          />
+          <TextField
+            select
+            margin="dense"
+            label="Category"
+            fullWidth
+            value={rememberDialog.category}
+            onChange={(e) => setRememberDialog(d => ({ ...d, category: e.target.value }))}
+          >
+            <MenuItem value="COUNTERPARTY">Counterparty</MenuItem>
+            <MenuItem value="INSTRUMENT">Instrument</MenuItem>
+            <MenuItem value="POLICY_OVERRIDE">Policy Override</MenuItem>
+            <MenuItem value="PREFERENCE">Preference</MenuItem>
+          </TextField>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRememberDialog(d => ({ ...d, open: false }))}>
+            No, Skip
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              createMemory({
+                content: rememberDialog.content,
+                category: rememberDialog.category,
+                source: rememberDialog.source,
+                related_action_type: rememberDialog.relatedActionType || undefined,
+                related_entity: rememberDialog.relatedEntity || undefined,
+              }).then(() => {
+                queryClient.invalidateQueries({ queryKey: ['memories'] })
+              })
+              setRememberDialog(d => ({ ...d, open: false }))
+            }}
+            disabled={!rememberDialog.content.trim()}
+          >
+            Yes, Remember
           </Button>
         </DialogActions>
       </Dialog>
