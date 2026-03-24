@@ -475,7 +475,7 @@ Return ONLY the JSON array, no other text."""
 
         try:
             vertexai.init(project=PROJECT_ID, location=REGION)
-            model = GenerativeModel("gemini-2.5-flash")
+            model = GenerativeModel("gemini-3-flash-preview")
             response = model.generate_content(prompt)
 
             # Parse recommendations from Gemini

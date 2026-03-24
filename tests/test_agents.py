@@ -5,8 +5,8 @@ import unittest
 
 os.environ["PROJECT_ID"] = "test-project"
 os.environ["DATASET_ID"] = "cash_agent_demo"
-os.environ["MODEL"] = "gemini-2.5-pro"
-os.environ["FLASH_MODEL"] = "gemini-2.5-flash"
+os.environ["MODEL"] = "gemini-3.1-pro-preview"
+os.environ["FLASH_MODEL"] = "gemini-3-flash-preview"
 
 
 class TestAgentImports(unittest.TestCase):

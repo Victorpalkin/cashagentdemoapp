@@ -395,7 +395,7 @@ ANOMALIES:
 
 Return a JSON array in the same order as input. Return ONLY the JSON array, no other text."""
         vertexai.init(project=PROJECT_ID, location=REGION)
-        model = GenerativeModel("gemini-2.5-flash")
+        model = GenerativeModel("gemini-3-flash-preview")
         response = model.generate_content(prompt)
         resp_text = response.text.strip()
         if resp_text.startswith("```"):
