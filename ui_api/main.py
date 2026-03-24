@@ -31,6 +31,10 @@ BROKER_API_URL = os.environ.get(
     "BROKER_API_URL",
     "https://broker-api-mock-558326705804.us-central1.run.app",
 )
+CHAT_APP_URL = os.environ.get(
+    "CHAT_APP_URL",
+    "https://chat-app-558326705804.us-central1.run.app",
+)
 
 REGION = os.environ.get("REGION", "us-central1")
 
@@ -873,6 +877,33 @@ def run_review():
         return {"error": f"Agent runner unavailable: {str(e)}"}
     except Exception as e:
         return {"error": str(e)}
+
+
+# ---- Chat (proxy to chat-app) ----
+
+@app.post("/api/chat")
+def chat(body: dict = Body(...)):
+    """Proxy chat messages to the chat-app service (ADK agent)."""
+    message = body.get("message", "")
+    if not message:
+        return {"response": "Error: empty message"}
+    try:
+        data = json.dumps({"message": message}).encode()
+        req = urllib.request.Request(
+            f"{CHAT_APP_URL}/api/chat",
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            result = json.loads(resp.read().decode())
+            return {"response": result.get("response", "No response from agent")}
+    except urllib.error.URLError as e:
+        logger.error(f"Chat proxy error: {e}")
+        return {"response": f"Error: Agent service unavailable — {e.reason}"}
+    except Exception as e:
+        logger.error(f"Chat proxy error: {e}")
+        return {"response": f"Error: {str(e)}"}
 
 
 # ---- Reset Demo ----

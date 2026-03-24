@@ -359,6 +359,19 @@ export const deactivateMemory = async (memoryId: string): Promise<void> => {
   if (!res.ok) throw new Error(`Deactivate failed: ${res.status}`)
 }
 
+// ---- Chat ----
+
+export const sendChatMessage = async (message: string): Promise<string> => {
+  const res = await fetch(`${API_BASE}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message }),
+  })
+  if (!res.ok) throw new Error(`Chat failed: ${res.status}`)
+  const data = await res.json()
+  return data.response || data.error || 'No response'
+}
+
 // ---- Reset Demo ----
 
 export const resetDemo = async (full: boolean = false): Promise<{ status: string }> => {

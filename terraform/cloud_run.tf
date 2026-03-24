@@ -132,6 +132,11 @@ resource "google_cloud_run_v2_service" "ui_api" {
         name  = "AGENT_RUNNER_URL"
         value = google_cloud_run_v2_service.agent_runner.uri
       }
+
+      env {
+        name  = "CHAT_APP_URL"
+        value = google_cloud_run_v2_service.chat_app.uri
+      }
     }
 
     service_account = google_service_account.cash_agent_sa.email
