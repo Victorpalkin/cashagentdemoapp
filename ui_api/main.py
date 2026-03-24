@@ -663,12 +663,12 @@ def reset_demo(full: bool = Query(default=False)):
     try:
         seed_memories_sql = f"""
             INSERT INTO {_table('agent_memory')}
-            (memory_id, source, category, content, related_action_type, related_entity, created_by, is_active)
+            (memory_id, created_at, source, category, content, related_action_type, related_entity, created_by, is_active)
             VALUES
-            ('MEM-SEED-001', 'MANUAL', 'PREFERENCE',
+            ('MEM-SEED-001', CURRENT_TIMESTAMP(), 'MANUAL', 'PREFERENCE',
              'Prefer Deutsche Bank over BNP Paribas for EUR term deposits — our relationship manager offers 15-25bps above market.',
              'PLACE_DEPOSIT', 'Deutsche Bank', 'VP Treasury (Sarah Chen)', TRUE),
-            ('MEM-SEED-002', 'MANUAL', 'POLICY_OVERRIDE',
+            ('MEM-SEED-002', CURRENT_TIMESTAMP(), 'MANUAL', 'POLICY_OVERRIDE',
              'For GBP FX hedges, use 30-day settlement (not 21-day) to align with month-end reporting. CFO approved this deviation Q4 2025.',
              'HEDGE_FX', 'GBP', 'VP Treasury (Sarah Chen)', TRUE)
         """
