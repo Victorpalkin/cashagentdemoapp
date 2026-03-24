@@ -109,7 +109,7 @@ resource "google_cloud_run_v2_service" "ui_api" {
         cpu_idle = true
         limits = {
           cpu    = "1"
-          memory = "256Mi"
+          memory = "512Mi"
         }
       }
 
@@ -121,6 +121,11 @@ resource "google_cloud_run_v2_service" "ui_api" {
       env {
         name  = "DATASET_ID"
         value = var.dataset_id
+      }
+
+      env {
+        name  = "REGION"
+        value = var.region
       }
 
       env {
