@@ -1,7 +1,10 @@
+import { useState } from 'react'
 import {
   Box, Typography, Card, CardContent, Grid, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Paper, Chip, CircularProgress, Alert,
+  Collapse, IconButton,
 } from '@mui/material'
+import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material'
 import { useQuery } from '@tanstack/react-query'
 import { getExecutions, Execution } from '../api/bigquery'
 
@@ -34,7 +37,43 @@ const formatAmount = (amount: number | undefined, currency: string | undefined):
   return `${symbol[currency] || ''}${amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
 }
 
+const DETAIL_LABELS: Record<string, string> = {
+  bank_name: 'Bank',
+  currency: 'Currency',
+  amount: 'Amount',
+  term_days: 'Term',
+  rate_pct: 'Rate',
+  maturity_date: 'Maturity Date',
+  expected_interest: 'Expected Interest',
+  value_date: 'Value Date',
+  confirmation_id: 'Confirmation ID',
+  deposit_id: 'Deposit ID',
+  buy_currency: 'Buy Currency',
+  sell_currency: 'Sell Currency',
+  buy_amount: 'Buy Amount',
+  sell_amount: 'Sell Amount',
+  rate: 'Rate',
+  trade_type: 'Trade Type',
+  settlement_date: 'Settlement Date',
+  counterparty: 'Counterparty',
+  contract_id: 'Contract ID',
+  trade_id: 'Trade ID',
+  status: 'Status',
+}
+
+const formatDetailValue = (key: string, value: unknown): string => {
+  if (value === null || value === undefined) return '-'
+  if (key === 'term_days') return `${value} days`
+  if (key === 'rate_pct') return `${value}%`
+  if (key === 'expected_interest' || key === 'amount' || key === 'buy_amount' || key === 'sell_amount') {
+    return typeof value === 'number' ? value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : String(value)
+  }
+  if (key === 'rate' && typeof value === 'number') return value.toFixed(4)
+  return String(value)
+}
+
 const Executions = () => {
+  const [expandedRow, setExpandedRow] = useState<number | null>(null)
   const { data: executions = [], isLoading, isError } = useQuery({
     queryKey: ['executions'],
     queryFn: () => getExecutions(),
@@ -132,6 +171,7 @@ const Executions = () => {
           <Table>
             <TableHead>
               <TableRow>
+                <TableCell sx={{ width: 40, p: 0.5 }} />
                 <TableCell sx={{ fontWeight: 600 }}>Time</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Confirmation ID</TableCell>
@@ -143,45 +183,93 @@ const Executions = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {executions.map((exec: Execution, idx: number) => (
-                <TableRow key={idx} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
-                  <TableCell>{formatTimestamp(exec.timestamp)}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={TYPE_LABELS[exec.tool_name] || exec.tool_name}
-                      color={TYPE_COLORS[exec.tool_name] || 'default'}
-                      size="small"
-                      sx={{ fontWeight: 600 }}
-                    />
-                  </TableCell>
-                  <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                    {exec.details?.confirmation_id || exec.details?.trade_id || exec.details?.deposit_id || '-'}
-                  </TableCell>
-                  <TableCell>
-                    {exec.details?.bank_name || exec.details?.counterparty || exec.agent_name}
-                  </TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 600 }}>
-                    {formatAmount(
-                      exec.details?.amount || exec.details?.buy_amount,
-                      exec.details?.currency || exec.details?.buy_currency,
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {exec.details?.rate ? exec.details.rate.toFixed(4) :
-                     exec.details?.rate_pct ? `${exec.details.rate_pct}%` : '-'}
-                  </TableCell>
-                  <TableCell>
-                    {exec.details?.settlement_date || exec.details?.maturity_date || '-'}
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={exec.details?.status === 'error' ? 'Failed' : 'Completed'}
-                      color={exec.details?.status === 'error' ? 'error' : 'success'}
-                      size="small"
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
+              {executions.map((exec: Execution, idx: number) => {
+                const isExpanded = expandedRow === idx
+                const allDetails: Record<string, unknown> = { ...exec.details }
+                // Remove status from detail panel (already shown in row)
+                delete allDetails.status
+                const detailEntries = Object.entries(allDetails).filter(
+                  ([, v]) => v !== null && v !== undefined && v !== ''
+                )
+                return (
+                  <>
+                    <TableRow
+                      key={idx}
+                      sx={{ '&:hover': { bgcolor: 'action.hover' }, cursor: 'pointer', '& > *': { borderBottom: isExpanded ? 'none' : undefined } }}
+                      onClick={() => setExpandedRow(isExpanded ? null : idx)}
+                    >
+                      <TableCell sx={{ p: 0.5 }}>
+                        <IconButton size="small">
+                          {isExpanded ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+                        </IconButton>
+                      </TableCell>
+                      <TableCell>{formatTimestamp(exec.timestamp)}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={TYPE_LABELS[exec.tool_name] || exec.tool_name}
+                          color={TYPE_COLORS[exec.tool_name] || 'default'}
+                          size="small"
+                          sx={{ fontWeight: 600 }}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                        {exec.details?.confirmation_id || exec.details?.trade_id || exec.details?.deposit_id || '-'}
+                      </TableCell>
+                      <TableCell>
+                        {exec.details?.bank_name || exec.details?.counterparty || exec.agent_name}
+                      </TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 600 }}>
+                        {formatAmount(
+                          exec.details?.amount || exec.details?.buy_amount,
+                          exec.details?.currency || exec.details?.buy_currency,
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {exec.details?.rate ? exec.details.rate.toFixed(4) :
+                         exec.details?.rate_pct ? `${exec.details.rate_pct}%` : '-'}
+                      </TableCell>
+                      <TableCell>
+                        {exec.details?.settlement_date || exec.details?.maturity_date || '-'}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={exec.details?.status === 'error' ? 'Failed' : 'Completed'}
+                          color={exec.details?.status === 'error' ? 'error' : 'success'}
+                          size="small"
+                        />
+                      </TableCell>
+                    </TableRow>
+                    <TableRow key={`${idx}-details`}>
+                      <TableCell sx={{ p: 0, border: 'none' }} colSpan={9}>
+                        <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                          <Box sx={{ p: 2.5, bgcolor: 'grey.50', borderBottom: '1px solid #E0E0E0' }}>
+                            {exec.input_summary && (
+                              <Box sx={{ mb: 2, p: 1.5, bgcolor: 'background.paper', borderRadius: 1, borderLeft: '3px solid', borderColor: 'primary.main' }}>
+                                <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.secondary' }}>
+                                  Trigger
+                                </Typography>
+                                <Typography variant="body2">{exec.input_summary}</Typography>
+                              </Box>
+                            )}
+                            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
+                              {detailEntries.map(([key, value]) => (
+                                <Box key={key} sx={{ display: 'flex', gap: 1 }}>
+                                  <Typography variant="body2" sx={{ color: 'text.secondary', minWidth: 130, fontWeight: 600 }}>
+                                    {DETAIL_LABELS[key] || key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}:
+                                  </Typography>
+                                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                    {formatDetailValue(key, value)}
+                                  </Typography>
+                                </Box>
+                              ))}
+                            </Box>
+                          </Box>
+                        </Collapse>
+                      </TableCell>
+                    </TableRow>
+                  </>
+                )
+              })}
             </TableBody>
           </Table>
         </TableContainer>

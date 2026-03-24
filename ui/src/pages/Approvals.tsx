@@ -89,12 +89,13 @@ const Approvals = () => {
       setMutationError(null)
       queryClient.invalidateQueries({ queryKey: ['approvals'] })
       if (overrides && Object.keys(overrides).length > 0) {
-        const parts: string[] = []
-        if (overrides.amount !== undefined) parts.push(`amount to ${overrides.amount.toLocaleString()}`)
-        if (overrides.action_type) parts.push(`action to ${overrides.action_type.replace(/_/g, ' ')}`)
-        if (overrides.currency) parts.push(`currency to ${overrides.currency}`)
-        const content = `Edited approval before approving: changed ${parts.join(', ')}.`
+        const editParts: string[] = []
+        if (overrides.amount !== undefined) editParts.push(`changed the amount to ${overrides.amount.toLocaleString()}`)
+        if (overrides.action_type) editParts.push(`changed the action to ${overrides.action_type.replace(/_/g, ' ')}`)
+        if (overrides.currency) editParts.push(`changed the currency to ${overrides.currency}`)
         const approval = approvals.find(a => a.request_id === variables.requestId)
+        const description = approval?.description || 'a recommendation'
+        const content = `When the agent recommended "${description}", I ${editParts.join(' and ')}. Prefer this adjustment for similar ${approval?.action_type?.replace(/_/g, ' ').toLowerCase() || ''} recommendations.`
         setRememberDialog({
           open: true,
           source: 'EDIT',
@@ -119,10 +120,14 @@ const Approvals = () => {
       queryClient.invalidateQueries({ queryKey: ['approvals'] })
       setRejectDialogOpen(false)
       const approval = approvals.find(a => a.request_id === variables.requestId)
+      const description = approval?.description || 'a recommendation'
+      const reasonText = variables.reason
+        ? `Rejected recommendation: "${description}". Reason: ${variables.reason}`
+        : `Rejected recommendation: "${description}".`
       setRememberDialog({
         open: true,
         source: 'REJECTION',
-        content: variables.reason || 'Rejected without specific reason.',
+        content: reasonText,
         relatedActionType: approval?.action_type || '',
         relatedEntity: approval?.description?.split(' ')[0] || '',
         category: 'COUNTERPARTY',
