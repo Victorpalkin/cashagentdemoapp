@@ -1,18 +1,57 @@
 import { useState } from 'react'
 import {
-  AppBar, Toolbar, Typography, Avatar, IconButton, Tabs, Tab, Box, Badge,
+  AppBar, Toolbar, Typography, Avatar, IconButton, Box, Badge,
   Menu, MenuItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent,
   DialogContentText, DialogActions, Button, Snackbar, Alert, CircularProgress,
+  Drawer, List, ListSubheader, ListItemButton, Divider,
 } from '@mui/material'
 import {
   Notifications as NotificationsIcon,
   Settings as SettingsIcon,
   RestartAlt as ResetIcon,
   Refresh as RefreshIcon,
+  Dashboard as DashboardIcon,
+  Warning as WarningIcon,
+  Lightbulb as LightbulbIcon,
+  CheckCircle as CheckCircleIcon,
+  PlayCircle as PlayCircleIcon,
+  Chat as ChatIcon,
+  Psychology as PsychologyIcon,
+  History as HistoryIcon,
+  AccountTree as AccountTreeIcon,
 } from '@mui/icons-material'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { resetDemo, getApprovals } from '../api/bigquery'
+
+const DRAWER_WIDTH = 240
+
+const navSections = [
+  {
+    label: 'Operations',
+    items: [
+      { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
+      { label: 'Anomalies', path: '/anomalies', icon: WarningIcon },
+      { label: 'Recommendations', path: '/recommendations', icon: LightbulbIcon },
+      { label: 'Approvals', path: '/approvals', icon: CheckCircleIcon, badge: true },
+      { label: 'Executions', path: '/executions', icon: PlayCircleIcon },
+    ],
+  },
+  {
+    label: 'Agent',
+    items: [
+      { label: 'Agent Chat', path: '/chat', icon: ChatIcon },
+      { label: 'Memory', path: '/memory', icon: PsychologyIcon },
+    ],
+  },
+  {
+    label: 'System',
+    items: [
+      { label: 'Audit Trail', path: '/audit', icon: HistoryIcon },
+      { label: 'Architecture', path: '/architecture', icon: AccountTreeIcon },
+    ],
+  },
+]
 
 const Shell = () => {
   const navigate = useNavigate()
@@ -47,25 +86,6 @@ const Shell = () => {
     },
   })
 
-  const getActiveTab = () => {
-    const path = location.pathname
-    if (path.startsWith('/dashboard')) return 0
-    if (path.startsWith('/anomalies')) return 1
-    if (path.startsWith('/recommendations')) return 2
-    if (path.startsWith('/approvals')) return 3
-    if (path.startsWith('/executions')) return 4
-    if (path.startsWith('/audit')) return 5
-    if (path.startsWith('/memory')) return 6
-    if (path.startsWith('/chat')) return 7
-    if (path.startsWith('/architecture')) return 8
-    return 0
-  }
-
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    const paths = ['/dashboard', '/anomalies', '/recommendations', '/approvals', '/executions', '/audit', '/memory', '/chat', '/architecture']
-    navigate(paths[newValue])
-  }
-
   const handleResetClick = (full: boolean) => {
     setSettingsAnchor(null)
     setConfirmDialog({ open: true, full })
@@ -77,52 +97,114 @@ const Shell = () => {
     resetMutation.mutate(full)
   }
 
+  const isActive = (path: string) => location.pathname.startsWith(path)
+
   return (
     <>
-      <AppBar position="static" sx={{ bgcolor: 'secondary.main', boxShadow: 'none', borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
-        <Toolbar sx={{ minHeight: 64, px: 3 }}>
-          {/* Left: App Title */}
-          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 0 }}>
-            <Typography variant="h6" component="div" sx={{ fontWeight: 700, color: 'white', mr: 4 }}>
-              Cash Agent Dashboard
-            </Typography>
-          </Box>
+      {/* Sidebar */}
+      <Drawer
+        variant="permanent"
+        sx={{
+          width: DRAWER_WIDTH,
+          flexShrink: 0,
+          '& .MuiDrawer-paper': {
+            width: DRAWER_WIDTH,
+            boxSizing: 'border-box',
+            bgcolor: 'secondary.main',
+            borderRight: '1px solid rgba(255,255,255,0.12)',
+          },
+        }}
+      >
+        {/* App Title */}
+        <Box sx={{ px: 3, py: 2.5, borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: 'white' }}>
+            Cash Agent
+          </Typography>
+        </Box>
 
-          {/* Center: Navigation Tabs */}
-          <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
-            <Tabs
-              value={getActiveTab()}
-              onChange={handleTabChange}
-              textColor="inherit"
-              indicatorColor="primary"
-              sx={{
-                '& .MuiTab-root': {
-                  color: 'rgba(255,255,255,0.7)',
-                  fontWeight: 500,
-                  minWidth: 120,
-                  '&.Mui-selected': {
-                    color: 'white',
-                  },
-                },
-                '& .MuiTabs-indicator': {
-                  backgroundColor: '#0070F2',
-                  height: 3,
-                },
-              }}
+        {/* Nav Sections */}
+        {navSections.map((section, sIdx) => (
+          <Box key={section.label}>
+            {sIdx > 0 && <Divider sx={{ borderColor: 'rgba(255,255,255,0.12)' }} />}
+            <List
+              dense
+              subheader={
+                <ListSubheader
+                  sx={{
+                    bgcolor: 'transparent',
+                    color: 'rgba(255,255,255,0.5)',
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    lineHeight: '32px',
+                    mt: 1,
+                  }}
+                >
+                  {section.label}
+                </ListSubheader>
+              }
             >
-              <Tab label="Dashboard" />
-              <Tab label="Anomalies" />
-              <Tab label="Recommendations" />
-              <Tab label="Approvals" />
-              <Tab label="Executions" />
-              <Tab label="Audit Trail" />
-              <Tab label="Memory" />
-              <Tab label="Agent Chat" />
-              <Tab label="Architecture" />
-            </Tabs>
+              {section.items.map((item) => {
+                const active = isActive(item.path)
+                const Icon = item.icon
+                return (
+                  <ListItemButton
+                    key={item.path}
+                    selected={active}
+                    onClick={() => navigate(item.path)}
+                    sx={{
+                      mx: 1,
+                      borderRadius: 1,
+                      mb: 0.25,
+                      color: active ? 'white' : 'rgba(255,255,255,0.7)',
+                      borderLeft: active ? '3px solid' : '3px solid transparent',
+                      borderColor: active ? 'primary.main' : 'transparent',
+                      bgcolor: active ? 'rgba(0,112,242,0.12)' : 'transparent',
+                      '&:hover': {
+                        bgcolor: active ? 'rgba(0,112,242,0.18)' : 'rgba(255,255,255,0.08)',
+                      },
+                      '&.Mui-selected': {
+                        bgcolor: 'rgba(0,112,242,0.12)',
+                      },
+                      '&.Mui-selected:hover': {
+                        bgcolor: 'rgba(0,112,242,0.18)',
+                      },
+                    }}
+                  >
+                    <ListItemIcon sx={{ color: 'inherit', minWidth: 36 }}>
+                      {item.badge ? (
+                        <Badge badgeContent={pendingCount > 0 ? pendingCount : undefined} color="error">
+                          <Icon fontSize="small" />
+                        </Badge>
+                      ) : (
+                        <Icon fontSize="small" />
+                      )}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={item.label}
+                      primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: active ? 600 : 400 }}
+                    />
+                  </ListItemButton>
+                )
+              })}
+            </List>
           </Box>
+        ))}
+      </Drawer>
 
-          {/* Right: Settings + User Info */}
+      {/* Slim AppBar */}
+      <AppBar
+        position="fixed"
+        sx={{
+          bgcolor: 'secondary.main',
+          boxShadow: 'none',
+          borderBottom: '1px solid rgba(255,255,255,0.12)',
+          width: `calc(100% - ${DRAWER_WIDTH}px)`,
+          ml: `${DRAWER_WIDTH}px`,
+        }}
+      >
+        <Toolbar sx={{ minHeight: 56, px: 3, justifyContent: 'flex-end' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <IconButton
               color="inherit"
@@ -202,4 +284,5 @@ const Shell = () => {
   )
 }
 
+export { DRAWER_WIDTH }
 export default Shell
