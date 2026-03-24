@@ -30,23 +30,28 @@ def create_approval_request(
 
     request_id = f"APR-2026-{random.randint(1000, 9999):04d}"
 
-    rows = [
-        {
-            "request_id": request_id,
-            "action_type": action_type,
-            "amount": amount,
-            "currency": currency,
-            "description": description,
-            "agent_reasoning": agent_reasoning,
-            "status": "PENDING",
-            "requested_at": datetime.datetime.now().isoformat(),
-            "requested_by": "cash_agent",
-        }
-    ]
     table_ref = f"{PROJECT_ID}.{DATASET_ID}.approval_requests"
-    errors = client.insert_rows_json(table_ref, rows)
-    if errors:
-        return {"status": "error", "errors": errors}
+    query = f"""
+        INSERT INTO `{table_ref}`
+        (request_id, action_type, amount, currency, description, agent_reasoning, status, requested_at, requested_by)
+        VALUES
+        (@request_id, @action_type, @amount, @currency, @description, @agent_reasoning, 'PENDING', @requested_at, 'cash_agent')
+    """
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[
+            bigquery.ScalarQueryParameter("request_id", "STRING", request_id),
+            bigquery.ScalarQueryParameter("action_type", "STRING", action_type),
+            bigquery.ScalarQueryParameter("amount", "FLOAT64", amount),
+            bigquery.ScalarQueryParameter("currency", "STRING", currency),
+            bigquery.ScalarQueryParameter("description", "STRING", description),
+            bigquery.ScalarQueryParameter("agent_reasoning", "STRING", agent_reasoning),
+            bigquery.ScalarQueryParameter("requested_at", "STRING", datetime.datetime.now().isoformat()),
+        ]
+    )
+    try:
+        client.query(query, job_config=job_config).result()
+    except Exception as e:
+        return {"status": "error", "errors": str(e)}
     return {
         "status": "pending_approval",
         "request_id": request_id,
