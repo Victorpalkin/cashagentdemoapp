@@ -247,13 +247,21 @@ export interface Anomaly {
   type: string
   description: string
   details: Record<string, any>
-  explanation?: string
-  suggested_action?: string
+}
+
+export interface AnomalyExplanation {
+  explanation: string
+  suggested_action: string
 }
 
 export const getAnomalies = async (): Promise<Anomaly[]> => {
   const resp = await apiFetch<{ anomalies: Anomaly[]; count: number }>('/api/anomalies')
   return resp.anomalies
+}
+
+export const getAnomalyExplanations = async (): Promise<AnomalyExplanation[]> => {
+  const resp = await apiFetch<{ explanations: AnomalyExplanation[] }>('/api/anomaly-explanations')
+  return resp.explanations
 }
 
 // ---- FX Rates ----

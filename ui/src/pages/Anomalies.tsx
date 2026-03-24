@@ -3,7 +3,7 @@ import {
 } from '@mui/material'
 import { Lightbulb, OpenInNew } from '@mui/icons-material'
 import { useQuery } from '@tanstack/react-query'
-import { getAnomalies, getRecommendations, Anomaly, Recommendation } from '../api/bigquery'
+import { getAnomalies, getAnomalyExplanations, getRecommendations, Anomaly, Recommendation } from '../api/bigquery'
 
 const SEVERITY_ORDER = ['HIGH', 'MEDIUM'] as const
 
@@ -28,6 +28,13 @@ const Anomalies = () => {
     queryKey: ['anomalies'],
     queryFn: () => getAnomalies(),
     refetchInterval: 30000,
+  })
+
+  const { data: explanations, isLoading: explanationsLoading } = useQuery({
+    queryKey: ['anomaly-explanations'],
+    queryFn: () => getAnomalyExplanations(),
+    enabled: anomalies.length > 0,
+    refetchInterval: 300000, // 5 min, matches backend cache TTL
   })
 
   const { data: recommendations = [] } = useQuery({
@@ -102,6 +109,9 @@ const Anomalies = () => {
 
             {items.map((anomaly: Anomaly, idx: number) => {
               const recs = linkedRecs.get(anomaly.type) || []
+              // Find the global index of this anomaly to match with explanations array
+              const globalIdx = anomalies.indexOf(anomaly)
+              const explanation = explanations?.[globalIdx]
 
               return (
                 <Card
@@ -134,21 +144,26 @@ const Anomalies = () => {
                     </Typography>
 
                     {/* Gemini Explanation */}
-                    {anomaly.explanation && (
+                    {explanation ? (
                       <Box sx={{ mb: 2, p: 2, bgcolor: '#E3F2FD', borderRadius: 1, borderLeft: '3px solid', borderColor: 'info.main' }}>
                         <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, color: 'info.dark', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           <Lightbulb sx={{ fontSize: 14 }} /> AI Analysis
                         </Typography>
                         <Typography variant="body2" sx={{ mb: 1, lineHeight: 1.7 }}>
-                          {anomaly.explanation}
+                          {explanation.explanation}
                         </Typography>
-                        {anomaly.suggested_action && (
+                        {explanation.suggested_action && (
                           <Typography variant="body2" sx={{ fontWeight: 600, color: 'info.dark' }}>
-                            Suggested action: {anomaly.suggested_action}
+                            Suggested action: {explanation.suggested_action}
                           </Typography>
                         )}
                       </Box>
-                    )}
+                    ) : explanationsLoading ? (
+                      <Box sx={{ mb: 2, p: 2, bgcolor: '#E3F2FD', borderRadius: 1, borderLeft: '3px solid', borderColor: 'info.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <CircularProgress size={16} />
+                        <Typography variant="body2" color="text.secondary">Loading AI analysis...</Typography>
+                      </Box>
+                    ) : null}
 
                     {/* Linked Recommendations */}
                     {recs.length > 0 && (

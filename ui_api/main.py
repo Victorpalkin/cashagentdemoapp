@@ -356,22 +356,33 @@ def anomalies():
 
     results.sort(key=lambda x: {"HIGH": 0, "MEDIUM": 1, "LOW": 2}.get(x["severity"], 2))
 
-    # Enrich anomalies with Gemini explanations
-    if results:
-        try:
-            cache_key = hashlib.md5(
-                json.dumps([r["description"] for r in results]).encode()
-            ).hexdigest()
-            now = time.time()
-            cached = _explanation_cache.get(cache_key)
-            if cached and (now - cached[0]) < _CACHE_TTL:
-                explanations = cached[1]
-            else:
-                anomaly_summaries = [
-                    {"type": r["type"], "description": r["description"]}
-                    for r in results
-                ]
-                prompt = f"""You are a treasury analyst. For each anomaly below, provide:
+    return {"anomalies": results, "count": len(results)}
+
+
+@app.get("/api/anomaly-explanations")
+def anomaly_explanations():
+    """Fetch Gemini-powered explanations for current anomalies (cached 5 min)."""
+    # First get the current anomalies
+    anomalies_resp = anomalies()
+    results = anomalies_resp["anomalies"]
+
+    if not results:
+        return {"explanations": []}
+
+    try:
+        cache_key = hashlib.md5(
+            json.dumps([r["description"] for r in results]).encode()
+        ).hexdigest()
+        now = time.time()
+        cached = _explanation_cache.get(cache_key)
+        if cached and (now - cached[0]) < _CACHE_TTL:
+            return {"explanations": cached[1]}
+
+        anomaly_summaries = [
+            {"type": r["type"], "description": r["description"]}
+            for r in results
+        ]
+        prompt = f"""You are a treasury analyst. For each anomaly below, provide:
 1. "explanation": A 1-2 sentence business-context explanation of why this matters
 2. "suggested_action": A specific recommended action
 
@@ -379,24 +390,19 @@ ANOMALIES:
 {json.dumps(anomaly_summaries, indent=2)}
 
 Return a JSON array in the same order as input. Return ONLY the JSON array, no other text."""
-                vertexai.init(project=PROJECT_ID, location=REGION)
-                model = GenerativeModel("gemini-2.5-flash")
-                response = model.generate_content(prompt)
-                resp_text = response.text.strip()
-                if resp_text.startswith("```"):
-                    resp_text = resp_text.split("\n", 1)[1]
-                    resp_text = resp_text.rsplit("```", 1)[0]
-                explanations = json.loads(resp_text)
-                _explanation_cache[cache_key] = (now, explanations)
-
-            for i, result in enumerate(results):
-                if i < len(explanations):
-                    result["explanation"] = explanations[i].get("explanation", "")
-                    result["suggested_action"] = explanations[i].get("suggested_action", "")
-        except Exception as e:
-            logger.warning(f"Gemini explanation enrichment failed: {e}")
-
-    return {"anomalies": results, "count": len(results)}
+        vertexai.init(project=PROJECT_ID, location=REGION)
+        model = GenerativeModel("gemini-2.5-flash")
+        response = model.generate_content(prompt)
+        resp_text = response.text.strip()
+        if resp_text.startswith("```"):
+            resp_text = resp_text.split("\n", 1)[1]
+            resp_text = resp_text.rsplit("```", 1)[0]
+        explanations = json.loads(resp_text)
+        _explanation_cache[cache_key] = (now, explanations)
+        return {"explanations": explanations}
+    except Exception as e:
+        logger.warning(f"Gemini explanation enrichment failed: {e}")
+        return {"explanations": []}
 
 
 # ---- Audit Log ----
