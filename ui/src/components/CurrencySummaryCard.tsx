@@ -25,8 +25,11 @@ const CurrencySummaryCard = ({ totalUsd, breakdown }: CurrencySummaryCardProps) 
   return (
     <Card sx={{ height: '100%' }}>
       <CardContent sx={{ p: 3 }}>
-        <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+        <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
           Total Cash Position
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+          Aggregate bank account balances converted to USD
         </Typography>
 
         <Typography variant="h3" sx={{ fontWeight: 700, mb: 3, color: 'primary.main' }}>

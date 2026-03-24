@@ -52,8 +52,11 @@ const Anomalies = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" sx={{ fontWeight: 700, mb: 3 }}>
+      <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
         Anomaly Detection
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+        TimesFM anomaly detection on cash flows combined with rule-based checks on AR/AP data
       </Typography>
 
       {anomalies.length === 0 ? (

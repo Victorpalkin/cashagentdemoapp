@@ -71,8 +71,11 @@ const Executions = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" sx={{ fontWeight: 700, mb: 3 }}>
+      <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
         Execution History
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+        Completed agent actions including deposits placed, FX hedges, and collections
       </Typography>
 
       {/* Summary Cards */}

@@ -73,8 +73,11 @@ const ForecastChart = ({ forecasts, isLoading, error, currentBalances }: Forecas
   return (
     <Card>
       <CardContent sx={{ p: 3 }}>
-        <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
+        <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
           30-Day Projected Cash Balance
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+          TimesFM forecast based on 12 months of cash journal history, cumulative from current balances
         </Typography>
 
         {isLoading ? (
@@ -82,7 +85,7 @@ const ForecastChart = ({ forecasts, isLoading, error, currentBalances }: Forecas
         ) : error ? (
           <Box sx={{ py: 4, textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">
-              BQML forecast model not available. Run the model creation notebook to enable forecasting.
+              Forecast not available. Run the model creation notebook to enable forecasting.
             </Typography>
           </Box>
         ) : chartData.length === 0 ? (

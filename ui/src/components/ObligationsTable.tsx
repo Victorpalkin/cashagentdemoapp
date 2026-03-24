@@ -40,8 +40,11 @@ const ObligationsTable = ({ obligations, isLoading }: ObligationsTableProps) => 
   return (
     <Card>
       <CardContent sx={{ p: 3 }}>
-        <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
+        <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
           Upcoming Obligations
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+          All open AR and AP items sorted by due date
         </Typography>
 
         {isLoading ? (

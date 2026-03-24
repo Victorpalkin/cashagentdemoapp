@@ -6,6 +6,8 @@ import CurrencySummaryCard from '../components/CurrencySummaryCard'
 import FxRatesCard from '../components/FxRatesCard'
 import ForecastChart from '../components/ForecastChart'
 import ObligationsTable from '../components/ObligationsTable'
+import AgentDecisionFactors from '../components/AgentDecisionFactors'
+import AnomalySummaryCard from '../components/AnomalySummaryCard'
 import { getCashPosition, getForecast, getObligations, getAuditLog, getRecommendations, getPaymentRuns, runDailyReview } from '../api/bigquery'
 import { useState } from 'react'
 
@@ -67,18 +69,7 @@ const Dashboard = () => {
     currentBalances[t.currency] = t.balance
   }
 
-  // AR/AP totals by currency
   const obligations = obligationsQuery.data ?? []
-  const arTotalsByCurrency: Record<string, number> = {}
-  const apTotalsByCurrency: Record<string, number> = {}
-  for (const ob of obligations) {
-    if (ob.type === 'AR') {
-      arTotalsByCurrency[ob.currency] = (arTotalsByCurrency[ob.currency] || 0) + ob.amount * (ob.probability || 1)
-    } else {
-      apTotalsByCurrency[ob.currency] = (apTotalsByCurrency[ob.currency] || 0) + ob.amount
-    }
-  }
-  const allCurrencies = [...new Set([...Object.keys(arTotalsByCurrency), ...Object.keys(apTotalsByCurrency)])].sort()
 
   const formatTimeAgo = (timestamp: string): string => {
     const now = new Date()
@@ -140,58 +131,30 @@ const Dashboard = () => {
           <FxRatesCard />
         </Grid>
         <Grid item xs={12} md={4}>
-          {/* AR/AP Summary */}
-          <Card sx={{ height: '100%' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                Receivables vs Payables
-              </Typography>
-              {obligationsQuery.isLoading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}><CircularProgress size={24} /></Box>
-              ) : allCurrencies.length === 0 ? (
-                <Typography variant="body2" color="text.secondary">No open items</Typography>
-              ) : (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                  {allCurrencies.map(cur => {
-                    const ar = arTotalsByCurrency[cur] || 0
-                    const ap = apTotalsByCurrency[cur] || 0
-                    const net = ar - ap
-                    return (
-                      <Box key={cur} sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 1 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{cur}</Typography>
-                          <Chip
-                            label={`Net: ${net >= 0 ? '+' : ''}${formatCompact(net, cur)}`}
-                            size="small"
-                            color={net >= 0 ? 'success' : 'error'}
-                            sx={{ fontWeight: 600 }}
-                          />
-                        </Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <Typography variant="caption" color="success.main">
-                            AR (wtd): {formatCompact(ar, cur)}
-                          </Typography>
-                          <Typography variant="caption" color="error.main">
-                            AP: {formatCompact(ap, cur)}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    )
-                  })}
-                </Box>
-              )}
-            </CardContent>
-          </Card>
+          <AnomalySummaryCard />
         </Grid>
       </Grid>
+
+      {/* Agent Decision Factors */}
+      <Box sx={{ mb: 3 }}>
+        <AgentDecisionFactors
+          obligations={obligations}
+          paymentRuns={paymentRunsQuery.data ?? []}
+          currencyBalances={currentBalances}
+          isLoading={obligationsQuery.isLoading || paymentRunsQuery.isLoading || cashQuery.isLoading}
+        />
+      </Box>
 
       {/* Payment Runs + Recent Activity */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid item xs={12} md={4}>
           <Card sx={{ height: '100%' }}>
             <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
                 Scheduled Payment Runs
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                Upcoming batch payment runs from SAP
               </Typography>
               {paymentRunsQuery.isLoading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}><CircularProgress size={24} /></Box>
@@ -232,8 +195,11 @@ const Dashboard = () => {
         <Grid item xs={12} md={8}>
           <Card sx={{ height: '100%' }}>
             <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
                 Recent Agent Activity
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                Latest actions from autonomous agent runs
               </Typography>
               {auditQuery.isLoading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress size={24} /></Box>
@@ -283,8 +249,11 @@ const Dashboard = () => {
       {/* Recent Recommendations */}
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ p: 3 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
             Recent Recommendations
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            Agent-generated recommendations from the most recent review
           </Typography>
           {recQuery.isLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}><CircularProgress size={24} /></Box>

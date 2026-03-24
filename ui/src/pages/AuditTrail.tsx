@@ -79,8 +79,11 @@ const AuditTrail = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" sx={{ fontWeight: 700, mb: 3 }}>
+      <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
         Audit Trail
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+        Complete log of all agent queries, analyses, recommendations, and executions
       </Typography>
 
       {isError && <Alert severity="error" sx={{ mb: 2 }}>Failed to load audit log</Alert>}

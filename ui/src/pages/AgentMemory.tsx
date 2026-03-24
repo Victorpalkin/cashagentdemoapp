@@ -99,7 +99,7 @@ const AgentMemory = () => {
             Agent Memory
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Persistent knowledge from past decisions and preferences. The agent consults these when generating recommendations.
+            Learned patterns from human approval decisions that influence future recommendations
           </Typography>
         </Box>
         <Button
