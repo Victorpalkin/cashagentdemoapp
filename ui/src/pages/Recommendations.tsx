@@ -4,7 +4,7 @@ import {
 } from '@mui/material'
 import {
   AccountBalance, CurrencyExchange, Speed, TrendingUp,
-  Gavel, PlayArrow, CheckCircle,
+  Gavel, PlayArrow, CheckCircle, BugReport,
 } from '@mui/icons-material'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import StatusBadge from '../components/StatusBadge'
@@ -265,6 +265,19 @@ const Recommendations = () => {
                             component="a"
                             href="/approvals"
                             sx={{ fontFamily: 'monospace', fontWeight: 600 }}
+                          />
+                        )}
+                        {rec.source_anomaly_type && (
+                          <Chip
+                            icon={<BugReport sx={{ fontSize: 14 }} />}
+                            label={`Triggered by: ${rec.source_anomaly_type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/ /g, ' ')}`}
+                            size="small"
+                            color="warning"
+                            variant="outlined"
+                            clickable
+                            component="a"
+                            href="/anomalies"
+                            sx={{ fontWeight: 600 }}
                           />
                         )}
                       </Box>

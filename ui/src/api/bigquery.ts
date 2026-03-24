@@ -226,6 +226,8 @@ export interface Recommendation {
   rationale: string
   status: string
   approval_request_id: string
+  source_anomaly_type?: string
+  source_anomaly_description?: string
 }
 
 export const getRecommendations = async (): Promise<Recommendation[]> => {
@@ -245,6 +247,8 @@ export interface Anomaly {
   type: string
   description: string
   details: Record<string, any>
+  explanation?: string
+  suggested_action?: string
 }
 
 export const getAnomalies = async (): Promise<Anomaly[]> => {

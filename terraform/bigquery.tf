@@ -470,6 +470,16 @@ resource "google_bigquery_table" "agent_recommendations" {
       name = "approval_request_id"
       type = "STRING"
       mode = "NULLABLE"
+    },
+    {
+      name = "source_anomaly_type"
+      type = "STRING"
+      mode = "NULLABLE"
+    },
+    {
+      name = "source_anomaly_description"
+      type = "STRING"
+      mode = "NULLABLE"
     }
   ])
 }

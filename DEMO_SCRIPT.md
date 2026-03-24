@@ -62,13 +62,24 @@ Three recommendations grouped by priority, each with full **Agent Rationale** (a
 2. **MEDIUM -- Place Term Deposit**: EUR surplus at ~153% of 30-day obligations, exceeding the 120% threshold. Amount > $500K, so it requires VP Treasury approval per Approval Matrix Section 2.1.
 3. **MEDIUM -- FX Forward Hedge**: Net GBP exposure of ~GBP 1.4M exceeds the GBP 500K mandatory hedging threshold.
 
+She can also click the **Anomalies** tab:
+
+**What she sees** (Anomalies tab -- "Anomaly Detection"):
+
+Each anomaly card now includes an **AI Analysis** box (blue, powered by Gemini) with:
+- A business-context **explanation** of why the anomaly matters (e.g., "This low-probability EUR receivable from ACME Corp represents significant collection risk that could create a EUR shortfall...")
+- A specific **suggested action** (e.g., "Accelerate collection on ACME Corp or hedge EUR exposure")
+- A **View Recommendation** chip linking to the recommendation this anomaly triggered -- clicking it navigates to the Recommendations page
+
+Back on the **Recommendations** tab, each recommendation that was triggered by an anomaly shows a **"Triggered by:"** chip (e.g., "Triggered by: Low Probability Receivable") linking back to the Anomalies page.
+
 **What she asks the agent**:
 
 > Check for any anomalies in our receivables and payables
 
 The agent explains the ACME risk in plain language: a major Phase 3 enterprise delivery with collection confidence far below normal. It quantifies the impact -- EUR 2.3M at risk equals roughly $2.5M USD.
 
-**Key talking points**: The TimesFM foundation model forecasts cash flow from historical patterns via AI.FORECAST (no model training needed), but it can't see AR probability data or AP schedules. The agent enriches the forecast with this context -- every recommendation cites the delta between ML-only and agent-enriched views. Policy references (Treasury Policy Section 2.3, FX Hedging Policy Section 2.1) come from semantic search over actual policy documents, not hallucinated rules.
+**Key talking points**: The TimesFM foundation model forecasts cash flow from historical patterns via AI.FORECAST (no model training needed), but it can't see AR probability data or AP schedules. The agent enriches the forecast with this context -- every recommendation cites the delta between ML-only and agent-enriched views. Policy references (Treasury Policy Section 2.3, FX Hedging Policy Section 2.1) come from semantic search over actual policy documents, not hallucinated rules. Anomalies are no longer just statistical alerts -- Gemini explains each one in business terms with a suggested action, and traceability links show exactly which recommendations were spawned by which anomalies.
 
 ---
 

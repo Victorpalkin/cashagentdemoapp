@@ -468,6 +468,8 @@ Return exactly 3 recommendations as a JSON array. Each must have:
 - "currency": "USD" | "EUR" | "GBP"
 - "description": short human-readable description
 - "rationale": detailed reasoning citing specific policy sections and computed values (show the math)
+- "source_anomaly_type": if this recommendation was triggered by an anomaly, the anomaly type (e.g. "TIMESFM_CASH_FLOW_ANOMALY", "LOW_PROBABILITY_RECEIVABLE", "AP_CONCENTRATION"), otherwise null
+- "source_anomaly_description": if triggered by an anomaly, a short description of the anomaly, otherwise null
 
 Return ONLY the JSON array, no other text."""
 
@@ -519,6 +521,8 @@ Return ONLY the JSON array, no other text."""
                     "rationale": rec.get("rationale", ""),
                     "status": status,
                     "approval_request_id": approval_id or "",
+                    "source_anomaly_type": rec.get("source_anomaly_type") or "",
+                    "source_anomaly_description": rec.get("source_anomaly_description") or "",
                 }
                 insert_recommendation(row)
 

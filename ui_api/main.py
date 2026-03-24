@@ -1,10 +1,12 @@
 """UI Backend API — FastAPI service that queries BigQuery for the management UI."""
 
 import datetime
+import hashlib
 import json
 import logging
 import os
 import random
+import time
 import urllib.request
 import urllib.error
 
@@ -12,6 +14,8 @@ from fastapi import FastAPI, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from google.cloud import bigquery
+import vertexai
+from vertexai.generative_models import GenerativeModel
 
 PROJECT_ID = os.environ.get("PROJECT_ID", "cash-agent-demo")
 DATASET_ID = os.environ.get("DATASET_ID", "cash_agent_demo")
@@ -28,7 +32,13 @@ BROKER_API_URL = os.environ.get(
     "https://broker-api-mock-558326705804.us-central1.run.app",
 )
 
+REGION = os.environ.get("REGION", "us-central1")
+
 logger = logging.getLogger("ui_api")
+
+# In-memory cache for Gemini anomaly explanations (hash -> (timestamp, explanations))
+_explanation_cache: dict[str, tuple[float, list[dict]]] = {}
+_CACHE_TTL = 300  # 5 minutes
 
 app = FastAPI(title="Cash Agent UI API")
 
@@ -345,6 +355,47 @@ def anomalies():
         pass
 
     results.sort(key=lambda x: {"HIGH": 0, "MEDIUM": 1, "LOW": 2}.get(x["severity"], 2))
+
+    # Enrich anomalies with Gemini explanations
+    if results:
+        try:
+            cache_key = hashlib.md5(
+                json.dumps([r["description"] for r in results]).encode()
+            ).hexdigest()
+            now = time.time()
+            cached = _explanation_cache.get(cache_key)
+            if cached and (now - cached[0]) < _CACHE_TTL:
+                explanations = cached[1]
+            else:
+                anomaly_summaries = [
+                    {"type": r["type"], "description": r["description"]}
+                    for r in results
+                ]
+                prompt = f"""You are a treasury analyst. For each anomaly below, provide:
+1. "explanation": A 1-2 sentence business-context explanation of why this matters
+2. "suggested_action": A specific recommended action
+
+ANOMALIES:
+{json.dumps(anomaly_summaries, indent=2)}
+
+Return a JSON array in the same order as input. Return ONLY the JSON array, no other text."""
+                vertexai.init(project=PROJECT_ID, location=REGION)
+                model = GenerativeModel("gemini-2.5-flash")
+                response = model.generate_content(prompt)
+                resp_text = response.text.strip()
+                if resp_text.startswith("```"):
+                    resp_text = resp_text.split("\n", 1)[1]
+                    resp_text = resp_text.rsplit("```", 1)[0]
+                explanations = json.loads(resp_text)
+                _explanation_cache[cache_key] = (now, explanations)
+
+            for i, result in enumerate(results):
+                if i < len(explanations):
+                    result["explanation"] = explanations[i].get("explanation", "")
+                    result["suggested_action"] = explanations[i].get("suggested_action", "")
+        except Exception as e:
+            logger.warning(f"Gemini explanation enrichment failed: {e}")
+
     return {"anomalies": results, "count": len(results)}
 
 
@@ -661,7 +712,7 @@ def recommendations():
     query = f"""
         SELECT recommendation_id, created_at, priority, action_type,
                amount, currency, description, rationale, status,
-               approval_request_id
+               approval_request_id, source_anomaly_type, source_anomaly_description
         FROM {_table('agent_recommendations')}
         ORDER BY
             CASE priority WHEN 'HIGH' THEN 0 WHEN 'MEDIUM' THEN 1 ELSE 2 END,
