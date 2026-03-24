@@ -130,11 +130,15 @@ The action auto-executes with the edited values. No need to go back to the agent
 
 She switches to Executions. The deposit appears in the table with the **edited amount**, a contract ID, counterparty (Deutsche Bank), rate (4.2%), maturity date, and "Completed" status.
 
+**What she sees** (Dashboard tab -- balance update):
+
+She clicks back to the Dashboard. The EUR cash position card now shows a **lower balance** -- Deutsche Bank's checking balance decreased by the deposit amount (e.g., EUR 500,000). The grand total USD equivalent also reflects the change. This happens because successful executions automatically update `bank_accounts` balances and insert `cash_journal` entries, so the Dashboard always shows the real post-trade position.
+
 **What she sees** (Audit Trail tab):
 
 The complete chain is visible: recommendation created, approval requested, approved (with edits), executed. Every step is timestamped with the agent's reasoning preserved.
 
-**Key talking points**: The complete lifecycle runs from analysis through execution: recommend, request approval, review and optionally edit, approve, auto-execute, record. The agent respects the approval gate -- it won't execute without authorization, even during autonomous overnight runs. The **Edit** capability demonstrates human-in-the-loop override: the agent recommends, but the human can adjust the action type, amount, or currency before approving. Everything is auditable.
+**Key talking points**: The complete lifecycle runs from analysis through execution: recommend, request approval, review and optionally edit, approve, auto-execute, record, **and update balances**. The agent respects the approval gate -- it won't execute without authorization, even during autonomous overnight runs. The **Edit** capability demonstrates human-in-the-loop override: the agent recommends, but the human can adjust the action type, amount, or currency before approving. Executed actions flow through to the Dashboard immediately -- approving a deposit reduces the source account balance, and approving an FX hedge adjusts both the sell-currency and USD accounts. Everything is auditable.
 
 ---
 

@@ -521,6 +521,9 @@ def approve_request(
                 f"Approved: {rec['currency']} {float(rec['amount']):,.0f}",
                 json.dumps(exec_result, default=str),
             )
+            # Update bank balances and journal after successful execution
+            if exec_result.get("status") == "confirmed":
+                _apply_balance_updates(client, rec, exec_result)
     except Exception as e:
         logger.warning(f"Post-approval execution failed: {e}")
 
@@ -690,6 +693,83 @@ def _log_action(client, agent_name: str, action: str, tool_name: str,
     }])
     if errors:
         logger.error(f"Failed to insert audit log rows: {errors}")
+
+
+def _update_balance(client, bank_name: str, currency: str, amount_delta: float):
+    """Update bank_accounts current_balance by delta. Uses LIKE match on bank_name."""
+    query = f"""
+        UPDATE {_table('bank_accounts')}
+        SET current_balance = current_balance + @delta,
+            last_updated = CURRENT_DATE()
+        WHERE bank_name LIKE @bank_pattern AND currency = @currency
+        LIMIT 1
+    """
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[
+            bigquery.ScalarQueryParameter("delta", "FLOAT64", amount_delta),
+            bigquery.ScalarQueryParameter("bank_pattern", "STRING", f"%{bank_name}%"),
+            bigquery.ScalarQueryParameter("currency", "STRING", currency),
+        ]
+    )
+    client.query(query, job_config=job_config).result()
+
+
+def _insert_journal(client, currency: str, amount: float, counterparty: str,
+                    description: str):
+    """Insert a cash_journal entry for an executed action."""
+    journal_id = f"CJ-EXEC-{random.randint(100000, 999999)}"
+    table_ref = f"{PROJECT_ID}.{DATASET_ID}.cash_journal"
+    errors = client.insert_rows_json(table_ref, [{
+        "journal_id": journal_id,
+        "posting_date": datetime.date.today().isoformat(),
+        "amount": abs(amount),
+        "currency": currency,
+        "transaction_type": "OUTFLOW" if amount < 0 else "INFLOW",
+        "counterparty": counterparty,
+        "description": description,
+    }])
+    if errors:
+        logger.error(f"Failed to insert journal row: {errors}")
+
+
+def _apply_balance_updates(client, rec: dict, exec_result: dict):
+    """Update bank balances and insert journal entries after successful execution."""
+    try:
+        action_type = rec["action_type"]
+        amount = float(rec["amount"])
+        currency = rec["currency"]
+
+        if action_type == "PLACE_DEPOSIT":
+            # Cash leaves checking account into term deposit
+            bank_name = exec_result.get("bank_name", "Deutsche Bank")
+            _update_balance(client, bank_name, currency, -amount)
+            _insert_journal(
+                client, currency, -amount, bank_name,
+                f"Term deposit placed: {currency} {amount:,.0f}",
+            )
+
+        elif action_type == "HEDGE_FX":
+            # Sell foreign currency, buy USD
+            sell_currency = exec_result.get("sell_currency", currency)
+            sell_amount = float(exec_result.get("sell_amount", amount))
+            buy_amount = float(exec_result.get("buy_amount", amount))
+            counterparty = exec_result.get("counterparty", "GlobalFX Brokers")
+
+            # Decrease sell-currency balance (first matching checking account)
+            _update_balance(client, "%", sell_currency, -sell_amount)
+            _insert_journal(
+                client, sell_currency, -sell_amount, counterparty,
+                f"FX hedge: sold {sell_currency} {sell_amount:,.0f}",
+            )
+
+            # Increase USD balance on Chase
+            _update_balance(client, "Chase", "USD", buy_amount)
+            _insert_journal(
+                client, "USD", buy_amount, counterparty,
+                f"FX hedge: bought USD {buy_amount:,.0f}",
+            )
+    except Exception as e:
+        logger.warning(f"Balance update after execution failed: {e}")
 
 
 # ---- FX Rates ----
