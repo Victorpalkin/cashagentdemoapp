@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { Box, Toolbar } from '@mui/material'
-import Shell, { DRAWER_WIDTH } from './components/Shell'
+import { Box } from '@mui/material'
+import Shell from './components/Shell'
 import Dashboard from './pages/Dashboard'
 import Approvals from './pages/Approvals'
 import Recommendations from './pages/Recommendations'
@@ -21,11 +21,8 @@ function App() {
           flexGrow: 1,
           overflow: 'auto',
           bgcolor: 'background.default',
-          ml: `${DRAWER_WIDTH}px`,
         }}
       >
-        {/* Spacer for fixed AppBar */}
-        <Toolbar sx={{ minHeight: 48 }} />
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />

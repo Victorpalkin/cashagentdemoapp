@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  AppBar, Toolbar, Typography, Avatar, IconButton, Box, Badge,
+  Typography, IconButton, Box, Badge,
   Menu, MenuItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent,
   DialogContentText, DialogActions, Button, Snackbar, Alert, CircularProgress,
   Drawer, List, ListSubheader, ListItemButton, Divider,
@@ -115,11 +115,30 @@ const Shell = () => {
           },
         }}
       >
-        {/* App Title */}
-        <Box sx={{ px: 3, py: 2.5, borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
+        {/* App Title + Actions */}
+        <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Typography variant="h6" sx={{ fontWeight: 700, color: 'white' }}>
             Cash Agent
           </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <IconButton
+              size="small"
+              sx={{ color: 'rgba(255,255,255,0.7)' }}
+              onClick={(e) => setSettingsAnchor(e.currentTarget)}
+              disabled={resetMutation.isPending}
+            >
+              {resetMutation.isPending ? (
+                <CircularProgress size={18} color="inherit" />
+              ) : (
+                <SettingsIcon fontSize="small" />
+              )}
+            </IconButton>
+            <IconButton size="small" sx={{ color: 'rgba(255,255,255,0.7)' }} onClick={() => { if (pendingCount > 0) navigate('/approvals') }}>
+              <Badge badgeContent={pendingCount > 0 ? pendingCount : undefined} color="error">
+                <NotificationsIcon fontSize="small" />
+              </Badge>
+            </IconButton>
+          </Box>
         </Box>
 
         {/* Nav Sections */}
@@ -193,47 +212,6 @@ const Shell = () => {
         ))}
       </Drawer>
 
-      {/* Slim AppBar */}
-      <AppBar
-        position="fixed"
-        elevation={0}
-        sx={{
-          bgcolor: 'background.default',
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          width: `calc(100% - ${DRAWER_WIDTH}px)`,
-          ml: `${DRAWER_WIDTH}px`,
-        }}
-      >
-        <Toolbar sx={{ minHeight: 48, px: 3, justifyContent: 'flex-end' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <IconButton
-              size="small"
-              onClick={(e) => setSettingsAnchor(e.currentTarget)}
-              disabled={resetMutation.isPending}
-            >
-              {resetMutation.isPending ? (
-                <CircularProgress size={20} />
-              ) : (
-                <SettingsIcon />
-              )}
-            </IconButton>
-            <IconButton size="small" onClick={() => { if (pendingCount > 0) navigate('/approvals') }}>
-              <Badge badgeContent={pendingCount > 0 ? pendingCount : undefined} color="error">
-                <NotificationsIcon />
-              </Badge>
-            </IconButton>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="body2" color="text.secondary">
-                Sarah Chen
-              </Typography>
-              <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: '0.875rem' }}>
-                SC
-              </Avatar>
-            </Box>
-          </Box>
-        </Toolbar>
-      </AppBar>
 
       {/* Settings Menu */}
       <Menu
