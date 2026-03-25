@@ -394,7 +394,7 @@ ANOMALIES:
 {json.dumps(anomaly_summaries, indent=2)}
 
 Return a JSON array in the same order as input. Return ONLY the JSON array, no other text."""
-        vertexai.init(project=PROJECT_ID, location=REGION)
+        vertexai.init(project=PROJECT_ID, location="global")
         model = GenerativeModel("gemini-3-flash-preview")
         response = model.generate_content(prompt)
         resp_text = response.text.strip()

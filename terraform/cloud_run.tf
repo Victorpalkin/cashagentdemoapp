@@ -196,7 +196,7 @@ resource "google_cloud_run_v2_service" "chat_app" {
         cpu_idle = true
         limits = {
           cpu    = "1"
-          memory = "256Mi"
+          memory = "512Mi"
         }
       }
 

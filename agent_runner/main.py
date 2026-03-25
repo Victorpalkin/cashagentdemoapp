@@ -474,7 +474,7 @@ Return exactly 3 recommendations as a JSON array. Each must have:
 Return ONLY the JSON array, no other text."""
 
         try:
-            vertexai.init(project=PROJECT_ID, location=REGION)
+            vertexai.init(project=PROJECT_ID, location="global")
             model = GenerativeModel("gemini-3-flash-preview")
             response = model.generate_content(prompt)
 

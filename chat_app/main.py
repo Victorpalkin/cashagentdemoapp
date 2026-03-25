@@ -1,6 +1,5 @@
 """Google Chat App webhook that bridges Chat events to Vertex AI Agent Engine."""
 
-import json
 import os
 
 from flask import Flask, Request, request, jsonify, render_template_string
@@ -51,7 +50,13 @@ def _query_agent(user_id: str, message: str) -> str:
             session_id=session_id,
             message=message,
         ):
-            if hasattr(event, "content") and event.content:
+            # Handle both dict events and object events
+            if isinstance(event, dict):
+                content = event.get("content", {})
+                for part in content.get("parts", []):
+                    if part.get("text"):
+                        response_text += part["text"]
+            elif hasattr(event, "content") and event.content:
                 for part in event.content.parts:
                     if hasattr(part, "text") and part.text:
                         response_text += part.text

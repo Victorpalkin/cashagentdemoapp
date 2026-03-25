@@ -1,5 +1,7 @@
 """BigQuery tools for querying cash management data."""
 
+import datetime
+
 from google.cloud import bigquery
 
 from ..shared_libraries.constants import PROJECT_ID, DATASET_ID
@@ -7,6 +9,15 @@ from ..shared_libraries.constants import PROJECT_ID, DATASET_ID
 
 def _table(name: str) -> str:
     return f"`{PROJECT_ID}.{DATASET_ID}.{name}`"
+
+
+def _row_to_dict(row) -> dict:
+    """Convert a BigQuery Row to a JSON-serializable dict."""
+    d = dict(row)
+    for k, v in d.items():
+        if isinstance(v, (datetime.date, datetime.datetime)):
+            d[k] = v.isoformat()
+    return d
 
 
 def get_cash_position(company_code: str = "1000") -> dict:
@@ -45,7 +56,7 @@ def get_cash_position(company_code: str = "1000") -> dict:
     rows = client.query(query, job_config=job_config).result()
     balances = []
     for row in rows:
-        entry = dict(row)
+        entry = _row_to_dict(row)
         if entry["currency"] == "USD":
             entry["usd_equivalent"] = entry["current_balance"]
         elif entry["usd_rate"]:
@@ -80,7 +91,7 @@ def get_bank_balances() -> dict:
     currency_totals = []
     grand_total_usd = 0
     for row in rows:
-        entry = dict(row)
+        entry = _row_to_dict(row)
         if entry["currency"] == "USD":
             entry["usd_equivalent"] = entry["total_balance"]
         elif entry["usd_rate"]:
@@ -121,7 +132,7 @@ def get_ar_open_items(currency: str = "") -> dict:
     """
     job_config = bigquery.QueryJobConfig(query_parameters=params)
     rows = client.query(query, job_config=job_config).result()
-    items = [dict(row) for row in rows]
+    items = [_row_to_dict(row) for row in rows]
     return {"items": items, "count": len(items)}
 
 
@@ -151,7 +162,7 @@ def get_ap_open_items(currency: str = "") -> dict:
     """
     job_config = bigquery.QueryJobConfig(query_parameters=params)
     rows = client.query(query, job_config=job_config).result()
-    items = [dict(row) for row in rows]
+    items = [_row_to_dict(row) for row in rows]
     return {"items": items, "count": len(items)}
 
 
@@ -170,7 +181,7 @@ def get_payment_runs() -> dict:
         ORDER BY scheduled_date
     """
     rows = client.query(query).result()
-    return {"payment_runs": [dict(row) for row in rows]}
+    return {"payment_runs": [_row_to_dict(row) for row in rows]}
 
 
 def _cash_journal_subquery() -> str:
@@ -211,7 +222,7 @@ def get_forecast(horizon_days: int = 30) -> dict:
     """
     try:
         rows = client.query(query).result()
-        forecasts = [dict(row) for row in rows]
+        forecasts = [_row_to_dict(row) for row in rows]
         return {"forecasts": forecasts, "horizon_days": horizon_days}
     except Exception as e:
         return {
@@ -232,8 +243,6 @@ def get_enriched_forecast(horizon_days: int = 30) -> dict:
     Returns:
         dict with ml_forecast, enriched_forecast, key_divergences, and summary.
     """
-    import datetime
-
     client = bigquery.Client(project=PROJECT_ID)
     today = datetime.date.today()
 
@@ -477,7 +486,7 @@ def get_recent_executions(limit: int = 10) -> dict:
         query_parameters=[bigquery.ScalarQueryParameter("limit", "INT64", limit)]
     )
     rows = client.query(query, job_config=job_config).result()
-    entries = [dict(row) for row in rows]
+    entries = [_row_to_dict(row) for row in rows]
     return {
         "executions": entries,
         "count": len(entries),
@@ -518,7 +527,7 @@ def get_transaction_history(
     """
     job_config = bigquery.QueryJobConfig(query_parameters=params)
     rows = client.query(query, job_config=job_config).result()
-    return {"transactions": [dict(row) for row in rows]}
+    return {"transactions": [_row_to_dict(row) for row in rows]}
 
 
 def detect_anomalies() -> dict:
@@ -689,4 +698,4 @@ def get_audit_log(limit: int = 50) -> dict:
         query_parameters=[bigquery.ScalarQueryParameter("limit", "INT64", limit)]
     )
     rows = client.query(query, job_config=job_config).result()
-    return {"entries": [dict(row) for row in rows]}
+    return {"entries": [_row_to_dict(row) for row in rows]}
