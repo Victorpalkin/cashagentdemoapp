@@ -25,7 +25,7 @@ function App() {
         }}
       >
         {/* Spacer for fixed AppBar */}
-        <Toolbar sx={{ minHeight: 56 }} />
+        <Toolbar sx={{ minHeight: 48 }} />
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />

@@ -1,3 +1,7 @@
+data "google_project" "project" {
+  project_id = var.project_id
+}
+
 # Enable required Google Cloud APIs
 resource "google_project_service" "bigquery" {
   service            = "bigquery.googleapis.com"

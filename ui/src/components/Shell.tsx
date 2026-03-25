@@ -196,35 +196,35 @@ const Shell = () => {
       {/* Slim AppBar */}
       <AppBar
         position="fixed"
+        elevation={0}
         sx={{
-          bgcolor: 'secondary.main',
-          boxShadow: 'none',
-          borderBottom: '1px solid rgba(255,255,255,0.12)',
+          bgcolor: 'background.default',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
           width: `calc(100% - ${DRAWER_WIDTH}px)`,
           ml: `${DRAWER_WIDTH}px`,
         }}
       >
-        <Toolbar sx={{ minHeight: 56, px: 3, justifyContent: 'flex-end' }}>
+        <Toolbar sx={{ minHeight: 48, px: 3, justifyContent: 'flex-end' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <IconButton
-              color="inherit"
               size="small"
               onClick={(e) => setSettingsAnchor(e.currentTarget)}
               disabled={resetMutation.isPending}
             >
               {resetMutation.isPending ? (
-                <CircularProgress size={20} color="inherit" />
+                <CircularProgress size={20} />
               ) : (
                 <SettingsIcon />
               )}
             </IconButton>
-            <IconButton color="inherit" size="small" onClick={() => { if (pendingCount > 0) navigate('/approvals') }}>
+            <IconButton size="small" onClick={() => { if (pendingCount > 0) navigate('/approvals') }}>
               <Badge badgeContent={pendingCount > 0 ? pendingCount : undefined} color="error">
                 <NotificationsIcon />
               </Badge>
             </IconButton>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="body2" sx={{ color: 'white' }}>
+              <Typography variant="body2" color="text.secondary">
                 Sarah Chen
               </Typography>
               <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: '0.875rem' }}>

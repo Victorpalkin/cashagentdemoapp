@@ -53,3 +53,22 @@ resource "google_project_iam_member" "chat_app_run_invoker" {
   role    = "roles/run.invoker"
   member  = "serviceAccount:${google_service_account.chat_app_sa.email}"
 }
+
+# Agent Engine service agent — needs BigQuery access for ADK agent tools
+resource "google_project_iam_member" "agent_engine_bigquery_job_user" {
+  project = var.project_id
+  role    = "roles/bigquery.jobUser"
+  member  = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-aiplatform-re.iam.gserviceaccount.com"
+}
+
+resource "google_project_iam_member" "agent_engine_bigquery_data_viewer" {
+  project = var.project_id
+  role    = "roles/bigquery.dataViewer"
+  member  = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-aiplatform-re.iam.gserviceaccount.com"
+}
+
+resource "google_project_iam_member" "agent_engine_bigquery_data_editor" {
+  project = var.project_id
+  role    = "roles/bigquery.dataEditor"
+  member  = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-aiplatform-re.iam.gserviceaccount.com"
+}
