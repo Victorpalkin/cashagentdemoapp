@@ -892,23 +892,31 @@ def chat(body: dict = Body(...)):
     message = body.get("message", "")
     if not message:
         return {"response": "Error: empty message"}
-    try:
-        data = json.dumps({"message": message}).encode()
-        req = urllib.request.Request(
-            f"{CHAT_APP_URL}/api/chat",
-            data=data,
-            headers={"Content-Type": "application/json"},
-            method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=120) as resp:
-            result = json.loads(resp.read().decode())
-            return {"response": result.get("response", "No response from agent")}
-    except urllib.error.URLError as e:
-        logger.error(f"Chat proxy error: {e}")
-        return {"response": f"Error: Agent service unavailable — {e.reason}"}
-    except Exception as e:
-        logger.error(f"Chat proxy error: {e}")
-        return {"response": f"Error: {str(e)}"}
+
+    data = json.dumps({"message": message}).encode()
+    last_error = None
+    for attempt in range(3):
+        try:
+            req = urllib.request.Request(
+                f"{CHAT_APP_URL}/api/chat",
+                data=data,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                result = json.loads(resp.read().decode())
+                return {"response": result.get("response", "No response from agent")}
+        except urllib.error.URLError as e:
+            last_error = e
+            logger.warning(f"Chat proxy attempt {attempt + 1}/3 failed: {e}")
+            if attempt < 2:
+                time.sleep(2 ** attempt)
+        except Exception as e:
+            logger.error(f"Chat proxy error: {e}")
+            return {"response": f"Error: {str(e)}"}
+
+    logger.error(f"Chat proxy failed after 3 attempts: {last_error}")
+    return {"response": f"Error: Agent service unavailable — {last_error.reason}"}
 
 
 # ---- Reset Demo ----
