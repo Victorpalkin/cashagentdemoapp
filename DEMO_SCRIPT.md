@@ -13,7 +13,7 @@ It's Tuesday morning. Sarah Chen, VP of Treasury at a multinational corporation,
 ## Pre-Demo Setup
 
 1. Open the Management UI. Click the **gear icon** (top-right) and choose **Quick Reset** (or **Full Reset** to regenerate seed data with today's dates).
-2. On the Dashboard, click **Run Agent Review** -- this populates recommendations, anomaly alerts, and agent activity.
+2. On the Dashboard, click **Execute Agents Synchronously Now** -- this populates recommendations, anomaly alerts, and agent activity.
 3. Open the **Agent Chat** in a second browser tab (side-by-side with the UI). Use `adk web` locally or the deployed chat app.
 
 ---
@@ -31,7 +31,7 @@ It's Tuesday morning. Sarah Chen, VP of Treasury at a multinational corporation,
 - The **Scheduled Payment Runs** card lists upcoming outflows -- she spots a $2.8M vendor run and a $1.5M payroll run in the next two weeks.
 - The **Recent Agent Activity** log shows the agent has already been at work: overnight forecast updates, anomaly scans, and position checks.
 
-She notices the agent ran its last review a few hours ago. She clicks **Run Agent Review** to get a fresh analysis with the latest data.
+She notices the agent ran its last review a few hours ago. She clicks **Execute Agents Synchronously Now** to get a fresh analysis with the latest data.
 
 **What she asks the agent** (optional confirmation):
 
@@ -162,7 +162,7 @@ She clicks the **Memory** tab to see all agent memories:
 
 **What happens next**:
 
-She clicks **Run Agent Review** on the Dashboard. The new recommendations no longer include the ACME collection acceleration. The rationale for other recommendations cites the agent's memory -- for example, the EUR deposit rationale mentions preferring Deutsche Bank per stored memory.
+She clicks **Execute Agents Synchronously Now** on the Dashboard. The new recommendations no longer include the ACME collection acceleration. The rationale for other recommendations cites the agent's memory -- for example, the EUR deposit rationale mentions preferring Deutsche Bank per stored memory.
 
 **Key talking points**: The agent learns from human decisions. Every rejection or edit can become persistent memory that shapes future recommendations. This is organizational knowledge capture -- the agent adapts to the company's specific context, not just generic policies. Memory entries can also be added manually or deactivated when no longer relevant.
 
@@ -216,7 +216,7 @@ Key moments where both screens shine:
 8. Show me pending approval requests
    [approve in UI -> auto-executes -> check Executions tab]
 9. [Reject ACME approval -> "Remember this?" -> Yes -> check Memory tab]
-10. [Run Agent Review -> recommendations now reflect memory]
+10. [Execute Agents Synchronously Now -> recommendations now reflect memory]
 11. What if ACME Corp doesn't pay and EUR/USD drops 5%?
 ```
 
@@ -284,4 +284,4 @@ Key moments where both screens shine:
 | BQML forecast unavailable | Model may need retraining; see `deploy.sh` |
 | Slow responses on `adk web` | First query initializes connections; subsequent queries are faster |
 | Mock service errors | Check Cloud Run services: `gcloud run services list` |
-| Recommendations empty after reset | Click **Run Agent Review** on the Dashboard |
+| Recommendations empty after reset | Click **Execute Agents Synchronously Now** on the Dashboard |
