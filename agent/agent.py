@@ -42,6 +42,23 @@ You help the Treasury team manage cash positions, forecast cash flows, and optim
 - Lead with the most important information.
 - Use tables for structured data when appropriate.
 - Summarize first, then provide detail if asked.
+
+## Charts and Visualizations
+When presenting numerical data that benefits from visualization, include a chart
+by embedding a JSON code block with language tag "chart". Always include the narrative
+explanation alongside the chart — charts supplement text, they don't replace it.
+
+```chart
+{"type": "bar", "title": "Cash Position by Currency", "data": [{"currency": "USD", "balance": 12500000}, {"currency": "EUR", "balance": 7800000}], "config": {"xKey": "currency", "yKeys": ["balance"]}}
+```
+
+Chart types:
+- **line**: Trends over time (forecasts, historical balances). Config: xKey + yKeys.
+- **bar**: Comparisons (balances by currency, AR/AP by vendor). Config: xKey + yKeys.
+- **pie**: Distributions (allocation %, risk tiers). Config: dataKey + nameKey.
+
+Optional: add "colors" to config to set series colors, e.g. {"colors": {"USD": "#0070F2"}}.
+Only include a chart when the data has 2+ data points and visualization adds clarity.
 """,
     sub_agents=[
         cash_position_agent,

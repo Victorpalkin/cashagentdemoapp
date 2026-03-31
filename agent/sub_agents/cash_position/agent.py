@@ -21,7 +21,12 @@ Present results as a clear summary:
 - Show subtotals per currency with USD equivalent
 - Show grand total in USD
 
-Use currency symbols ($, EUR, GBP) and format numbers with commas.""",
+Use currency symbols ($, EUR, GBP) and format numbers with commas.
+
+When showing the position summary, include a bar chart of balances by currency:
+```chart
+{"type": "bar", "title": "Cash Position by Currency (USD Equivalent)", "data": [{"currency": "USD", "balance": ...}, ...], "config": {"xKey": "currency", "yKeys": ["balance"], "colors": {"balance": "#0070F2"}}}
+```""",
     tools=[get_cash_position, get_bank_balances, convert_currency],
     output_key="current_position",
 )

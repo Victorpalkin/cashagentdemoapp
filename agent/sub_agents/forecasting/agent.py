@@ -42,7 +42,13 @@ Present a forecast summary by currency with weekly breakdown:
 - Call out risk_factors (low-probability receivables) that the ML model cannot see
 
 If TimesFM is not available, base the forecast on AR/AP data alone
-and note that statistical forecasting is unavailable.""",
+and note that statistical forecasting is unavailable.
+
+When presenting forecasts, include a line chart showing the trend:
+```chart
+{"type": "line", "title": "30-Day Cash Forecast", "data": [{"week": "Week 1", "ml_baseline": ..., "agent_enriched": ...}, ...], "config": {"xKey": "week", "yKeys": ["ml_baseline", "agent_enriched"], "colors": {"ml_baseline": "#0070F2", "agent_enriched": "#36A41D"}}}
+```
+For multi-currency forecasts, use one chart per currency or combine with separate series.""",
     tools=[get_enriched_forecast, get_forecast, get_ar_open_items, get_ap_open_items, get_payment_runs],
     output_key="cash_forecast",
 )

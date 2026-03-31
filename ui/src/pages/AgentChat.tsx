@@ -1,9 +1,12 @@
-import { useState, useRef, useEffect } from 'react'
-import { Box, Typography, Card, Paper, TextField, Button, Avatar } from '@mui/material'
-import { Send } from '@mui/icons-material'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { Box, Typography, Card, Paper, TextField, Button, Avatar, IconButton, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material'
+import { Send, MoreVert, Description, Code, PictureAsPdf, Article } from '@mui/icons-material'
 import ReactMarkdown, { Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { sendChatMessage } from '../api/bigquery'
+import ChatChart from '../components/ChatChart'
+import { ChartData } from '../types/chart'
+import { exportAsMarkdown, exportAsHTML, exportAsPDF, exportAsDOCX } from '../utils/messageExport'
 
 const markdownComponents: Components = {
   p: ({ children }) => (
@@ -29,6 +32,21 @@ const markdownComponents: Components = {
   ),
   code: ({ className, children }) => {
     const isBlock = className?.startsWith('language-')
+    const language = className?.replace('language-', '')
+
+    if (language === 'chart') {
+      try {
+        const chartData: ChartData = JSON.parse(String(children).trim())
+        return <ChatChart data={chartData} />
+      } catch {
+        return (
+          <Box sx={{ color: 'error.main', fontSize: '0.85rem', my: 1 }}>
+            Invalid chart data
+          </Box>
+        )
+      }
+    }
+
     return isBlock ? (
       <Box component="pre" sx={{
         bgcolor: '#1E1E1E', color: '#D4D4D4', p: 1.5, borderRadius: 1,
@@ -77,6 +95,12 @@ const AgentChat = () => {
   const [inputText, setInputText] = useState('')
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messageRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const [exportMenu, setExportMenu] = useState<{ anchorEl: HTMLElement; messageId: string } | null>(null)
+
+  const setMessageRef = useCallback((id: string) => (el: HTMLDivElement | null) => {
+    messageRefs.current[id] = el
+  }, [])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -154,6 +178,7 @@ const AgentChat = () => {
                 display: 'flex',
                 justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start',
                 mb: 2,
+                '&:hover .export-btn': { opacity: 1 },
               }}
             >
               <Box sx={{ display: 'flex', gap: 1, maxWidth: '70%', alignItems: 'flex-start' }}>
@@ -164,14 +189,30 @@ const AgentChat = () => {
                 )}
                 <Box>
                   <Paper
+                    ref={message.sender === 'agent' ? setMessageRef(message.id) : undefined}
                     sx={{
                       p: 2,
                       bgcolor: message.sender === 'user' ? 'primary.main' : 'background.paper',
                       color: message.sender === 'user' ? 'white' : 'text.primary',
                       borderRadius: 2,
                       border: message.sender === 'agent' ? '1px solid #E0E0E0' : 'none',
+                      position: 'relative',
                     }}
                   >
+                    {message.sender === 'agent' && message.text !== 'Thinking...' && (
+                      <IconButton
+                        className="export-btn"
+                        size="small"
+                        onClick={(e) => setExportMenu({ anchorEl: e.currentTarget, messageId: message.id })}
+                        sx={{
+                          position: 'absolute', top: 4, right: 4,
+                          opacity: 0, transition: 'opacity 0.2s',
+                          bgcolor: 'background.paper', '&:hover': { bgcolor: 'grey.100' },
+                        }}
+                      >
+                        <MoreVert fontSize="small" />
+                      </IconButton>
+                    )}
                     {message.sender === 'agent' ? (
                       <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                         {message.text}
@@ -196,6 +237,48 @@ const AgentChat = () => {
           ))}
           <div ref={messagesEndRef} />
         </Box>
+
+        {/* Export Menu */}
+        <Menu
+          anchorEl={exportMenu?.anchorEl}
+          open={!!exportMenu}
+          onClose={() => setExportMenu(null)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        >
+          <MenuItem onClick={() => {
+            const msg = messages.find(m => m.id === exportMenu?.messageId)
+            if (msg) exportAsMarkdown(msg)
+            setExportMenu(null)
+          }}>
+            <ListItemIcon><Code fontSize="small" /></ListItemIcon>
+            <ListItemText>Markdown</ListItemText>
+          </MenuItem>
+          <MenuItem onClick={() => {
+            const msg = messages.find(m => m.id === exportMenu?.messageId)
+            if (msg) exportAsHTML(msg)
+            setExportMenu(null)
+          }}>
+            <ListItemIcon><Article fontSize="small" /></ListItemIcon>
+            <ListItemText>HTML</ListItemText>
+          </MenuItem>
+          <MenuItem onClick={async () => {
+            const el = messageRefs.current[exportMenu?.messageId || '']
+            if (el) await exportAsPDF(el)
+            setExportMenu(null)
+          }}>
+            <ListItemIcon><PictureAsPdf fontSize="small" /></ListItemIcon>
+            <ListItemText>PDF</ListItemText>
+          </MenuItem>
+          <MenuItem onClick={async () => {
+            const msg = messages.find(m => m.id === exportMenu?.messageId)
+            if (msg) await exportAsDOCX(msg)
+            setExportMenu(null)
+          }}>
+            <ListItemIcon><Description fontSize="small" /></ListItemIcon>
+            <ListItemText>Word</ListItemText>
+          </MenuItem>
+        </Menu>
 
         {/* Input Area */}
         <Box sx={{ p: 2, borderTop: '1px solid #E0E0E0', bgcolor: 'background.default' }}>
