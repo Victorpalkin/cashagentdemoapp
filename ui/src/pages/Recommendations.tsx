@@ -2,13 +2,13 @@ import { useState } from 'react'
 import {
   Box, Typography, Card, CardContent, Chip, Button, CircularProgress, Alert,
   Divider, Tabs, Tab, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem,
+  Select, FormControl, InputLabel,
 } from '@mui/material'
 import {
   AccountBalance, CurrencyExchange, Speed, TrendingUp,
-  Gavel, PlayArrow, CheckCircle, BugReport,
+  Gavel, PlayArrow, CheckCircle, BugReport, Cancel, Edit as EditIcon,
 } from '@mui/icons-material'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import ApprovalCard from '../components/ApprovalCard'
 import StatusBadge from '../components/StatusBadge'
 import {
   getRecommendations, dismissRecommendation, Recommendation,
@@ -48,6 +48,15 @@ const ACTION_CONFIG: Record<string, { label: string; icon: React.ReactNode; colo
     color: '#7B61FF',
   },
 }
+
+const ACTION_OPTIONS = [
+  { value: 'PLACE_DEPOSIT', label: 'Place Term Deposit' },
+  { value: 'HEDGE_FX', label: 'FX Forward Hedge' },
+  { value: 'ACCELERATE_COLLECTION', label: 'Accelerate Collection' },
+  { value: 'PLACE_INVESTMENT', label: 'Place Investment' },
+]
+
+const CURRENCY_OPTIONS = ['USD', 'EUR', 'GBP']
 
 const getExecutionPlan = (rec: { action_type: string; amount: number; currency: string }): string[] => {
   const amount = new Intl.NumberFormat('en-US', {
@@ -117,6 +126,12 @@ const Recommendations = () => {
     relatedActionType: string; relatedEntity: string; category: string;
   }>({ open: false, source: '', content: '', relatedActionType: '', relatedEntity: '', category: 'COUNTERPARTY' })
 
+  // Inline edit state
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editedActionType, setEditedActionType] = useState('')
+  const [editedAmount, setEditedAmount] = useState(0)
+  const [editedCurrency, setEditedCurrency] = useState('')
+
   const { data: recommendations = [], isLoading: recLoading, isError: recError } = useQuery({
     queryKey: ['recommendations'],
     queryFn: () => getRecommendations(),
@@ -141,6 +156,7 @@ const Recommendations = () => {
       const { overrides } = variables
       setMutatingId(null)
       setMutationError(null)
+      setEditingId(null)
       queryClient.invalidateQueries({ queryKey: ['approvals'] })
       queryClient.invalidateQueries({ queryKey: ['recommendations'] })
       if (overrides && Object.keys(overrides).length > 0) {
@@ -212,7 +228,28 @@ const Recommendations = () => {
     rejectMutation.mutate({ requestId: rejectingId, reason: rejectReason })
   }
 
-  const pendingApprovals = approvals.filter(a => a.status === 'PENDING')
+  const handleStartEdit = (approval: ApprovalRequest) => {
+    setEditingId(approval.request_id)
+    setEditedActionType(approval.action_type)
+    setEditedAmount(approval.amount)
+    setEditedCurrency(approval.currency)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingId(null)
+  }
+
+  const handleApproveEdited = (requestId: string, originalApproval: ApprovalRequest) => {
+    const overrides: ApprovalOverrides = {}
+    if (editedActionType !== originalApproval.action_type) overrides.action_type = editedActionType
+    if (editedAmount !== originalApproval.amount) overrides.amount = editedAmount
+    if (editedCurrency !== originalApproval.currency) overrides.currency = editedCurrency
+    handleApprove(requestId, Object.keys(overrides).length > 0 ? overrides : undefined)
+  }
+
+  const pendingApprovalMap = new Map(
+    approvals.filter(a => a.status === 'PENDING').map(a => [a.request_id, a])
+  )
   const historyApprovals = approvals.filter(a => a.status !== 'PENDING')
 
   const grouped = PRIORITY_ORDER.map(priority => ({
@@ -240,12 +277,27 @@ const Recommendations = () => {
   }
 
   const renderRecommendationCard = (rec: Recommendation) => {
-    const actionCfg = ACTION_CONFIG[rec.action_type] || {
-      label: rec.action_type.replace(/_/g, ' '),
+    const pendingApproval = rec.approval_request_id ? pendingApprovalMap.get(rec.approval_request_id) : undefined
+    const isEditing = pendingApproval && editingId === pendingApproval.request_id
+    const isMutating = pendingApproval && mutatingId === pendingApproval.request_id && (approveMutation.isPending || rejectMutation.isPending)
+    const cardError = pendingApproval && mutatingId === pendingApproval.request_id ? mutationError : null
+
+    const displayActionType = isEditing ? editedActionType : rec.action_type
+    const displayAmount = isEditing ? editedAmount : rec.amount
+    const displayCurrency = isEditing ? editedCurrency : rec.currency
+
+    const actionCfg = ACTION_CONFIG[displayActionType] || {
+      label: displayActionType.replace(/_/g, ' '),
       icon: <PlayArrow fontSize="small" />,
       color: '#666',
     }
-    const executionSteps = getExecutionPlan(rec)
+    const executionSteps = getExecutionPlan({ action_type: displayActionType, amount: displayAmount, currency: displayCurrency })
+
+    const hasEdits = isEditing && pendingApproval && (
+      editedActionType !== pendingApproval.action_type ||
+      editedAmount !== pendingApproval.amount ||
+      editedCurrency !== pendingApproval.currency
+    )
 
     return (
       <Card
@@ -253,36 +305,86 @@ const Recommendations = () => {
         elevation={0}
         sx={{
           mb: 2,
-          border: '1px solid #E0E0E0',
-          '&:hover': { borderColor: 'primary.main', boxShadow: 1 },
+          border: pendingApproval ? '2px solid' : '1px solid',
+          borderColor: isEditing ? 'info.main' : pendingApproval ? 'warning.main' : '#E0E0E0',
+          '&:hover': { borderColor: isEditing ? 'info.main' : pendingApproval ? 'warning.main' : 'primary.main', boxShadow: 1 },
         }}
       >
         <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
           {/* Header: Action type, amount, status */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+              {isEditing ? (
+                <>
+                  <FormControl size="small" sx={{ minWidth: 200 }}>
+                    <InputLabel>Action Type</InputLabel>
+                    <Select
+                      value={editedActionType}
+                      label="Action Type"
+                      onChange={(e) => setEditedActionType(e.target.value)}
+                    >
+                      {ACTION_OPTIONS.map(opt => (
+                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <TextField
+                    size="small"
+                    label="Amount"
+                    type="number"
+                    value={editedAmount}
+                    onChange={(e) => setEditedAmount(Number(e.target.value))}
+                    sx={{ width: 160 }}
+                    inputProps={{ min: 0, step: 10000 }}
+                  />
+                  <FormControl size="small" sx={{ minWidth: 100 }}>
+                    <InputLabel>Currency</InputLabel>
+                    <Select
+                      value={editedCurrency}
+                      label="Currency"
+                      onChange={(e) => setEditedCurrency(e.target.value)}
+                    >
+                      {CURRENCY_OPTIONS.map(c => (
+                        <MenuItem key={c} value={c}>{c}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </>
+              ) : (
+                <>
+                  <Chip
+                    icon={actionCfg.icon as React.ReactElement}
+                    label={actionCfg.label}
+                    sx={{
+                      fontWeight: 600,
+                      bgcolor: `${actionCfg.color}14`,
+                      color: actionCfg.color,
+                      border: `1px solid ${actionCfg.color}40`,
+                      '& .MuiChip-icon': { color: actionCfg.color },
+                    }}
+                  />
+                  <Chip
+                    label={rec.priority}
+                    color={priorityColor(rec.priority)}
+                    size="small"
+                    sx={{ fontWeight: 600 }}
+                  />
+                  <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                    {formatCurrency(rec.amount, rec.currency)}
+                  </Typography>
+                </>
+              )}
+            </Box>
+            {pendingApproval ? (
               <Chip
-                icon={actionCfg.icon as React.ReactElement}
-                label={actionCfg.label}
-                sx={{
-                  fontWeight: 600,
-                  bgcolor: `${actionCfg.color}14`,
-                  color: actionCfg.color,
-                  border: `1px solid ${actionCfg.color}40`,
-                  '& .MuiChip-icon': { color: actionCfg.color },
-                }}
-              />
-              <Chip
-                label={rec.priority}
-                color={priorityColor(rec.priority)}
+                label={isEditing ? 'EDITING' : 'PENDING APPROVAL'}
+                color={isEditing ? 'info' : 'warning'}
                 size="small"
                 sx={{ fontWeight: 600 }}
               />
-              <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                {formatCurrency(rec.amount, rec.currency)}
-              </Typography>
-            </Box>
-            <StatusBadge status={rec.status as any} />
+            ) : (
+              <StatusBadge status={rec.status as any} />
+            )}
           </Box>
 
           {/* Description */}
@@ -306,7 +408,7 @@ const Recommendations = () => {
               {rec.status === 'AUTO_EXECUTED' ? (
                 <><CheckCircle sx={{ fontSize: 14 }} /> Actions Taken</>
               ) : (
-                <><Gavel sx={{ fontSize: 14 }} /> Actions Upon Approval</>
+                <><Gavel sx={{ fontSize: 14 }} /> Actions Upon Approval {isEditing && hasEdits && '(Updated)'}</>
               )}
             </Typography>
             <Box component="ol" sx={{ m: 0, pl: 2.5 }}>
@@ -319,6 +421,10 @@ const Recommendations = () => {
           </Box>
 
           <Divider sx={{ my: 2 }} />
+
+          {cardError && (
+            <Alert severity="error" sx={{ mb: 2 }}>{cardError}</Alert>
+          )}
 
           {/* Footer: metadata and actions */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
@@ -343,17 +449,84 @@ const Recommendations = () => {
                 />
               )}
             </Box>
-            {rec.status !== 'DISMISSED' && rec.status !== 'AUTO_EXECUTED' && (
-              <Button
-                size="small"
-                variant="outlined"
-                color="inherit"
-                onClick={() => dismissMutation.mutate(rec.recommendation_id)}
-                disabled={dismissMutation.isPending}
-                sx={{ textTransform: 'none' }}
-              >
-                Dismiss
-              </Button>
+
+            {/* Action buttons */}
+            {pendingApproval ? (
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                {isEditing ? (
+                  <>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={handleCancelEdit}
+                      disabled={!!isMutating}
+                      sx={{ textTransform: 'none' }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="contained"
+                      color="success"
+                      size="small"
+                      startIcon={isMutating ? <CircularProgress size={16} color="inherit" /> : <CheckCircle />}
+                      onClick={() => handleApproveEdited(pendingApproval.request_id, pendingApproval)}
+                      disabled={!!isMutating}
+                      sx={{ textTransform: 'none' }}
+                    >
+                      {hasEdits ? 'Approve as Edited' : 'Approve'}
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      size="small"
+                      startIcon={<EditIcon />}
+                      onClick={() => handleStartEdit(pendingApproval)}
+                      disabled={!!isMutating}
+                      sx={{ textTransform: 'none' }}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="contained"
+                      color="success"
+                      size="small"
+                      startIcon={isMutating ? <CircularProgress size={16} color="inherit" /> : <CheckCircle />}
+                      onClick={() => handleApprove(pendingApproval.request_id)}
+                      disabled={!!isMutating}
+                      sx={{ textTransform: 'none' }}
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      size="small"
+                      startIcon={isMutating ? <CircularProgress size={16} color="inherit" /> : <Cancel />}
+                      onClick={() => handleRejectClick(pendingApproval.request_id)}
+                      disabled={!!isMutating}
+                      sx={{ textTransform: 'none' }}
+                    >
+                      Reject
+                    </Button>
+                  </>
+                )}
+              </Box>
+            ) : (
+              rec.status !== 'DISMISSED' && rec.status !== 'AUTO_EXECUTED' && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="inherit"
+                  onClick={() => dismissMutation.mutate(rec.recommendation_id)}
+                  disabled={dismissMutation.isPending}
+                  sx={{ textTransform: 'none' }}
+                >
+                  Dismiss
+                </Button>
+              )
             )}
           </Box>
         </CardContent>
@@ -485,12 +658,11 @@ const Recommendations = () => {
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)}>
           <Tab label={`Recommendations (${recommendations.length})`} />
-          <Tab label={`Pending Approvals (${pendingApprovals.length})`} />
           <Tab label={`Approval History (${historyApprovals.length})`} />
         </Tabs>
       </Box>
 
-      {/* Tab 0: Recommendations */}
+      {/* Tab 0: Recommendations (with inline approval actions) */}
       {activeTab === 0 && (
         recommendations.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 8 }}>
@@ -521,39 +693,8 @@ const Recommendations = () => {
         )
       )}
 
-      {/* Tab 1: Pending Approvals */}
+      {/* Tab 1: Approval History */}
       {activeTab === 1 && (
-        pendingApprovals.length === 0 ? (
-          <Box sx={{ textAlign: 'center', py: 8 }}>
-            <Typography variant="h6" color="text.secondary">
-              No pending approvals
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Approvals will appear here when the agent creates requests exceeding $500K
-            </Typography>
-          </Box>
-        ) : (
-          pendingApprovals.map(approval => (
-            <ApprovalCard
-              key={approval.request_id}
-              requestId={approval.request_id}
-              actionType={approval.action_type}
-              amount={approval.amount}
-              currency={approval.currency}
-              description={approval.description}
-              reasoning={approval.agent_reasoning || ''}
-              timestamp={approval.requested_at}
-              onApprove={handleApprove}
-              onReject={handleRejectClick}
-              isLoading={mutatingId === approval.request_id && (approveMutation.isPending || rejectMutation.isPending)}
-              error={mutatingId === approval.request_id ? mutationError : null}
-            />
-          ))
-        )
-      )}
-
-      {/* Tab 2: Approval History */}
-      {activeTab === 2 && (
         historyApprovals.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 8 }}>
             <Typography variant="h6" color="text.secondary">
