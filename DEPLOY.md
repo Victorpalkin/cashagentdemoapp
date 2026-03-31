@@ -176,6 +176,7 @@ agent_engine = agent_engines.create(
         'PROJECT_ID': '${PROJECT_ID}',
         'REGION': '${REGION}',
         'DATASET_ID': 'cash_agent_demo',
+        'GOOGLE_CLOUD_LOCATION': 'global',  # Required: Gemini 3 preview models need global location
         'SAP_API_URL': 'https://sap-api-mock-\${CLOUD_RUN_SUFFIX}.a.run.app',
         'BANK_API_URL': 'https://bank-api-mock-\${CLOUD_RUN_SUFFIX}.a.run.app',
         'BROKER_API_URL': 'https://broker-api-mock-\${CLOUD_RUN_SUFFIX}.a.run.app',

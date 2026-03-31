@@ -1,6 +1,6 @@
 import os
 
-PROJECT_ID = os.environ.get("PROJECT_ID", "your-gcp-project-id")
+PROJECT_ID = os.environ.get("PROJECT_ID", "cash-agent-demo")
 REGION = os.environ.get("REGION", "us-central1")
 DATASET_ID = os.environ.get("DATASET_ID", "cash_agent_demo")
 MODEL = os.environ.get("MODEL", "gemini-3.1-pro-preview")
@@ -10,4 +10,4 @@ SAP_API_URL = os.environ.get("SAP_API_URL", "http://localhost:8081")
 BANK_API_URL = os.environ.get("BANK_API_URL", "http://localhost:8082")
 BROKER_API_URL = os.environ.get("BROKER_API_URL", "http://localhost:8083")
 
-STAGING_BUCKET = os.environ.get("STAGING_BUCKET", "gs://your-staging-bucket")
+STAGING_BUCKET = os.environ.get("STAGING_BUCKET", f"gs://{PROJECT_ID}-cash-agent-staging")
