@@ -2,7 +2,6 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { Box } from '@mui/material'
 import Shell from './components/Shell'
 import Dashboard from './pages/Dashboard'
-import Approvals from './pages/Approvals'
 import Recommendations from './pages/Recommendations'
 import AuditTrail from './pages/AuditTrail'
 import Executions from './pages/Executions'
@@ -27,7 +26,7 @@ function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/anomalies" element={<Anomalies />} />
-          <Route path="/approvals" element={<Approvals />} />
+          <Route path="/approvals" element={<Recommendations />} />
           <Route path="/recommendations" element={<Recommendations />} />
           <Route path="/executions" element={<Executions />} />
           <Route path="/audit" element={<AuditTrail />} />

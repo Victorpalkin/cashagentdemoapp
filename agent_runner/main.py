@@ -486,6 +486,22 @@ Return ONLY the JSON array, no other text."""
 
             recommendations = json.loads(response_text)
 
+            # Clear old non-dismissed recommendations and their pending approvals
+            client = _bq_client()
+            client.query(f"""
+                DELETE FROM {_table('approval_requests')}
+                WHERE status = 'PENDING'
+                AND request_id IN (
+                    SELECT approval_request_id FROM {_table('agent_recommendations')}
+                    WHERE status != 'DISMISSED'
+                    AND approval_request_id IS NOT NULL AND approval_request_id != ''
+                )
+            """).result()
+            client.query(f"""
+                DELETE FROM {_table('agent_recommendations')}
+                WHERE status != 'DISMISSED'
+            """).result()
+
             rec_count = 0
             for i, rec in enumerate(recommendations):
                 rec_id = f"REC-{datetime.date.today().strftime('%Y%m%d')}-{i+1:03d}"

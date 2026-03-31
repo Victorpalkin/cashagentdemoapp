@@ -13,7 +13,6 @@ import {
   Dashboard as DashboardIcon,
   Warning as WarningIcon,
   Lightbulb as LightbulbIcon,
-  CheckCircle as CheckCircleIcon,
   PlayCircle as PlayCircleIcon,
   Chat as ChatIcon,
   Psychology as PsychologyIcon,
@@ -32,8 +31,7 @@ const navSections = [
     items: [
       { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
       { label: 'Anomalies', path: '/anomalies', icon: WarningIcon },
-      { label: 'Recommendations', path: '/recommendations', icon: LightbulbIcon },
-      { label: 'Approvals', path: '/approvals', icon: CheckCircleIcon, badge: true },
+      { label: 'Recommendations', path: '/recommendations', icon: LightbulbIcon, badge: true },
       { label: 'Executions', path: '/executions', icon: PlayCircleIcon },
     ],
   },

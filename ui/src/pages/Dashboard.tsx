@@ -103,7 +103,7 @@ const Dashboard = () => {
           disabled={reviewMutation.isPending}
           sx={{ textTransform: 'none', fontWeight: 600 }}
         >
-          {reviewMutation.isPending ? 'Running...' : 'Run Agent Review'}
+          {reviewMutation.isPending ? 'Running...' : 'Execute Agents Synchronously Now'}
         </Button>
       </Box>
 
@@ -238,7 +238,7 @@ const Dashboard = () => {
                 </List>
               ) : (
                 <Typography variant="body2" color="text.secondary">
-                  No agent activity recorded yet. Click "Run Agent Review" to start.
+                  No agent activity recorded yet. Click "Execute Agents Synchronously Now" to start.
                 </Typography>
               )}
             </CardContent>

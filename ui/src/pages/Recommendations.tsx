@@ -1,14 +1,19 @@
+import { useState } from 'react'
 import {
   Box, Typography, Card, CardContent, Chip, Button, CircularProgress, Alert,
-  Divider,
+  Divider, Tabs, Tab, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem,
 } from '@mui/material'
 import {
   AccountBalance, CurrencyExchange, Speed, TrendingUp,
   Gavel, PlayArrow, CheckCircle, BugReport,
 } from '@mui/icons-material'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import ApprovalCard from '../components/ApprovalCard'
 import StatusBadge from '../components/StatusBadge'
-import { getRecommendations, dismissRecommendation, Recommendation } from '../api/bigquery'
+import {
+  getRecommendations, dismissRecommendation, Recommendation,
+  getApprovals, approveRequest, rejectRequest, createMemory, ApprovalRequest, ApprovalOverrides,
+} from '../api/bigquery'
 
 const PRIORITY_ORDER = ['HIGH', 'MEDIUM', 'LOW'] as const
 
@@ -44,7 +49,7 @@ const ACTION_CONFIG: Record<string, { label: string; icon: React.ReactNode; colo
   },
 }
 
-const getExecutionPlan = (rec: Recommendation): string[] => {
+const getExecutionPlan = (rec: { action_type: string; amount: number; currency: string }): string[] => {
   const amount = new Intl.NumberFormat('en-US', {
     style: 'currency', currency: rec.currency,
     minimumFractionDigits: 0, maximumFractionDigits: 0,
@@ -78,13 +83,50 @@ const getExecutionPlan = (rec: Recommendation): string[] => {
   }
 }
 
+const formatCurrency = (amount: number, currency: string): string => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
+
+const formatTimestamp = (timestamp: string): string => {
+  const date = new Date(timestamp)
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
 const Recommendations = () => {
   const queryClient = useQueryClient()
+  const [activeTab, setActiveTab] = useState(0)
 
-  const { data: recommendations = [], isLoading, isError } = useQuery({
+  // Approval state
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
+  const [rejectingId, setRejectingId] = useState('')
+  const [rejectReason, setRejectReason] = useState('')
+  const [mutatingId, setMutatingId] = useState<string | null>(null)
+  const [mutationError, setMutationError] = useState<string | null>(null)
+  const [rememberDialog, setRememberDialog] = useState<{
+    open: boolean; source: string; content: string;
+    relatedActionType: string; relatedEntity: string; category: string;
+  }>({ open: false, source: '', content: '', relatedActionType: '', relatedEntity: '', category: 'COUNTERPARTY' })
+
+  const { data: recommendations = [], isLoading: recLoading, isError: recError } = useQuery({
     queryKey: ['recommendations'],
     queryFn: () => getRecommendations(),
     refetchInterval: 10000,
+  })
+
+  const { data: approvals = [], isLoading: appLoading, isError: appError } = useQuery({
+    queryKey: ['approvals'],
+    queryFn: () => getApprovals(),
+    refetchInterval: 5000,
   })
 
   const dismissMutation = useMutation({
@@ -92,29 +134,94 @@ const Recommendations = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recommendations'] }),
   })
 
-  const formatCurrency = (amount: number, currency: string): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
+  const approveMutation = useMutation({
+    mutationFn: ({ requestId, overrides }: { requestId: string; overrides?: ApprovalOverrides }) =>
+      approveRequest(requestId, overrides),
+    onSuccess: (_data, variables) => {
+      const { overrides } = variables
+      setMutatingId(null)
+      setMutationError(null)
+      queryClient.invalidateQueries({ queryKey: ['approvals'] })
+      queryClient.invalidateQueries({ queryKey: ['recommendations'] })
+      if (overrides && Object.keys(overrides).length > 0) {
+        const editParts: string[] = []
+        if (overrides.amount !== undefined) editParts.push(`changed the amount to ${overrides.amount.toLocaleString()}`)
+        if (overrides.action_type) editParts.push(`changed the action to ${overrides.action_type.replace(/_/g, ' ')}`)
+        if (overrides.currency) editParts.push(`changed the currency to ${overrides.currency}`)
+        const approval = approvals.find(a => a.request_id === variables.requestId)
+        const description = approval?.description || 'a recommendation'
+        const content = `When the agent recommended "${description}", I ${editParts.join(' and ')}. Prefer this adjustment for similar ${approval?.action_type?.replace(/_/g, ' ').toLowerCase() || ''} recommendations.`
+        setRememberDialog({
+          open: true,
+          source: 'EDIT',
+          content,
+          relatedActionType: approval?.action_type || '',
+          relatedEntity: approval?.currency || '',
+          category: 'PREFERENCE',
+        })
+      }
+    },
+    onError: (err: Error) => {
+      setMutationError(err.message)
+    },
+  })
+
+  const rejectMutation = useMutation({
+    mutationFn: ({ requestId, reason }: { requestId: string; reason: string }) =>
+      rejectRequest(requestId, reason),
+    onSuccess: (_data, variables) => {
+      setMutatingId(null)
+      setMutationError(null)
+      queryClient.invalidateQueries({ queryKey: ['approvals'] })
+      queryClient.invalidateQueries({ queryKey: ['recommendations'] })
+      setRejectDialogOpen(false)
+      const approval = approvals.find(a => a.request_id === variables.requestId)
+      const description = approval?.description || 'a recommendation'
+      const reasonText = variables.reason
+        ? `Rejected recommendation: "${description}". Reason: ${variables.reason}`
+        : `Rejected recommendation: "${description}".`
+      setRememberDialog({
+        open: true,
+        source: 'REJECTION',
+        content: reasonText,
+        relatedActionType: approval?.action_type || '',
+        relatedEntity: approval?.description?.split(' ')[0] || '',
+        category: 'COUNTERPARTY',
+      })
+      setRejectReason('')
+    },
+    onError: (err: Error) => {
+      setMutationError(err.message)
+    },
+  })
+
+  const handleApprove = (requestId: string, overrides?: ApprovalOverrides) => {
+    setMutatingId(requestId)
+    setMutationError(null)
+    approveMutation.mutate({ requestId, overrides })
   }
 
-  const formatTimestamp = (timestamp: string): string => {
-    const date = new Date(timestamp)
-    return date.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    })
+  const handleRejectClick = (requestId: string) => {
+    setRejectingId(requestId)
+    setMutatingId(requestId)
+    setMutationError(null)
+    setRejectDialogOpen(true)
   }
+
+  const handleRejectConfirm = () => {
+    rejectMutation.mutate({ requestId: rejectingId, reason: rejectReason })
+  }
+
+  const pendingApprovals = approvals.filter(a => a.status === 'PENDING')
+  const historyApprovals = approvals.filter(a => a.status !== 'PENDING')
 
   const grouped = PRIORITY_ORDER.map(priority => ({
     priority,
     items: recommendations.filter((r: Recommendation) => r.priority === priority),
   })).filter(g => g.items.length > 0)
+
+  const isLoading = recLoading || appLoading
+  const isError = recError || appError
 
   if (isLoading) {
     return (
@@ -132,175 +239,420 @@ const Recommendations = () => {
     )
   }
 
+  const renderRecommendationCard = (rec: Recommendation) => {
+    const actionCfg = ACTION_CONFIG[rec.action_type] || {
+      label: rec.action_type.replace(/_/g, ' '),
+      icon: <PlayArrow fontSize="small" />,
+      color: '#666',
+    }
+    const executionSteps = getExecutionPlan(rec)
+
+    return (
+      <Card
+        key={rec.recommendation_id + rec.created_at}
+        elevation={0}
+        sx={{
+          mb: 2,
+          border: '1px solid #E0E0E0',
+          '&:hover': { borderColor: 'primary.main', boxShadow: 1 },
+        }}
+      >
+        <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
+          {/* Header: Action type, amount, status */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+              <Chip
+                icon={actionCfg.icon as React.ReactElement}
+                label={actionCfg.label}
+                sx={{
+                  fontWeight: 600,
+                  bgcolor: `${actionCfg.color}14`,
+                  color: actionCfg.color,
+                  border: `1px solid ${actionCfg.color}40`,
+                  '& .MuiChip-icon': { color: actionCfg.color },
+                }}
+              />
+              <Chip
+                label={rec.priority}
+                color={priorityColor(rec.priority)}
+                size="small"
+                sx={{ fontWeight: 600 }}
+              />
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                {formatCurrency(rec.amount, rec.currency)}
+              </Typography>
+            </Box>
+            <StatusBadge status={rec.status as any} />
+          </Box>
+
+          {/* Description */}
+          <Typography variant="body1" sx={{ mb: 2, fontWeight: 500 }}>
+            {rec.description}
+          </Typography>
+
+          {/* Rationale */}
+          <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1, borderLeft: '3px solid', borderColor: 'primary.main' }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: 1 }}>
+              Agent Rationale
+            </Typography>
+            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+              {rec.rationale}
+            </Typography>
+          </Box>
+
+          {/* Execution Plan */}
+          <Box sx={{ mb: 2, p: 2, bgcolor: '#F0F7FF', borderRadius: 1, borderLeft: '3px solid', borderColor: 'info.main' }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: 'info.dark', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              {rec.status === 'AUTO_EXECUTED' ? (
+                <><CheckCircle sx={{ fontSize: 14 }} /> Actions Taken</>
+              ) : (
+                <><Gavel sx={{ fontSize: 14 }} /> Actions Upon Approval</>
+              )}
+            </Typography>
+            <Box component="ol" sx={{ m: 0, pl: 2.5 }}>
+              {executionSteps.map((step, i) => (
+                <Typography component="li" variant="body2" key={i} sx={{ mb: 0.5, lineHeight: 1.6 }}>
+                  {step}
+                </Typography>
+              ))}
+            </Box>
+          </Box>
+
+          <Divider sx={{ my: 2 }} />
+
+          {/* Footer: metadata and actions */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+              <Typography variant="caption" color="text.secondary">
+                {formatTimestamp(rec.created_at)}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+                {rec.recommendation_id}
+              </Typography>
+              {rec.source_anomaly_type && (
+                <Chip
+                  icon={<BugReport sx={{ fontSize: 14 }} />}
+                  label={`Triggered by: ${rec.source_anomaly_type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/ /g, ' ')}`}
+                  size="small"
+                  color="warning"
+                  variant="outlined"
+                  clickable
+                  component="a"
+                  href="/anomalies"
+                  sx={{ fontWeight: 600 }}
+                />
+              )}
+            </Box>
+            {rec.status !== 'DISMISSED' && rec.status !== 'AUTO_EXECUTED' && (
+              <Button
+                size="small"
+                variant="outlined"
+                color="inherit"
+                onClick={() => dismissMutation.mutate(rec.recommendation_id)}
+                disabled={dismissMutation.isPending}
+                sx={{ textTransform: 'none' }}
+              >
+                Dismiss
+              </Button>
+            )}
+          </Box>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const renderApprovalHistoryCard = (approval: ApprovalRequest) => {
+    const actionCfg = ACTION_CONFIG[approval.action_type] || {
+      label: approval.action_type.replace(/_/g, ' '),
+      icon: <PlayArrow fontSize="small" />,
+      color: '#666',
+    }
+    const executionSteps = getExecutionPlan(approval)
+    const isApproved = approval.status === 'APPROVED'
+
+    return (
+      <Card
+        key={approval.request_id}
+        elevation={0}
+        sx={{
+          mb: 2,
+          border: '1px solid #E0E0E0',
+          opacity: approval.status === 'REJECTED' ? 0.75 : 1,
+        }}
+      >
+        <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+              <Chip
+                icon={actionCfg.icon as React.ReactElement}
+                label={actionCfg.label}
+                sx={{
+                  fontWeight: 600,
+                  bgcolor: `${actionCfg.color}14`,
+                  color: actionCfg.color,
+                  border: `1px solid ${actionCfg.color}40`,
+                  '& .MuiChip-icon': { color: actionCfg.color },
+                }}
+              />
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                {formatCurrency(approval.amount, approval.currency)}
+              </Typography>
+            </Box>
+            <StatusBadge status={approval.status} />
+          </Box>
+
+          <Typography variant="body1" sx={{ mb: 2, fontWeight: 500 }}>
+            {approval.description}
+          </Typography>
+
+          <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1, borderLeft: '3px solid', borderColor: 'primary.main' }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: 1 }}>
+              Agent Reasoning
+            </Typography>
+            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+              {approval.agent_reasoning}
+            </Typography>
+          </Box>
+
+          <Box sx={{ mb: 2, p: 2, bgcolor: isApproved ? '#F0FFF0' : '#FFF5F5', borderRadius: 1, borderLeft: '3px solid', borderColor: isApproved ? 'success.main' : 'error.main' }}>
+            <Typography variant="subtitle2" sx={{
+              fontWeight: 700, mb: 1, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: 1,
+              color: isApproved ? 'success.dark' : 'error.dark',
+              display: 'flex', alignItems: 'center', gap: 0.5,
+            }}>
+              {isApproved ? (
+                <><CheckCircle sx={{ fontSize: 14 }} /> Actions Executed</>
+              ) : (
+                <><Gavel sx={{ fontSize: 14 }} /> Actions Proposed (Rejected)</>
+              )}
+            </Typography>
+            <Box component="ol" sx={{ m: 0, pl: 2.5 }}>
+              {executionSteps.map((step, i) => (
+                <Typography
+                  component="li" variant="body2" key={i}
+                  sx={{
+                    mb: 0.5, lineHeight: 1.6,
+                    textDecoration: !isApproved ? 'line-through' : 'none',
+                    color: !isApproved ? 'text.secondary' : 'text.primary',
+                  }}
+                >
+                  {step}
+                </Typography>
+              ))}
+            </Box>
+          </Box>
+
+          {(approval.approved_by || approval.rejection_reason) && (
+            <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+              {approval.approved_by && (
+                <Typography variant="body2" sx={{ mb: 0.5 }}>
+                  <strong>{isApproved ? 'Approved' : 'Rejected'} by:</strong> {approval.approved_by}
+                  {approval.approved_at && <> on {formatTimestamp(approval.approved_at)}</>}
+                </Typography>
+              )}
+              {approval.rejection_reason && (
+                <Typography variant="body2">
+                  <strong>Reason:</strong> {approval.rejection_reason}
+                </Typography>
+              )}
+            </Box>
+          )}
+
+          <Divider sx={{ my: 1.5 }} />
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+              {approval.request_id}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Requested {formatTimestamp(approval.requested_at)}
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-        Agent Recommendations
+        Recommendations & Approvals
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
-        Generated by autonomous agent during scheduled reviews based on cash position analysis
+        Agent-generated recommendations and actions requiring human approval
       </Typography>
 
-      {recommendations.length === 0 ? (
-        <Box sx={{ textAlign: 'center', py: 8 }}>
-          <Typography variant="h6" color="text.secondary">
-            No recommendations yet
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            The autonomous agent will generate recommendations during its scheduled runs.
-          </Typography>
-        </Box>
-      ) : (
-        grouped.map(({ priority, items }) => (
-          <Box key={priority} sx={{ mb: 4 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-              <Chip
-                label={priority}
-                color={priorityColor(priority)}
-                size="small"
-                sx={{ fontWeight: 700 }}
-              />
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-                Priority ({items.length})
-              </Typography>
-            </Box>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)}>
+          <Tab label={`Recommendations (${recommendations.length})`} />
+          <Tab label={`Pending Approvals (${pendingApprovals.length})`} />
+          <Tab label={`Approval History (${historyApprovals.length})`} />
+        </Tabs>
+      </Box>
 
-            {items.map((rec: Recommendation) => {
-              const actionCfg = ACTION_CONFIG[rec.action_type] || {
-                label: rec.action_type.replace(/_/g, ' '),
-                icon: <PlayArrow fontSize="small" />,
-                color: '#666',
-              }
-              const executionSteps = getExecutionPlan(rec)
-
-              return (
-                <Card
-                  key={rec.recommendation_id + rec.created_at}
-                  elevation={0}
-                  sx={{
-                    mb: 2,
-                    border: '1px solid #E0E0E0',
-                    '&:hover': { borderColor: 'primary.main', boxShadow: 1 },
-                  }}
-                >
-                  <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
-                    {/* Header: Action type, amount, status */}
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                        <Chip
-                          icon={actionCfg.icon as React.ReactElement}
-                          label={actionCfg.label}
-                          sx={{
-                            fontWeight: 600,
-                            bgcolor: `${actionCfg.color}14`,
-                            color: actionCfg.color,
-                            border: `1px solid ${actionCfg.color}40`,
-                            '& .MuiChip-icon': { color: actionCfg.color },
-                          }}
-                        />
-                        <Chip
-                          label={rec.priority}
-                          color={priorityColor(rec.priority)}
-                          size="small"
-                          sx={{ fontWeight: 600 }}
-                        />
-                        <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                          {formatCurrency(rec.amount, rec.currency)}
-                        </Typography>
-                      </Box>
-                      <StatusBadge status={rec.status as any} />
-                    </Box>
-
-                    {/* Description */}
-                    <Typography variant="body1" sx={{ mb: 2, fontWeight: 500 }}>
-                      {rec.description}
-                    </Typography>
-
-                    {/* Rationale — always visible, never truncated */}
-                    <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1, borderLeft: '3px solid', borderColor: 'primary.main' }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: 1 }}>
-                        Agent Rationale
-                      </Typography>
-                      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
-                        {rec.rationale}
-                      </Typography>
-                    </Box>
-
-                    {/* Execution Plan — what happens if approved */}
-                    <Box sx={{ mb: 2, p: 2, bgcolor: '#F0F7FF', borderRadius: 1, borderLeft: '3px solid', borderColor: 'info.main' }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: 'info.dark', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        {rec.status === 'AUTO_EXECUTED' ? (
-                          <><CheckCircle sx={{ fontSize: 14 }} /> Actions Taken</>
-                        ) : (
-                          <><Gavel sx={{ fontSize: 14 }} /> Actions Upon Approval</>
-                        )}
-                      </Typography>
-                      <Box component="ol" sx={{ m: 0, pl: 2.5 }}>
-                        {executionSteps.map((step, i) => (
-                          <Typography component="li" variant="body2" key={i} sx={{ mb: 0.5, lineHeight: 1.6 }}>
-                            {step}
-                          </Typography>
-                        ))}
-                      </Box>
-                    </Box>
-
-                    <Divider sx={{ my: 2 }} />
-
-                    {/* Footer: metadata and actions */}
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                        <Typography variant="caption" color="text.secondary">
-                          {formatTimestamp(rec.created_at)}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
-                          {rec.recommendation_id}
-                        </Typography>
-                        {rec.approval_request_id && (
-                          <Chip
-                            label={`Approval: ${rec.approval_request_id}`}
-                            size="small"
-                            color="primary"
-                            variant="outlined"
-                            clickable
-                            component="a"
-                            href="/approvals"
-                            sx={{ fontFamily: 'monospace', fontWeight: 600 }}
-                          />
-                        )}
-                        {rec.source_anomaly_type && (
-                          <Chip
-                            icon={<BugReport sx={{ fontSize: 14 }} />}
-                            label={`Triggered by: ${rec.source_anomaly_type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/ /g, ' ')}`}
-                            size="small"
-                            color="warning"
-                            variant="outlined"
-                            clickable
-                            component="a"
-                            href="/anomalies"
-                            sx={{ fontWeight: 600 }}
-                          />
-                        )}
-                      </Box>
-                      {rec.status !== 'DISMISSED' && rec.status !== 'AUTO_EXECUTED' && (
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          color="inherit"
-                          onClick={() => dismissMutation.mutate(rec.recommendation_id)}
-                          disabled={dismissMutation.isPending}
-                          sx={{ textTransform: 'none' }}
-                        >
-                          Dismiss
-                        </Button>
-                      )}
-                    </Box>
-                  </CardContent>
-                </Card>
-              )
-            })}
+      {/* Tab 0: Recommendations */}
+      {activeTab === 0 && (
+        recommendations.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 8 }}>
+            <Typography variant="h6" color="text.secondary">
+              No recommendations yet
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              The autonomous agent will generate recommendations during its scheduled runs.
+            </Typography>
           </Box>
-        ))
+        ) : (
+          grouped.map(({ priority, items }) => (
+            <Box key={priority} sx={{ mb: 4 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <Chip
+                  label={priority}
+                  color={priorityColor(priority)}
+                  size="small"
+                  sx={{ fontWeight: 700 }}
+                />
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                  Priority ({items.length})
+                </Typography>
+              </Box>
+              {items.map(renderRecommendationCard)}
+            </Box>
+          ))
+        )
       )}
+
+      {/* Tab 1: Pending Approvals */}
+      {activeTab === 1 && (
+        pendingApprovals.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 8 }}>
+            <Typography variant="h6" color="text.secondary">
+              No pending approvals
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Approvals will appear here when the agent creates requests exceeding $500K
+            </Typography>
+          </Box>
+        ) : (
+          pendingApprovals.map(approval => (
+            <ApprovalCard
+              key={approval.request_id}
+              requestId={approval.request_id}
+              actionType={approval.action_type}
+              amount={approval.amount}
+              currency={approval.currency}
+              description={approval.description}
+              reasoning={approval.agent_reasoning || ''}
+              timestamp={approval.requested_at}
+              onApprove={handleApprove}
+              onReject={handleRejectClick}
+              isLoading={mutatingId === approval.request_id && (approveMutation.isPending || rejectMutation.isPending)}
+              error={mutatingId === approval.request_id ? mutationError : null}
+            />
+          ))
+        )
+      )}
+
+      {/* Tab 2: Approval History */}
+      {activeTab === 2 && (
+        historyApprovals.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 8 }}>
+            <Typography variant="h6" color="text.secondary">
+              No approval history yet
+            </Typography>
+          </Box>
+        ) : (
+          historyApprovals.map(renderApprovalHistoryCard)
+        )
+      )}
+
+      {/* Rejection Reason Dialog */}
+      <Dialog open={rejectDialogOpen} onClose={() => setRejectDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Reject Approval Request</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Reason for rejection"
+            fullWidth
+            multiline
+            rows={3}
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRejectDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleRejectConfirm}
+            color="error"
+            variant="contained"
+            disabled={rejectMutation.isPending}
+          >
+            Reject
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Remember This? Dialog */}
+      <Dialog
+        open={rememberDialog.open}
+        onClose={() => setRememberDialog(d => ({ ...d, open: false }))}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Should the agent remember this?</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            This will be stored as agent memory and consulted when generating future recommendations.
+          </Typography>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="What should the agent remember?"
+            fullWidth
+            multiline
+            rows={3}
+            value={rememberDialog.content}
+            onChange={(e) => setRememberDialog(d => ({ ...d, content: e.target.value }))}
+          />
+          <TextField
+            select
+            margin="dense"
+            label="Category"
+            fullWidth
+            value={rememberDialog.category}
+            onChange={(e) => setRememberDialog(d => ({ ...d, category: e.target.value }))}
+          >
+            <MenuItem value="COUNTERPARTY">Counterparty</MenuItem>
+            <MenuItem value="INSTRUMENT">Instrument</MenuItem>
+            <MenuItem value="POLICY_OVERRIDE">Policy Override</MenuItem>
+            <MenuItem value="PREFERENCE">Preference</MenuItem>
+          </TextField>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRememberDialog(d => ({ ...d, open: false }))}>
+            No, Skip
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              createMemory({
+                content: rememberDialog.content,
+                category: rememberDialog.category,
+                source: rememberDialog.source,
+                related_action_type: rememberDialog.relatedActionType || undefined,
+                related_entity: rememberDialog.relatedEntity || undefined,
+              }).then(() => {
+                queryClient.invalidateQueries({ queryKey: ['memories'] })
+              })
+              setRememberDialog(d => ({ ...d, open: false }))
+            }}
+            disabled={!rememberDialog.content.trim()}
+          >
+            Yes, Remember
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }

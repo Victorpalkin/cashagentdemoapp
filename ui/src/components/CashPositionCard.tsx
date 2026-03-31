@@ -32,6 +32,9 @@ const CashPositionCard = ({ currency, balance, usdEquivalent, changePercent }: C
   return (
     <Card sx={{ height: '100%', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-2px)' } }}>
       <CardContent sx={{ p: 3 }}>
+        <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 600, letterSpacing: '0.08em' }}>
+          Cash Position
+        </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
           <Typography variant="h3" component="span">
             {getCurrencyFlag(currency)}
