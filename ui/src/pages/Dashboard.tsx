@@ -308,6 +308,8 @@ const Dashboard = () => {
           isLoading={forecastQuery.isLoading}
           error={forecastQuery.data?.error}
           currentBalances={currentBalances}
+          obligations={obligationsQuery.data ?? []}
+          paymentRuns={paymentRunsQuery.data ?? []}
         />
       </Box>
 

@@ -73,7 +73,7 @@ const Architecture = () => {
               <Typography variant="h6" sx={{ fontWeight: 600 }}>Forecast</Typography>
             </Box>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              TimesFM foundation model generates 30/60/90-day cash flow predictions via AI.FORECAST — no model training needed.
+              TimesFM generates statistical cash flow forecasts via AI.FORECAST. The agent enriches these with probability-weighted AR, scheduled AP, and planned payment runs to produce an agent-adjusted projection.
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
               <Chip label="CashPositionAgent" size="small" variant="outlined" />
@@ -179,7 +179,7 @@ const Architecture = () => {
               </Box>
               <Typography variant="caption" color="text.secondary">Cash Flow Forecasting &amp; Anomaly Detection</Typography>
               <Typography variant="caption" display="block" color="text.secondary">
-                Foundation model via AI.FORECAST / AI.DETECT_ANOMALIES — no training needed, generates 30/60/90-day forecasts
+                Foundation model via AI.FORECAST / AI.DETECT_ANOMALIES — statistical baseline enriched by agent with AR/AP/payment run adjustments
               </Typography>
             </Box>
 

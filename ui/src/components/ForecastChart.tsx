@@ -1,17 +1,19 @@
 import { Card, CardContent, Typography, Box, CircularProgress } from '@mui/material'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts'
-import { ForecastDataPoint } from '../api/bigquery'
+import { ForecastDataPoint, Obligation, PaymentRun } from '../api/bigquery'
 
 interface ForecastChartProps {
   forecasts: ForecastDataPoint[]
   isLoading: boolean
   error?: string
   currentBalances?: Record<string, number>
+  obligations?: Obligation[]
+  paymentRuns?: PaymentRun[]
 }
 
 const CURRENCY_SYMBOLS: Record<string, string> = { USD: '$', EUR: '\u20AC', GBP: '\u00A3' }
 
-const ForecastChart = ({ forecasts, isLoading, error, currentBalances }: ForecastChartProps) => {
+const ForecastChart = ({ forecasts, isLoading, error, currentBalances, obligations = [], paymentRuns = [] }: ForecastChartProps) => {
   const minimumReserve = 8000000
 
   const formatYAxis = (value: number) => {
@@ -27,29 +29,55 @@ const ForecastChart = ({ forecasts, isLoading, error, currentBalances }: Forecas
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
 
+  // Build AR/AP/payment-run adjustments indexed by date+currency
+  const adjustmentsByDateCurrency: Record<string, Record<string, number>> = {}
+  const addAdjustment = (dateStr: string, currency: string, amount: number) => {
+    const dateKey = dateStr.split('T')[0]
+    if (!adjustmentsByDateCurrency[dateKey]) adjustmentsByDateCurrency[dateKey] = {}
+    adjustmentsByDateCurrency[dateKey][currency] = (adjustmentsByDateCurrency[dateKey][currency] || 0) + amount
+  }
+  for (const ob of obligations) {
+    const dateKey = ob.date.split('T')[0]
+    if (ob.type === 'AR') {
+      addAdjustment(dateKey, ob.currency, ob.amount * (ob.probability ?? 1))
+    } else {
+      addAdjustment(dateKey, ob.currency, -ob.amount)
+    }
+  }
+  for (const run of paymentRuns) {
+    addAdjustment(run.scheduled_date, run.currency, -run.total_amount)
+  }
+
   // Group forecast data by date, computing cumulative balances per currency
   const chartData = (() => {
     if (!forecasts.length) return []
 
-    // Sort forecasts by currency then date
     const today = new Date().toISOString().split('T')[0]
     const byCurrency: Record<string, { date: string; flow: number }[]> = {}
     for (const f of forecasts) {
       const dateKey = f.forecast_date.split('T')[0]
-      if (dateKey <= today) continue // skip past/today — already reflected in current balances
+      if (dateKey <= today) continue
       if (!byCurrency[f.currency]) byCurrency[f.currency] = []
       byCurrency[f.currency].push({ date: dateKey, flow: f.net_cash_flow })
     }
 
-    // Compute cumulative balances starting from today's current balance
-    const cumulativeByCurrency: Record<string, Record<string, number>> = {}
+    // Compute cumulative balances: baseline (ML-only) and enriched (ML + AR/AP/payment runs)
+    const baselineByCurrency: Record<string, Record<string, number>> = {}
+    const enrichedByCurrency: Record<string, Record<string, number>> = {}
     for (const [currency, entries] of Object.entries(byCurrency)) {
       entries.sort((a, b) => a.date.localeCompare(b.date))
-      let running = currentBalances?.[currency] ?? 0
-      cumulativeByCurrency[currency] = { [today]: running } // anchor at today
+      const startBalance = currentBalances?.[currency] ?? 0
+      let baselineRunning = startBalance
+      let enrichedRunning = startBalance
+      baselineByCurrency[currency] = { [today]: startBalance }
+      enrichedByCurrency[currency] = { [today]: startBalance }
       for (const entry of entries) {
-        running += entry.flow
-        cumulativeByCurrency[currency][entry.date] = running
+        baselineRunning += entry.flow
+        baselineByCurrency[currency][entry.date] = baselineRunning
+
+        const adj = adjustmentsByDateCurrency[entry.date]?.[currency] || 0
+        enrichedRunning += entry.flow + adj
+        enrichedByCurrency[currency][entry.date] = enrichedRunning
       }
     }
 
@@ -58,9 +86,12 @@ const ForecastChart = ({ forecasts, isLoading, error, currentBalances }: Forecas
     const allDates = [today, ...futureDates]
     return allDates.map(date => {
       const row: Record<string, any> = { date: formatDate(date) }
-      for (const currency of Object.keys(cumulativeByCurrency)) {
-        if (cumulativeByCurrency[currency][date] !== undefined) {
-          row[currency] = Math.round(cumulativeByCurrency[currency][date])
+      for (const currency of Object.keys(baselineByCurrency)) {
+        if (baselineByCurrency[currency][date] !== undefined) {
+          row[`${currency}_baseline`] = Math.round(baselineByCurrency[currency][date])
+        }
+        if (enrichedByCurrency[currency][date] !== undefined) {
+          row[`${currency}_enriched`] = Math.round(enrichedByCurrency[currency][date])
         }
       }
       return row
@@ -74,10 +105,10 @@ const ForecastChart = ({ forecasts, isLoading, error, currentBalances }: Forecas
     <Card>
       <CardContent sx={{ p: 3 }}>
         <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-          30-Day Projected Cash Balance
+          30-Day Cash Forecast
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
-          TimesFM forecast based on 12 months of cash journal history, cumulative from current balances
+          Agent-enriched projection (solid) adjusted for probability-weighted AR, scheduled AP, and payment runs vs. ML-only baseline (dashed)
         </Typography>
 
         {isLoading ? (
@@ -117,13 +148,26 @@ const ForecastChart = ({ forecasts, isLoading, error, currentBalances }: Forecas
 
               {currencies.map(cur => (
                 <Line
-                  key={cur}
+                  key={`${cur}_enriched`}
                   type="monotone"
-                  dataKey={cur}
+                  dataKey={`${cur}_enriched`}
                   stroke={colorMap[cur] || '#999'}
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                   dot={false}
-                  name={`${cur} Balance`}
+                  name={`${cur} Agent-Enriched`}
+                />
+              ))}
+              {currencies.map(cur => (
+                <Line
+                  key={`${cur}_baseline`}
+                  type="monotone"
+                  dataKey={`${cur}_baseline`}
+                  stroke={colorMap[cur] || '#999'}
+                  strokeWidth={1.5}
+                  strokeDasharray="6 3"
+                  dot={false}
+                  name={`${cur} ML Baseline`}
+                  opacity={0.6}
                 />
               ))}
             </LineChart>

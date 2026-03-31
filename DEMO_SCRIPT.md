@@ -27,7 +27,7 @@ It's Tuesday morning. Sarah Chen, VP of Treasury at a multinational corporation,
 - Three **Cash Position Cards** across the top: ~$11.1M USD, ~EUR 6.8M, ~GBP 3.1M -- totaling roughly **$22.4M** in the **Currency Summary** card below.
 - The **FX Rates** card shows current EUR/USD (~1.08) and GBP/USD (~1.27) rates.
 - The **Receivables vs Payables** card breaks down net AR/AP by currency with color-coded chips.
-- The **Forecast Chart** shows the TimesFM projection with confidence intervals.
+- The **Forecast Chart** shows two lines per currency: a solid **Agent-Enriched Forecast** (adjusted for probability-weighted AR, scheduled AP, and payment runs) and a dashed **ML Baseline** (pure TimesFM statistical forecast). The lines diverge around AR/AP due dates, showing the agent's value-add.
 - The **Scheduled Payment Runs** card lists upcoming outflows -- she spots a $2.8M vendor run and a $1.5M payroll run in the next two weeks.
 - The **Recent Agent Activity** log shows the agent has already been at work: overnight forecast updates, anomaly scans, and position checks.
 
@@ -79,7 +79,7 @@ Back on the **Recommendations** tab, each recommendation that was triggered by a
 
 The agent explains the ACME risk in plain language: a major Phase 3 enterprise delivery with collection confidence far below normal. It quantifies the impact -- EUR 2.3M at risk equals roughly $2.5M USD.
 
-**Key talking points**: The TimesFM foundation model forecasts cash flow from historical patterns via AI.FORECAST (no model training needed), but it can't see AR probability data or AP schedules. The agent enriches the forecast with this context -- every recommendation cites the delta between ML-only and agent-enriched views. Policy references (Treasury Policy Section 2.3, FX Hedging Policy Section 2.1) come from semantic search over actual policy documents, not hallucinated rules. Anomalies are no longer just statistical alerts -- Gemini explains each one in business terms with a suggested action, and traceability links show exactly which recommendations were spawned by which anomalies.
+**Key talking points**: The TimesFM foundation model forecasts cash flow from historical patterns via AI.FORECAST (no model training needed), but it can't see AR probability data or AP schedules. The agent enriches the forecast with this context -- **the Forecast Chart on the Dashboard visualizes this directly**: the solid Agent-Enriched line diverges from the dashed ML Baseline around AR/AP due dates, making the gap between "what the model thinks" and "what the agent knows" immediately visible. Every recommendation cites the delta between these two views. Policy references (Treasury Policy Section 2.3, FX Hedging Policy Section 2.1) come from semantic search over actual policy documents, not hallucinated rules. Anomalies are no longer just statistical alerts -- Gemini explains each one in business terms with a suggested action, and traceability links show exactly which recommendations were spawned by which anomalies.
 
 ---
 
