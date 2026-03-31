@@ -1,7 +1,69 @@
 import { useState, useRef, useEffect } from 'react'
 import { Box, Typography, Card, Paper, TextField, Button, Avatar } from '@mui/material'
 import { Send } from '@mui/icons-material'
+import ReactMarkdown, { Components } from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { sendChatMessage } from '../api/bigquery'
+
+const markdownComponents: Components = {
+  p: ({ children }) => (
+    <Typography variant="body2" sx={{ mb: 1, '&:last-child': { mb: 0 } }}>{children}</Typography>
+  ),
+  h1: ({ children }) => (
+    <Typography variant="h6" sx={{ fontWeight: 700, mt: 1, mb: 0.5 }}>{children}</Typography>
+  ),
+  h2: ({ children }) => (
+    <Typography variant="subtitle1" sx={{ fontWeight: 700, mt: 1, mb: 0.5 }}>{children}</Typography>
+  ),
+  h3: ({ children }) => (
+    <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 1, mb: 0.5 }}>{children}</Typography>
+  ),
+  ul: ({ children }) => (
+    <Box component="ul" sx={{ m: 0, pl: 2.5, mb: 1 }}>{children}</Box>
+  ),
+  ol: ({ children }) => (
+    <Box component="ol" sx={{ m: 0, pl: 2.5, mb: 1 }}>{children}</Box>
+  ),
+  li: ({ children }) => (
+    <Typography component="li" variant="body2" sx={{ mb: 0.25 }}>{children}</Typography>
+  ),
+  code: ({ className, children }) => {
+    const isBlock = className?.startsWith('language-')
+    return isBlock ? (
+      <Box component="pre" sx={{
+        bgcolor: '#1E1E1E', color: '#D4D4D4', p: 1.5, borderRadius: 1,
+        overflow: 'auto', fontSize: '0.8rem', fontFamily: 'monospace', mb: 1,
+      }}>
+        <code>{children}</code>
+      </Box>
+    ) : (
+      <Box component="code" sx={{
+        bgcolor: 'grey.100', px: 0.5, borderRadius: 0.5,
+        fontSize: '0.85em', fontFamily: 'monospace',
+      }}>
+        {children}
+      </Box>
+    )
+  },
+  table: ({ children }) => (
+    <Box component="table" sx={{
+      borderCollapse: 'collapse', width: '100%', mb: 1, fontSize: '0.85rem',
+      '& th, & td': { border: '1px solid #E0E0E0', px: 1, py: 0.5, textAlign: 'left' },
+      '& th': { bgcolor: 'grey.100', fontWeight: 600 },
+    }}>
+      {children}
+    </Box>
+  ),
+  strong: ({ children }) => (
+    <Box component="strong" sx={{ fontWeight: 700 }}>{children}</Box>
+  ),
+  blockquote: ({ children }) => (
+    <Box sx={{ borderLeft: '3px solid', borderColor: 'primary.main', pl: 1.5, my: 1, color: 'text.secondary' }}>
+      {children}
+    </Box>
+  ),
+  hr: () => <Box component="hr" sx={{ border: 'none', borderTop: '1px solid #E0E0E0', my: 1.5 }} />,
+}
 
 interface Message {
   id: string
@@ -110,9 +172,15 @@ const AgentChat = () => {
                       border: message.sender === 'agent' ? '1px solid #E0E0E0' : 'none',
                     }}
                   >
-                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-                      {message.text}
-                    </Typography>
+                    {message.sender === 'agent' ? (
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                        {message.text}
+                      </ReactMarkdown>
+                    ) : (
+                      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                        {message.text}
+                      </Typography>
+                    )}
                   </Paper>
                   <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
                     {formatTimestamp(message.timestamp)}
