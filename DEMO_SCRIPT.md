@@ -6,13 +6,13 @@
 
 ## The Story
 
-It's Tuesday morning. Sarah Chen, VP of Treasury at a multinational corporation, opens the Cash Agent Dashboard to start her day. The AI treasury agent has been working overnight -- scanning for anomalies, generating recommendations, and monitoring cash positions across three currencies. Sarah's job is to review what the agent found, decide what to act on, and stress-test the plan.
+It's Tuesday morning. Sarah Chen, VP of Treasury at a multinational corporation, opens the Cash Agent Dashboard to start her day. The AI treasury agent has been working overnight -- scanning for anomalies, generating recommendations, and monitoring cash positions across seven currencies and fourteen bank accounts spanning four continents. Sarah's job is to review what the agent found, decide what to act on, and stress-test the plan.
 
 ---
 
 ## Pre-Demo Setup
 
-1. Open the Management UI. Click the **gear icon** (top-right) and choose **Quick Reset** (or **Full Reset** to regenerate seed data with today's dates).
+1. Open the Management UI. Click the **gear icon** (sidebar top) and choose **Quick Reset** (or **Full Reset** to regenerate seed data with today's dates).
 2. On the Dashboard, click **Execute Agents Synchronously Now** -- this populates recommendations, anomaly alerts, and agent activity.
 3. Open the **Agent Chat** in a second browser tab (side-by-side with the UI). Use `adk web` locally or the deployed chat app.
 
@@ -24,11 +24,11 @@ It's Tuesday morning. Sarah Chen, VP of Treasury at a multinational corporation,
 
 **What she sees in the UI** (Dashboard tab -- "Treasury Overview"):
 
-- Three **Cash Position Cards** across the top: ~$11.1M USD, ~EUR 6.8M, ~GBP 3.1M -- totaling roughly **$22.4M** in the **Currency Summary** card below.
-- The **FX Rates** card shows current EUR/USD (~1.08) and GBP/USD (~1.27) rates.
-- The **Receivables vs Payables** card breaks down net AR/AP by currency with color-coded chips.
-- The **Forecast Chart** shows two lines per currency: a solid **Agent-Enriched Forecast** (adjusted for probability-weighted AR, scheduled AP, and payment runs) and a dashed **ML Baseline** (pure TimesFM statistical forecast). The lines diverge around AR/AP due dates, showing the agent's value-add.
-- The **Scheduled Payment Runs** card lists upcoming outflows -- she spots a $2.8M vendor run and a $1.5M payroll run in the next two weeks.
+- Seven **Cash Position Cards** in a compact 4-column grid: ~$5.2M Chase, ~$3.8M BofA, ~EUR 4.5M Deutsche Bank, ~GBP 1.9M Barclays, ~JPY 450M MUFG, ~SGD 2.7M DBS, ~AUD 2.4M ANZ, plus six more accounts -- totaling roughly **$34M** in the **Currency Summary** card below.
+- The **FX Rates** card shows a 2-column layout with current rates: EUR/USD (~1.08), GBP/USD (~1.27), JPY/USD (~0.0067), CHF/USD (~1.12), SGD/USD (~0.75), AUD/USD (~0.66).
+- The **Receivables vs Payables** card breaks down net AR/AP by currency with color-coded chips -- 75 AR items and 84 AP items across all seven currencies.
+- The **Forecast Chart** shows two lines per currency: a solid **Agent-Enriched Forecast** (adjusted for probability-weighted AR, scheduled AP, and payment runs) and a dashed **ML Baseline** (pure TimesFM statistical forecast). Use the **Show All Currencies** toggle to switch between the top 3 (USD/EUR/GBP) and all 7 currencies. The lines diverge around AR/AP due dates, showing the agent's value-add.
+- The **Scheduled Payment Runs** card lists 10 upcoming payment runs across all currencies -- she spots a $2.8M vendor run, a JPY 120M supplier batch, and a SGD 800K regional payroll.
 - The **Recent Agent Activity** log shows the agent has already been at work: overnight forecast updates, anomaly scans, and position checks.
 
 She notices the agent ran its last review a few hours ago. She clicks **Execute Agents Synchronously Now** to get a fresh analysis with the latest data.
@@ -37,9 +37,9 @@ She notices the agent ran its last review a few hours ago. She clicks **Execute 
 
 > What's our current cash position across all bank accounts?
 
-The agent confirms the same numbers: 7 accounts, 3 currencies, ~$22.4M total. The real-time BigQuery queries match the Dashboard exactly.
+The agent confirms the same numbers: 14 accounts, 7 currencies, ~$34M total. The real-time BigQuery queries match the Dashboard exactly.
 
-**Key talking points**: The Dashboard is powered by the same BigQuery data the agent queries. The agent runs autonomously on a Cloud Scheduler cadence (every 2-4 hours), so the Dashboard always reflects recent analysis -- not stale reports.
+**Key talking points**: The Dashboard is powered by the same BigQuery data the agent queries. The agent runs autonomously on a Cloud Scheduler cadence (every 2-4 hours), so the Dashboard always reflects recent analysis -- not stale reports. The multinational scope (USD, EUR, GBP, JPY, CHF, SGD, AUD) demonstrates real-world treasury complexity.
 
 ---
 
@@ -49,26 +49,39 @@ The agent confirms the same numbers: 7 accounts, 3 currencies, ~$22.4M total. Th
 
 **What she sees in the UI** (Dashboard tab):
 
-- The **Recent Recommendations** card at the bottom of the Dashboard shows a **HIGH**-priority alert with a red chip. Something about ACME Corp.
-- She scrolls down to the **Obligations Table** and spots the ACME Corp row -- EUR 2,300,000 receivable flagged with an abnormally low probability indicator.
+- The **Recent Recommendations** card at the bottom shows up to 5 recommendations. A **HIGH**-priority alert with a red chip catches her eye -- something about ACME Corp. She also notices a smaller action was already **auto-executed** by the agent overnight (amount < $100K, per the Approval Matrix).
+- She scrolls down to the **Obligations Table** and spots the ACME Corp row -- EUR 2,300,000 receivable flagged with a warning icon indicating abnormally low collection probability.
 
 She clicks the **Recommendations** tab to get the full picture.
 
 **What she sees** (Recommendations tab -- "Agent Recommendations"):
 
-Three recommendations grouped by priority, each with full **Agent Rationale** (always visible, never truncated) and numbered **Actions Upon Approval** steps:
+5-7 recommendations grouped by priority, each with full **Agent Rationale** (always visible, never truncated) and numbered **Actions Upon Approval** steps. Typical recommendations include:
 
-1. **HIGH -- Accelerate Collection**: ACME Corp EUR 2.3M at only 45% probability (vs typical 85-97%). The rationale explains the enriched forecast reduces expected EUR inflow by ~EUR 1.27M compared to what the ML model alone predicts.
-2. **MEDIUM -- Place Term Deposit**: EUR surplus at ~153% of 30-day obligations, exceeding the 120% threshold. Amount > $500K, so it requires VP Treasury approval per Approval Matrix Section 2.1.
-3. **MEDIUM -- FX Forward Hedge**: Net GBP exposure of ~GBP 1.4M exceeds the GBP 500K mandatory hedging threshold.
+1. **HIGH -- Accelerate Collection**: ACME Corp EUR 2.3M at only 45% probability (vs typical 85-97%). The rationale explains the enriched forecast reduces expected EUR inflow by ~EUR 1.27M compared to what the ML model alone predicts. *Triggered by: Low Probability Receivable.*
+2. **HIGH -- Accelerate Collection**: Takeda Pharmaceutical JPY 180M at 40% probability -- a payment dispute flagged by the agent. *Triggered by: Low Probability Receivable.*
+3. **MEDIUM -- Place Term Deposit**: EUR surplus at ~153% of 30-day obligations, exceeding the 120% threshold. Amount > $500K, so it requires VP Treasury approval per Approval Matrix Section 2.1.
+4. **MEDIUM -- FX Forward Hedge**: Net GBP exposure of ~GBP 1.4M exceeds the GBP 500K mandatory hedging threshold per FX Hedging Policy.
+5. **MEDIUM -- Interbank Sweep**: Excess JPY balance at Mizuho can be consolidated to MUFG for better overnight rates.
+6. **LOW -- Early Payment Discount**: Several AP items offer 2/10 net 30 terms -- capturing a 2% discount worth $15-50K.
+7. **LOW -- Spot FX Rebalance**: AUD balance slightly above target; rebalance to USD.
+
+Some small recommendations (< $100K) show as **auto-executed** -- the agent acted within its authority per the Approval Matrix.
 
 She can also click the **Anomalies** tab:
 
 **What she sees** (Anomalies tab -- "Anomaly Detection"):
 
-Each anomaly card now includes an **AI Analysis** box (blue, powered by Gemini) with:
-- A business-context **explanation** of why the anomaly matters (e.g., "This low-probability EUR receivable from ACME Corp represents significant collection risk that could create a EUR shortfall...")
-- A specific **suggested action** (e.g., "Accelerate collection on ACME Corp or hedge EUR exposure")
+Multiple anomaly types detected:
+- **Low Probability Receivable**: ACME Corp (EUR), Takeda Pharmaceutical (JPY), BHP Mining (AUD)
+- **TimesFM Cash Flow Anomaly**: Statistical anomalies detected by AI.DETECT_ANOMALIES
+- **AP Concentration**: High vendor payment concentration risk
+- **FX Exposure Breach**: Currency exposure exceeding policy thresholds
+- **Payment Spike**: Unusual EUR outflow spike from emergency equipment replacement
+
+Each anomaly card includes an **AI Analysis** box (blue, powered by Gemini) with:
+- A business-context **explanation** of why the anomaly matters
+- A specific **suggested action**
 - A **View Recommendation** chip linking to the recommendation this anomaly triggered -- clicking it navigates to the Recommendations page
 
 Back on the **Recommendations** tab, each recommendation that was triggered by an anomaly shows a **"Triggered by:"** chip (e.g., "Triggered by: Low Probability Receivable") linking back to the Anomalies page.
@@ -77,9 +90,9 @@ Back on the **Recommendations** tab, each recommendation that was triggered by a
 
 > Check for any anomalies in our receivables and payables
 
-The agent explains the ACME risk in plain language: a major Phase 3 enterprise delivery with collection confidence far below normal. It quantifies the impact -- EUR 2.3M at risk equals roughly $2.5M USD.
+The agent explains the ACME risk in plain language: a major Phase 3 enterprise delivery with collection confidence far below normal. It also flags Takeda Pharmaceutical in JPY and BHP Mining in AUD -- risks spanning three currencies.
 
-**Key talking points**: The TimesFM foundation model forecasts cash flow from historical patterns via AI.FORECAST (no model training needed), but it can't see AR probability data or AP schedules. The agent enriches the forecast with this context -- **the Forecast Chart on the Dashboard visualizes this directly**: the solid Agent-Enriched line diverges from the dashed ML Baseline around AR/AP due dates, making the gap between "what the model thinks" and "what the agent knows" immediately visible. Every recommendation cites the delta between these two views. Policy references (Treasury Policy Section 2.3, FX Hedging Policy Section 2.1) come from semantic search over actual policy documents, not hallucinated rules. Anomalies are no longer just statistical alerts -- Gemini explains each one in business terms with a suggested action, and traceability links show exactly which recommendations were spawned by which anomalies.
+**Key talking points**: The TimesFM foundation model forecasts cash flow from historical patterns via AI.FORECAST (no model training needed), but it can't see AR probability data or AP schedules. The agent enriches the forecast with this context -- **the Forecast Chart on the Dashboard visualizes this directly**: the solid Agent-Enriched line diverges from the dashed ML Baseline around AR/AP due dates, making the gap between "what the model thinks" and "what the agent knows" immediately visible. Every recommendation cites the delta between these two views. Policy references (Treasury Policy Section 2.3, FX Hedging Policy Section 2.1) come from semantic search over actual policy documents loaded at inference time, not hallucinated rules. Anomalies are no longer just statistical alerts -- Gemini explains each one in business terms with a suggested action, and traceability links show exactly which recommendations were spawned by which anomalies. The agent also auto-executes small actions (< $100K) overnight without human intervention, per the Approval Matrix.
 
 ---
 
@@ -95,8 +108,9 @@ The $200K amount falls in the $100K-$500K band, so the agent asks for confirmati
 
 **What she sees** (Executions tab -- "Execution History"):
 
-- Summary cards at the top show counts: **Deposits**, **FX Trades**, **Other Actions**.
+- Summary cards at the top show counts by type: **Deposits**, **FX Trades**, **Transfers**, **Sweeps**, **Discounts**, and other action types.
 - The execution table shows the completed transfer with columns for Time, Type ("Transfer"), Confirmation ID, Counterparty ("Chase"), Amount ($200,000), and Status ("Completed").
+- If the agent auto-executed any small actions overnight, those appear here too with their confirmation details.
 
 Now she turns to the bigger action.
 
@@ -104,13 +118,13 @@ Now she turns to the bigger action.
 
 The agent recognizes the amount exceeds $500K. Instead of executing, it creates a **formal approval request** and tells Sarah it's been submitted for VP Treasury approval.
 
-**What she sees** (Approvals tab -- "Agent Approvals"):
+**What she sees** (Recommendations tab -- "Agent Recommendations"):
 
-- The **Pending** sub-tab shows the new approval request (the UI polls every 5 seconds).
+- The **Pending Approvals** sub-tab (within Recommendations) shows the new approval request.
 - The card displays the action type ("Place Term Deposit"), the amount, and a full **Agent Reasoning** section explaining why the deposit is warranted.
 - Below that, numbered **execution steps** show exactly what will happen upon approval.
 
-**Key talking points**: Three-tier authorization keeps the agent safe. Under $100K: auto-executed. $100K-$500K: user confirms in chat. Over $500K: formal approval workflow with full reasoning. Three external systems are integrated in a single agent action: Bank API, SAP ERP, and the audit log.
+**Key talking points**: Three-tier authorization keeps the agent safe. Under $100K: auto-executed (visible in Executions tab). $100K-$500K: user confirms in chat. Over $500K: formal approval workflow with full reasoning. These thresholds are defined in the Approval Matrix policy document and loaded dynamically -- not hardcoded. Three external systems are integrated in a single agent action: Bank API, SAP ERP, and the audit log.
 
 ---
 
@@ -118,7 +132,7 @@ The agent recognizes the amount exceeds $500K. Instead of executing, it creates 
 
 *Sarah reviews and adjusts the deposit before approving.*
 
-**What she sees** (Approvals tab):
+**What she sees** (Recommendations tab -- Pending Approvals):
 
 She reads the agent's reasoning on the pending EUR deposit. The numbered execution plan makes it clear what will happen: transfer funds, place the deposit at ~4.2% annual rate, 30-day term, confirmation recorded.
 
@@ -146,7 +160,7 @@ The complete chain is visible: recommendation created, approval requested, appro
 
 *Sarah rejects the ACME collection acceleration and teaches the agent why.*
 
-**What she does** (Approvals tab):
+**What she does** (Recommendations tab -- Pending Approvals):
 
 She sees the ACME collection acceleration in the pending approvals. She clicks **Reject** and enters: "ACME has contractual 60-day payment terms. Low probability reflects timing, not credit risk."
 
@@ -168,7 +182,26 @@ She clicks **Execute Agents Synchronously Now** on the Dashboard. The new recomm
 
 ---
 
-## Beat 5 -- Stress Testing
+## Beat 5 -- Policies & Governance Framework
+
+*Sarah wants to show her team the policies driving the agent's decisions.*
+
+**What she sees** (Policies tab -- "Treasury Policies"):
+
+She clicks **Policies** in the System navigation section. The page shows:
+
+- **Three threshold summary cards** at the top:
+  - **Approval Matrix**: Three-tier authorization (Auto-execute < $100K, Confirmation $100K-$500K, Formal Approval > $500K)
+  - **FX Hedging Thresholds**: Per-currency mandatory hedging limits (EUR 750K, GBP 500K, JPY 50M, CHF 500K, SGD 500K, AUD 500K)
+  - **Treasury Policy**: Key parameters (Surplus ratio 120%, Collection risk threshold 60%, Strategic reserve $2M, Operating reserve 14 days)
+
+- **Full policy documents** in expandable accordion sections below, rendered from the actual markdown policy files that the agent uses at inference time. What Sarah reads is exactly what grounds the agent's decisions -- not a summary or approximation.
+
+**Key talking points**: The agent's decisions are grounded in actual policy documents, not hardcoded rules. The thresholds shown on this page are the same values used by the agent when generating recommendations, detecting anomalies, and determining approval requirements. Changing a threshold in the policy document changes agent behavior -- single source of truth. This transparency is critical for regulated industries where auditors need to verify what rules the AI is following.
+
+---
+
+## Beat 6 -- Stress Testing
 
 *Sarah wants to understand the downside risk before her board call.*
 
@@ -194,12 +227,13 @@ For maximum impact, present with two browser windows side by side:
 
 Key moments where both screens shine:
 
-1. **Beat 1**: Agent reports cash position -- Dashboard shows the same totals
-2. **Beat 2**: Agent explains ACME anomaly -- Obligations Table flags the row
-3. **Beat 3**: Agent creates approval request -- Approvals tab shows it with full reasoning
+1. **Beat 1**: Agent reports cash position across 14 accounts -- Dashboard shows the same totals
+2. **Beat 2**: Agent explains ACME anomaly -- Obligations Table flags the row; auto-executed actions visible in Executions
+3. **Beat 3**: Agent creates approval request -- Recommendations tab shows it with full reasoning
 4. **Beat 4**: Click Approve in the UI -- Executions tab shows the trade confirmation
-5. **Beat 4.5**: Reject ACME in Approvals -- Memory tab shows the new entry
-6. **Beat 5**: Agent runs scenario -- Dashboard serves as the base-case reference
+5. **Beat 4.5**: Reject ACME in Recommendations -- Memory tab shows the new entry
+6. **Beat 5**: Navigate to Policies -- show the governance framework grounding agent decisions
+7. **Beat 6**: Agent runs scenario -- Dashboard serves as the base-case reference
 
 ---
 
@@ -217,7 +251,8 @@ Key moments where both screens shine:
    [approve in UI -> auto-executes -> check Executions tab]
 9. [Reject ACME approval -> "Remember this?" -> Yes -> check Memory tab]
 10. [Execute Agents Synchronously Now -> recommendations now reflect memory]
-11. What if ACME Corp doesn't pay and EUR/USD drops 5%?
+11. [Navigate to Policies tab -> review governance framework]
+12. What if ACME Corp doesn't pay and EUR/USD drops 5%?
 ```
 
 ---
@@ -251,7 +286,8 @@ Key moments where both screens shine:
 | Component | Role |
 |-----------|------|
 | ADK (Agent Development Kit) | Agent framework, orchestration |
-| Vertex AI | LLM inference (Gemini) |
+| Vertex AI Agent Engine | Managed agent runtime, session management |
+| Gemini (2.5 Flash / Pro) | LLM inference for agents, chat, recommendations |
 | BigQuery | Data warehouse, operational tables |
 | TimesFM (AI.FORECAST) | Zero-training time-series forecasting and anomaly detection |
 | Cloud Run | Mock services, UI, UI API, Chat App, Agent Runner |
@@ -262,17 +298,31 @@ Key moments where both screens shine:
 
 | Data Point | Value |
 |-----------|-------|
-| Total cash position | ~$22.4M USD equivalent |
+| Total cash position | ~$34M USD equivalent |
+| Currencies | 7 (USD, EUR, GBP, JPY, CHF, SGD, AUD) |
+| Bank accounts | 14 across 8 banks |
+| Banks | Chase, BofA, Deutsche Bank, BNP Paribas, Barclays, MUFG, Mizuho, UBS, DBS, OCBC, ANZ, Westpac |
 | USD holdings | $11.1M (3 accounts) |
 | EUR holdings | EUR 6.8M (2 accounts) |
 | GBP holdings | GBP 3.1M (2 accounts) |
-| EUR/USD rate | ~1.08 |
-| GBP/USD rate | ~1.27 |
+| JPY holdings | JPY 650M (2 accounts) |
+| CHF holdings | CHF 1.8M (1 account) |
+| SGD holdings | SGD 3.9M (2 accounts) |
+| AUD holdings | AUD 3.5M (2 accounts) |
+| AR items | 75 across 7 currencies |
+| AP items | 84 across 7 currencies |
+| Payment runs | 10 scheduled batches |
+| Recommendations per run | 5-7 (anomaly-driven + policy-driven) |
 | ACME Corp receivable | EUR 2,300,000 at 45% probability |
-| Surplus threshold | 120% of 30-day obligations |
-| Auto-execute limit | < $100K |
-| Confirm limit | $100K-$500K |
-| Formal approval limit | > $500K |
+| Takeda Pharmaceutical | JPY 180,000,000 at 40% probability |
+| BHP Mining Services | AUD 450,000 at 35% probability |
+| Surplus threshold | 120% of 30-day obligations (from Treasury Policy) |
+| Auto-execute limit | < $100K (from Approval Matrix) |
+| Confirm limit | $100K-$500K (from Approval Matrix) |
+| Formal approval limit | > $500K (from Approval Matrix) |
+| FX hedge thresholds | EUR 750K, GBP 500K, JPY 50M, CHF 500K, SGD 500K, AUD 500K |
+| Action types | PLACE_DEPOSIT, HEDGE_FX, ACCELERATE_COLLECTION, PLACE_INVESTMENT, INTERBANK_SWEEP, SPOT_FX_REBALANCE, EARLY_PAYMENT_DISCOUNT |
+| Anomaly types | TIMESFM_CASH_FLOW_ANOMALY, LOW_PROBABILITY_RECEIVABLE, AP_CONCENTRATION, FX_EXPOSURE_BREACH, PAYMENT_SPIKE |
 
 ### Troubleshooting
 
@@ -285,3 +335,5 @@ Key moments where both screens shine:
 | Slow responses on `adk web` | First query initializes connections; subsequent queries are faster |
 | Mock service errors | Check Cloud Run services: `gcloud run services list` |
 | Recommendations empty after reset | Click **Execute Agents Synchronously Now** on the Dashboard |
+| Policy thresholds not loading | Check `/api/policy-thresholds` endpoint; ensure `pyyaml` is installed in ui_api |
+| Only 3 currencies in forecast chart | Click **Show All Currencies** toggle to see all 7 |
