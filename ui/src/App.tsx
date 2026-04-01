@@ -9,6 +9,7 @@ import AgentChat from './pages/AgentChat'
 import AgentMemory from './pages/AgentMemory'
 import Anomalies from './pages/Anomalies'
 import Architecture from './pages/Architecture'
+import Policies from './pages/Policies'
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
           <Route path="/memory" element={<AgentMemory />} />
           <Route path="/chat" element={<AgentChat />} />
           <Route path="/architecture" element={<Architecture />} />
+          <Route path="/policies" element={<Policies />} />
         </Routes>
       </Box>
     </Box>

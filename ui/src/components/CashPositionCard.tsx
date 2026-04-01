@@ -13,6 +13,10 @@ const getCurrencyFlag = (currency: string): string => {
     USD: '🇺🇸',
     EUR: '🇪🇺',
     GBP: '🇬🇧',
+    JPY: '🇯🇵',
+    CHF: '🇨🇭',
+    SGD: '🇸🇬',
+    AUD: '🇦🇺',
   }
   return flags[currency] || '💰'
 }

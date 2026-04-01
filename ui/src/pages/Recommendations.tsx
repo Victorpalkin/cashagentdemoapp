@@ -47,6 +47,21 @@ const ACTION_CONFIG: Record<string, { label: string; icon: React.ReactNode; colo
     icon: <TrendingUp fontSize="small" />,
     color: '#7B61FF',
   },
+  INTERBANK_SWEEP: {
+    label: 'Interbank Sweep',
+    icon: <AccountBalance fontSize="small" />,
+    color: '#00B4D8',
+  },
+  SPOT_FX_REBALANCE: {
+    label: 'Spot FX Rebalance',
+    icon: <CurrencyExchange fontSize="small" />,
+    color: '#F77F00',
+  },
+  EARLY_PAYMENT_DISCOUNT: {
+    label: 'Early Payment Discount',
+    icon: <TrendingUp fontSize="small" />,
+    color: '#CC1919',
+  },
 }
 
 const ACTION_OPTIONS = [
@@ -54,9 +69,12 @@ const ACTION_OPTIONS = [
   { value: 'HEDGE_FX', label: 'FX Forward Hedge' },
   { value: 'ACCELERATE_COLLECTION', label: 'Accelerate Collection' },
   { value: 'PLACE_INVESTMENT', label: 'Place Investment' },
+  { value: 'INTERBANK_SWEEP', label: 'Interbank Sweep' },
+  { value: 'SPOT_FX_REBALANCE', label: 'Spot FX Rebalance' },
+  { value: 'EARLY_PAYMENT_DISCOUNT', label: 'Early Payment Discount' },
 ]
 
-const CURRENCY_OPTIONS = ['USD', 'EUR', 'GBP']
+const CURRENCY_OPTIONS = ['USD', 'EUR', 'GBP', 'JPY', 'CHF', 'SGD', 'AUD']
 
 const getExecutionPlan = (rec: { action_type: string; amount: number; currency: string }): string[] => {
   const amount = new Intl.NumberFormat('en-US', {
@@ -86,6 +104,27 @@ const getExecutionPlan = (rec: { action_type: string; amount: number; currency: 
         `Send automated payment reminder to customer`,
         `Escalate to VP Treasury for direct counterparty engagement`,
         `Monitor payment status daily until resolved`,
+      ]
+    case 'INTERBANK_SWEEP':
+      return [
+        `Transfer ${amount} between accounts of the same currency`,
+        `Rebalance idle cash from savings to operating account`,
+        `Transaction processed via internal bank transfer`,
+        `Confirmation recorded in execution log`,
+      ]
+    case 'SPOT_FX_REBALANCE':
+      return [
+        `Execute spot FX trade: convert ${amount} at current market rate`,
+        `Trade settled T+2 business days`,
+        `Rebalances minor currency position to target allocation`,
+        `Trade confirmation and rate recorded in execution log`,
+      ]
+    case 'EARLY_PAYMENT_DISCOUNT':
+      return [
+        `Pay invoice early to capture 2% discount (2/10 net 30 terms)`,
+        `Process payment of ${amount} before discount deadline`,
+        `Net savings credited to operating account`,
+        `Payment confirmation recorded in execution log`,
       ]
     default:
       return [`Execute ${rec.action_type.replace(/_/g, ' ').toLowerCase()} for ${amount}`]

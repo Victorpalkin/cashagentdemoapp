@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query'
 import { Box, Card, CardContent, Container, Grid, Paper, Typography, Chip, Divider } from '@mui/material'
 import {
   TrendingUp as ForecastIcon,
@@ -53,7 +54,22 @@ const connectorSx = {
   fontSize: '1.5rem',
 }
 
+const formatThreshold = (amount: number): string => {
+  if (amount >= 1000000) return `${(amount / 1000000).toFixed(1)}M`
+  if (amount >= 1000) return `${(amount / 1000).toFixed(0)}K`
+  return amount.toLocaleString()
+}
+
 const Architecture = () => {
+  const { data: thresholds } = useQuery({
+    queryKey: ['policy-thresholds'],
+    queryFn: async () => {
+      const res = await fetch('/api/policy-thresholds')
+      if (!res.ok) return null
+      return res.json()
+    },
+    staleTime: Infinity,
+  })
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Section 1: Agentic Flow */}
@@ -119,9 +135,9 @@ const Architecture = () => {
                 Three-tier authorization:
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, mt: 0.5 }}>
-                <Typography variant="caption">Auto-approve: &lt; $100K</Typography>
-                <Typography variant="caption">Confirm: $100K &ndash; $500K</Typography>
-                <Typography variant="caption">Formal approval: &gt; $500K</Typography>
+                <Typography variant="caption">Auto-approve: &lt; ${formatThreshold(thresholds?.agent_auto_execute_max ?? 100000)}</Typography>
+                <Typography variant="caption">Confirm: ${formatThreshold(thresholds?.agent_auto_execute_max ?? 100000)} &ndash; ${formatThreshold(thresholds?.agent_confirmation_max ?? 500000)}</Typography>
+                <Typography variant="caption">Formal approval: &gt; ${formatThreshold(thresholds?.agent_formal_approval_min ?? 500000)}</Typography>
               </Box>
             </Box>
             <Chip label="ExecutionAgent" size="small" variant="outlined" />

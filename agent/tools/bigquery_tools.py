@@ -5,6 +5,7 @@ import datetime
 from google.cloud import bigquery
 
 from ..shared_libraries.constants import PROJECT_ID, DATASET_ID
+from .policy_tools import get_collection_risk_threshold, get_hedge_thresholds
 
 
 def _table(name: str) -> str:
@@ -578,7 +579,7 @@ def detect_anomalies() -> dict:
     risky_ar_query = f"""
         SELECT customer_name, amount, currency, due_date, probability
         FROM {_table('ar_open_items')}
-        WHERE status = 'OPEN' AND probability < 0.6
+        WHERE status = 'OPEN' AND probability < {get_collection_risk_threshold()}
         ORDER BY amount DESC
     """
     risky_ar = [dict(r) for r in client.query(risky_ar_query).result()]
@@ -636,6 +637,80 @@ def detect_anomalies() -> dict:
             ),
             "details": item,
         })
+
+    # 4. FX exposure breach — net foreign currency obligation exceeds hedging threshold
+    hedge_thresholds = get_hedge_thresholds()
+    try:
+        ap_by_cur = {}
+        for r in client.query(f"""
+            SELECT currency, SUM(amount) AS total
+            FROM {_table('ap_open_items')} WHERE status = 'OPEN'
+            GROUP BY currency
+        """).result():
+            ap_by_cur[r["currency"]] = r["total"]
+
+        ar_weighted_by_cur = {}
+        for r in client.query(f"""
+            SELECT currency, SUM(amount * probability) AS total
+            FROM {_table('ar_open_items')} WHERE status = 'OPEN'
+            GROUP BY currency
+        """).result():
+            ar_weighted_by_cur[r["currency"]] = r["total"]
+
+        for cur, threshold in hedge_thresholds.items():
+            net_obligation = (ap_by_cur.get(cur, 0) - ar_weighted_by_cur.get(cur, 0))
+            if net_obligation > threshold:
+                anomalies.append({
+                    "severity": "HIGH" if net_obligation > threshold * 2 else "MEDIUM",
+                    "type": "FX_EXPOSURE_BREACH",
+                    "description": (
+                        f"{cur} net FX obligation of {net_obligation:,.0f} "
+                        f"exceeds hedging threshold of {threshold:,.0f} "
+                        f"(AP: {ap_by_cur.get(cur, 0):,.0f}, "
+                        f"weighted AR: {ar_weighted_by_cur.get(cur, 0):,.0f})"
+                    ),
+                    "details": {
+                        "currency": cur,
+                        "net_obligation": net_obligation,
+                        "threshold": threshold,
+                    },
+                })
+    except Exception:
+        pass
+
+    # 5. Payment spike — next 7 days AP exceeds 2x weekly average
+    try:
+        spike_query = f"""
+            WITH next_7_days AS (
+                SELECT currency, SUM(amount) AS upcoming_total
+                FROM {_table('ap_open_items')}
+                WHERE status = 'OPEN'
+                  AND due_date BETWEEN CURRENT_DATE() AND DATE_ADD(CURRENT_DATE(), INTERVAL 7 DAY)
+                GROUP BY currency
+            ),
+            weekly_avg AS (
+                SELECT currency, AVG(amount) * 5 AS avg_weekly_total
+                FROM {_table('ap_open_items')}
+                WHERE status = 'OPEN'
+                GROUP BY currency
+            )
+            SELECT n.currency, n.upcoming_total, w.avg_weekly_total
+            FROM next_7_days n
+            JOIN weekly_avg w ON n.currency = w.currency
+            WHERE n.upcoming_total > w.avg_weekly_total * 2
+        """
+        for r in client.query(spike_query).result():
+            anomalies.append({
+                "severity": "HIGH",
+                "type": "PAYMENT_SPIKE",
+                "description": (
+                    f"{r['currency']} has {r['upcoming_total']:,.0f} in AP due within 7 days, "
+                    f"which is more than 2x the weekly average of {r['avg_weekly_total']:,.0f}"
+                ),
+                "details": _row_to_dict(r),
+            })
+    except Exception:
+        pass
 
     anomalies.sort(key=lambda x: {"HIGH": 0, "MEDIUM": 1, "LOW": 2}[x["severity"]])
     return {"anomalies": anomalies, "count": len(anomalies)}

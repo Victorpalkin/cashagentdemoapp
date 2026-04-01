@@ -1,3 +1,9 @@
+---
+thresholds:
+  agent_auto_execute_max: 100000
+  agent_confirmation_max: 500000
+  agent_formal_approval_min: 500000
+---
 # Treasury Approval Matrix
 
 ## 1. Purpose

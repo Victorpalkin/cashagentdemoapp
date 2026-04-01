@@ -84,6 +84,10 @@ def _mock_fx_trade(buy_currency, sell_currency, buy_amount, trade_type, settleme
         ("GBP", "USD"): 1.27,
         ("EUR", "USD"): 1.08,
         ("EUR", "GBP"): 0.8504,
+        ("JPY", "USD"): 0.0067,
+        ("CHF", "USD"): 1.12,
+        ("SGD", "USD"): 0.75,
+        ("AUD", "USD"): 0.66,
     }
     pair = (buy_currency, sell_currency)
     rev_pair = (sell_currency, buy_currency)

@@ -105,7 +105,8 @@ declare -A IMAGES=(
   ["sap-api-mock"]="mock_services/sap_api"
   ["bank-api-mock"]="mock_services/bank_api"
   ["broker-api-mock"]="mock_services/broker_api"
-  ["ui-api"]="ui_api"
+  # ui-api now built separately (needs repo root context for policy files)
+  # ["ui-api"]="ui_api"
   ["chat-app"]="chat_app"
 )
 
@@ -115,6 +116,13 @@ info "  Building agent-runner from agent_runner/ (repo root context)..."
 docker build -t "$AGENT_RUNNER_IMAGE" -f "$SCRIPT_DIR/agent_runner/Dockerfile" "$SCRIPT_DIR"
 docker push "$AGENT_RUNNER_IMAGE"
 ok "  Pushed ${AGENT_RUNNER_IMAGE}"
+
+# UI API needs repo root context for policy files
+UI_API_IMAGE="${REGISTRY}/ui-api:latest"
+info "  Building ui-api from ui_api/ (repo root context)..."
+docker build -t "$UI_API_IMAGE" -f "$SCRIPT_DIR/ui_api/Dockerfile" "$SCRIPT_DIR"
+docker push "$UI_API_IMAGE"
+ok "  Pushed ${UI_API_IMAGE}"
 
 for IMAGE_NAME in "${!IMAGES[@]}"; do
   BUILD_DIR="${IMAGES[$IMAGE_NAME]}"

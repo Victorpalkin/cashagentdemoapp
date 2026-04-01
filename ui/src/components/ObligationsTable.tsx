@@ -14,8 +14,9 @@ import {
   Tooltip,
 } from '@mui/material'
 import { Warning } from '@mui/icons-material'
+import { useQuery } from '@tanstack/react-query'
 import StatusBadge from './StatusBadge'
-import { Obligation } from '../api/bigquery'
+import { Obligation, getPolicyThresholds } from '../api/bigquery'
 
 interface ObligationsTableProps {
   obligations: Obligation[]
@@ -37,6 +38,12 @@ const formatDate = (dateStr: string): string => {
 }
 
 const ObligationsTable = ({ obligations, isLoading }: ObligationsTableProps) => {
+  const { data: thresholds } = useQuery({
+    queryKey: ['policy-thresholds'],
+    queryFn: getPolicyThresholds,
+    staleTime: Infinity,
+  })
+
   return (
     <Card>
       <CardContent sx={{ p: 3 }}>
@@ -68,7 +75,8 @@ const ObligationsTable = ({ obligations, isLoading }: ObligationsTableProps) => 
               </TableHead>
               <TableBody>
                 {obligations.map((obligation) => {
-                  const isAnomaly = obligation.type === 'AR' && obligation.probability !== undefined && obligation.probability < 0.6
+                  const collectionRiskThreshold = thresholds?.collection_risk_probability ?? 0.6
+                  const isAnomaly = obligation.type === 'AR' && obligation.probability !== undefined && obligation.probability < collectionRiskThreshold
                   return (
                     <TableRow
                       key={obligation.id}

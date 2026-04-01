@@ -359,6 +359,24 @@ export const deactivateMemory = async (memoryId: string): Promise<void> => {
   if (!res.ok) throw new Error(`Deactivate failed: ${res.status}`)
 }
 
+// ---- Policies ----
+
+export interface PolicyDocument {
+  name: string
+  display_name: string
+  thresholds: Record<string, any>
+  body_markdown: string
+}
+
+export const getPolicies = async (): Promise<PolicyDocument[]> => {
+  const resp = await apiFetch<{ policies: PolicyDocument[] }>('/api/policies')
+  return resp.policies
+}
+
+export const getPolicyThresholds = async (): Promise<Record<string, any>> => {
+  return apiFetch<Record<string, any>>('/api/policy-thresholds')
+}
+
 // ---- Chat ----
 
 export const sendChatMessage = async (message: string): Promise<string> => {

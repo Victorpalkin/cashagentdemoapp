@@ -1,8 +1,21 @@
+---
+thresholds:
+  surplus_ratio: 1.2
+  collection_risk_probability: 0.6
+  strategic_reserve_usd: 2000000
+  operating_reserve_days: 14
+  surplus_obligation_days: 30
+  max_single_investment_pct: 0.4
+  max_investment_maturity_days: 90
+  max_counterparty_pct: 0.6
+  intercompany_transfer_approval_usd: 1000000
+  max_credit_utilization_pct: 0.5
+---
 # Corporate Treasury Policy
 
 ## 1. Purpose and Scope
 
-This policy governs the management of corporate cash, liquidity, and short-term investments for all operating entities. It applies to all treasury operations across USD, EUR, and GBP currency holdings.
+This policy governs the management of corporate cash, liquidity, and short-term investments for all operating entities. It applies to all treasury operations across USD, EUR, GBP, JPY, CHF, SGD, and AUD currency holdings.
 
 ## 2. Minimum Reserve Requirements
 
@@ -46,6 +59,13 @@ No more than 60% of total cash may be held with any single banking counterparty.
 - Deutsche Bank (EUR primary)
 - BNP Paribas (EUR secondary)
 - Barclays (GBP primary)
+- MUFG (JPY primary)
+- Mizuho (JPY secondary)
+- UBS (CHF primary)
+- DBS (SGD primary)
+- OCBC (SGD secondary)
+- ANZ (AUD primary)
+- Westpac (AUD secondary)
 
 ## 5. Intercompany Transfers
 

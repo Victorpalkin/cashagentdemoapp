@@ -15,6 +15,10 @@ const CURRENCY_COLORS: Record<string, string> = {
   USD: '#0070F2',
   EUR: '#36A41D',
   GBP: '#E76500',
+  JPY: '#CC1919',
+  CHF: '#7B61FF',
+  SGD: '#00B4D8',
+  AUD: '#F77F00',
 }
 
 const Dashboard = () => {
@@ -83,7 +87,7 @@ const Dashboard = () => {
   }
 
   const formatCompact = (amount: number, currency: string): string => {
-    const symbol: Record<string, string> = { USD: '$', EUR: '\u20AC', GBP: '\u00A3' }
+    const symbol: Record<string, string> = { USD: '$', EUR: '\u20AC', GBP: '\u00A3', JPY: '\u00A5', CHF: 'CHF ', SGD: 'S$', AUD: 'A$' }
     const s = symbol[currency] || ''
     if (amount >= 1000000) return `${s}${(amount / 1000000).toFixed(1)}M`
     if (amount >= 1000) return `${s}${(amount / 1000).toFixed(0)}K`
@@ -115,7 +119,7 @@ const Dashboard = () => {
       ) : (
         <Grid container spacing={3} sx={{ mb: 3 }}>
           {cashPositions.map((position) => (
-            <Grid item xs={12} md={4} key={position.currency}>
+            <Grid item xs={12} sm={6} md={3} key={position.currency}>
               <CashPositionCard {...position} />
             </Grid>
           ))}
@@ -263,7 +267,7 @@ const Dashboard = () => {
             </Typography>
           ) : (
             <List dense>
-              {recQuery.data.slice(0, 3).map((rec) => (
+              {recQuery.data.slice(0, 5).map((rec) => (
                 <ListItem
                   key={rec.recommendation_id}
                   sx={{

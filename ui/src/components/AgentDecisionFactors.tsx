@@ -1,5 +1,7 @@
 import { Card, CardContent, Typography, Box, Chip, CircularProgress, Divider } from '@mui/material'
 import { AccountBalance, CurrencyExchange, Warning } from '@mui/icons-material'
+import { useQuery } from '@tanstack/react-query'
+import { getPolicyThresholds } from '../api/bigquery'
 import type { Obligation, PaymentRun } from '../api/bigquery'
 
 interface AgentDecisionFactorsProps {
@@ -9,12 +11,8 @@ interface AgentDecisionFactorsProps {
   isLoading: boolean
 }
 
-const SURPLUS_RATIO = 1.2
-const HEDGE_THRESHOLDS: Record<string, number> = { EUR: 750000, GBP: 500000 }
-const COLLECTION_RISK_THRESHOLD = 0.6
-
 const formatCompact = (amount: number, currency: string): string => {
-  const symbol: Record<string, string> = { USD: '$', EUR: '\u20AC', GBP: '\u00A3' }
+  const symbol: Record<string, string> = { USD: '$', EUR: '\u20AC', GBP: '\u00A3', JPY: '\u00A5', CHF: 'CHF ', SGD: 'S$', AUD: 'A$' }
   const s = symbol[currency] || ''
   const abs = Math.abs(amount)
   const sign = amount < 0 ? '-' : ''
@@ -24,6 +22,16 @@ const formatCompact = (amount: number, currency: string): string => {
 }
 
 const AgentDecisionFactors = ({ obligations, paymentRuns, currencyBalances, isLoading }: AgentDecisionFactorsProps) => {
+  const { data: thresholds } = useQuery({
+    queryKey: ['policy-thresholds'],
+    queryFn: getPolicyThresholds,
+    staleTime: Infinity,
+  })
+
+  const SURPLUS_RATIO = thresholds?.surplus_ratio ?? 1.2
+  const HEDGE_THRESHOLDS: Record<string, number> = thresholds?.hedge_thresholds ?? { EUR: 750000, GBP: 500000, JPY: 50000000, CHF: 500000, SGD: 500000, AUD: 500000 }
+  const COLLECTION_RISK_THRESHOLD = thresholds?.collection_risk_probability ?? 0.6
+
   if (isLoading) {
     return (
       <Card>

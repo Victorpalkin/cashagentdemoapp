@@ -1,4 +1,5 @@
-import { Card, CardContent, Typography, Box, CircularProgress } from '@mui/material'
+import React from 'react'
+import { Card, CardContent, Typography, Box, CircularProgress, Button } from '@mui/material'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { ForecastDataPoint, Obligation, PaymentRun } from '../api/bigquery'
 
@@ -11,7 +12,7 @@ interface ForecastChartProps {
   paymentRuns?: PaymentRun[]
 }
 
-const CURRENCY_SYMBOLS: Record<string, string> = { USD: '$', EUR: '\u20AC', GBP: '\u00A3' }
+const CURRENCY_SYMBOLS: Record<string, string> = { USD: '$', EUR: '\u20AC', GBP: '\u00A3', JPY: '\u00A5', CHF: 'CHF ', SGD: 'S$', AUD: 'A$' }
 
 const ForecastChart = ({ forecasts, isLoading, error, currentBalances, obligations = [], paymentRuns = [] }: ForecastChartProps) => {
   const minimumReserve = 8000000
@@ -98,8 +99,11 @@ const ForecastChart = ({ forecasts, isLoading, error, currentBalances, obligatio
     })
   })()
 
-  const currencies = [...new Set(forecasts.map(f => f.currency))].sort()
-  const colorMap: Record<string, string> = { USD: '#0070F2', EUR: '#36A41D', GBP: '#E76500' }
+  const allCurrencies = [...new Set(forecasts.map(f => f.currency))].sort()
+  const colorMap: Record<string, string> = { USD: '#0070F2', EUR: '#36A41D', GBP: '#E76500', JPY: '#CC1919', CHF: '#7B61FF', SGD: '#00B4D8', AUD: '#F77F00' }
+  const defaultCurrencies = ['USD', 'EUR', 'GBP']
+  const [showAllCurrencies, setShowAllCurrencies] = React.useState(false)
+  const currencies = showAllCurrencies ? allCurrencies : allCurrencies.filter(c => defaultCurrencies.includes(c))
 
   return (
     <Card>
@@ -107,9 +111,21 @@ const ForecastChart = ({ forecasts, isLoading, error, currentBalances, obligatio
         <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
           30-Day Cash Forecast
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
-          Agent-enriched projection (solid) adjusted for probability-weighted AR, scheduled AP, and payment runs vs. ML-only baseline (dashed)
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5 }}>
+          <Typography variant="body2" color="text.secondary">
+            Agent-enriched projection (solid) adjusted for probability-weighted AR, scheduled AP, and payment runs vs. ML-only baseline (dashed)
+          </Typography>
+          {allCurrencies.length > 3 && (
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => setShowAllCurrencies(!showAllCurrencies)}
+              sx={{ textTransform: 'none', ml: 2, whiteSpace: 'nowrap' }}
+            >
+              {showAllCurrencies ? 'Show Major' : `Show All (${allCurrencies.length})`}
+            </Button>
+          )}
+        </Box>
 
         {isLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>

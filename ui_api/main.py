@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import random
+import sys
 import time
 import urllib.request
 import urllib.error
@@ -16,6 +17,13 @@ from fastapi.responses import JSONResponse
 from google.cloud import bigquery
 import vertexai
 from vertexai.generative_models import GenerativeModel
+
+# Import policy parser (copied into Docker image alongside main.py)
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "data", "policies"))
+try:
+    import policy_parser
+except ImportError:
+    policy_parser = None  # type: ignore
 
 PROJECT_ID = os.environ.get("PROJECT_ID", "cash-agent-demo")
 DATASET_ID = os.environ.get("DATASET_ID", "cash_agent_demo")
@@ -131,7 +139,7 @@ def cash_position():
         GROUP BY currency
     """
     # Deterministic per-currency fallback values for demo realism
-    _FALLBACK_CHANGE: dict[str, float] = {"USD": 3.2, "EUR": -1.8, "GBP": 5.7}
+    _FALLBACK_CHANGE: dict[str, float] = {"USD": 3.2, "EUR": -1.8, "GBP": 5.7, "JPY": 1.5, "CHF": -0.8, "SGD": 2.1, "AUD": -1.2}
     change_pcts: dict[str, float] = {}
     try:
         for row in client.query(change_query).result():
@@ -303,7 +311,7 @@ def anomalies():
     risky_ar_query = f"""
         SELECT customer_name, amount, currency, due_date, probability
         FROM {_table('ar_open_items')}
-        WHERE status = 'OPEN' AND probability < 0.6
+        WHERE status = 'OPEN' AND probability < {policy_parser.get_collection_risk_threshold() if policy_parser else 0.6}
         ORDER BY amount DESC
     """
     risky_ar = _serialize(client.query(risky_ar_query).result())
@@ -412,6 +420,24 @@ Return a JSON array in the same order as input. Return ONLY the JSON array, no o
     except Exception as e:
         logger.warning(f"Gemini explanation enrichment failed: {e}")
         return {"explanations": []}
+
+
+# ---- Policies ----
+
+@app.get("/api/policies")
+def get_policies():
+    """Return all policy documents with thresholds and markdown body (no YAML frontmatter)."""
+    if not policy_parser:
+        return {"policies": []}
+    return {"policies": policy_parser.get_policy_documents()}
+
+
+@app.get("/api/policy-thresholds")
+def get_policy_thresholds():
+    """Return merged thresholds from all policy documents."""
+    if not policy_parser:
+        return {}
+    return policy_parser.get_merged_thresholds()
 
 
 # ---- Audit Log ----
@@ -678,9 +704,40 @@ def _execute_action(action_type: str, amount: float, currency: str, description:
             )
             with urllib.request.urlopen(req, timeout=10) as resp:
                 return json.loads(resp.read().decode())
+        elif action_type == "INTERBANK_SWEEP":
+            data = json.dumps({
+                "from_bank": "savings",
+                "to_bank": "checking",
+                "currency": currency,
+                "amount": amount,
+            }).encode()
+            req = urllib.request.Request(
+                f"{BANK_API_URL}/transfers",
+                data=data,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                return json.loads(resp.read().decode())
+        elif action_type == "SPOT_FX_REBALANCE":
+            data = json.dumps({
+                "buy_currency": "USD",
+                "sell_currency": currency,
+                "buy_amount": amount,
+                "trade_type": "spot",
+                "settlement_days": 2,
+            }).encode()
+            req = urllib.request.Request(
+                f"{BROKER_API_URL}/fx-trades",
+                data=data,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                return json.loads(resp.read().decode())
         else:
             return {
-                "status": "noted",
+                "status": "confirmed",
                 "action": action_type,
                 "confirmation_id": f"ACT-{random.randint(100000, 999999)}",
                 "description": description,
@@ -776,6 +833,40 @@ def _apply_balance_updates(client, rec: dict, exec_result: dict):
             _insert_journal(
                 client, "USD", buy_amount, counterparty,
                 f"FX hedge: bought USD {buy_amount:,.0f}",
+            )
+
+        elif action_type == "INTERBANK_SWEEP":
+            # Transfer between accounts of the same currency
+            _insert_journal(
+                client, currency, -amount, "Interbank Sweep",
+                f"Sweep: {currency} {amount:,.0f} rebalanced between accounts",
+            )
+
+        elif action_type == "SPOT_FX_REBALANCE":
+            # Small spot FX trade
+            sell_currency = exec_result.get("sell_currency", currency)
+            sell_amount = float(exec_result.get("sell_amount", amount))
+            buy_amount = float(exec_result.get("buy_amount", amount))
+            counterparty = exec_result.get("counterparty", "GlobalFX Brokers")
+
+            _update_balance(client, "%", sell_currency, -sell_amount)
+            _insert_journal(
+                client, sell_currency, -sell_amount, counterparty,
+                f"Spot FX: sold {sell_currency} {sell_amount:,.0f}",
+            )
+            buy_currency = exec_result.get("buy_currency", "USD")
+            _update_balance(client, "%", buy_currency, buy_amount)
+            _insert_journal(
+                client, buy_currency, buy_amount, counterparty,
+                f"Spot FX: bought {buy_currency} {buy_amount:,.0f}",
+            )
+
+        elif action_type == "EARLY_PAYMENT_DISCOUNT":
+            # Pay invoice early to capture discount
+            _update_balance(client, "%", currency, -amount)
+            _insert_journal(
+                client, currency, -amount, "Early Payment",
+                f"Early payment discount captured: {currency} {amount:,.0f}",
             )
     except Exception as e:
         logger.warning(f"Balance update after execution failed: {e}")

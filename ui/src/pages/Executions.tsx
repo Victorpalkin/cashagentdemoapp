@@ -14,6 +14,9 @@ const TYPE_COLORS: Record<string, 'primary' | 'success' | 'warning' | 'secondary
   execute_transfer: 'warning',
   place_investment: 'secondary',
   accelerate_collection: 'warning',
+  interbank_sweep: 'primary',
+  spot_fx_rebalance: 'success',
+  early_payment_discount: 'secondary',
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -22,6 +25,9 @@ const TYPE_LABELS: Record<string, string> = {
   execute_transfer: 'Transfer',
   place_investment: 'Investment',
   accelerate_collection: 'Collection',
+  interbank_sweep: 'Sweep',
+  spot_fx_rebalance: 'Spot FX',
+  early_payment_discount: 'Early Pay',
 }
 
 const formatTimestamp = (timestamp: string): string => {
@@ -33,7 +39,7 @@ const formatTimestamp = (timestamp: string): string => {
 
 const formatAmount = (amount: number | undefined, currency: string | undefined): string => {
   if (!amount || !currency) return '-'
-  const symbol: Record<string, string> = { USD: '$', EUR: '\u20AC', GBP: '\u00A3' }
+  const symbol: Record<string, string> = { USD: '$', EUR: '\u20AC', GBP: '\u00A3', JPY: '\u00A5', CHF: 'CHF ', SGD: 'S$', AUD: 'A$' }
   return `${symbol[currency] || ''}${amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
 }
 

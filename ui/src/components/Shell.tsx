@@ -18,6 +18,7 @@ import {
   Psychology as PsychologyIcon,
   History as HistoryIcon,
   AccountTree as AccountTreeIcon,
+  Description as DescriptionIcon,
 } from '@mui/icons-material'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -46,6 +47,7 @@ const navSections = [
     label: 'System',
     items: [
       { label: 'Audit Trail', path: '/audit', icon: HistoryIcon },
+      { label: 'Policies', path: '/policies', icon: DescriptionIcon },
       { label: 'Architecture', path: '/architecture', icon: AccountTreeIcon },
     ],
   },

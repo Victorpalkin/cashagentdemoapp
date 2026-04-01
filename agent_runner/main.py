@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import random
+import sys
 import traceback
 
 import requests
@@ -12,6 +13,13 @@ from fastapi import FastAPI
 from google.cloud import bigquery
 import vertexai
 from vertexai.generative_models import GenerativeModel
+
+# Import policy parser (copied into Docker image alongside main.py)
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "data", "policies"))
+try:
+    import policy_parser
+except ImportError:
+    policy_parser = None  # type: ignore
 
 PROJECT_ID = os.environ.get("PROJECT_ID", "cash-agent-demo")
 DATASET_ID = os.environ.get("DATASET_ID", "cash_agent_demo")
@@ -160,6 +168,25 @@ def get_ap_open_items():
     return {"items": items, "count": len(items)}
 
 
+def _build_policy_section() -> str:
+    """Build the POLICIES section for the Gemini prompt from policy documents."""
+    if not policy_parser:
+        return """POLICIES (from corporate treasury policy documents):
+- Treasury Policy Section 2.3: Receivables with probability < 60% represent collection risk.
+- Treasury Policy Section 3.1: Surplus is cash balances exceeding 120% of 30-day obligations.
+- FX Hedging Policy Section 2.1: Hedge when net FX obligation exceeds currency thresholds.
+- Approval Matrix Section 3.1: Under $100,000 can be auto-executed.
+- Approval Matrix Section 3.2: $100,000-$500,000 require user confirmation.
+- Approval Matrix Section 3.3: Over $500,000 require formal VP Treasury approval."""
+
+    policies = policy_parser.load_all_policies()
+    sections = ["POLICIES (from corporate treasury policy documents):"]
+    for fname, data in policies.items():
+        display = fname.replace("_", " ").replace(".md", "").title()
+        sections.append(f"\n--- {display} ---\n{data['body']}")
+    return "\n".join(sections)
+
+
 def detect_anomalies():
     client = _bq_client()
     anomalies = []
@@ -203,7 +230,7 @@ def detect_anomalies():
     risky_ar = [dict(r) for r in client.query(f"""
         SELECT customer_name, amount, currency, due_date, probability
         FROM {_table('ar_open_items')}
-        WHERE status = 'OPEN' AND probability < 0.6 ORDER BY amount DESC
+        WHERE status = 'OPEN' AND probability < {policy_parser.get_collection_risk_threshold() if policy_parser else 0.6} ORDER BY amount DESC
     """).result()]
 
     for item in risky_ar:
@@ -216,6 +243,132 @@ def detect_anomalies():
             "description": f"{item['customer_name']}: {item['currency']} {item['amount']:,.0f} due {due} with only {item['probability']*100:.0f}% probability",
             "details": item,
         })
+
+    # 3. AP concentration — unusual weekly spikes
+    try:
+        ap_concentration_query = f"""
+            WITH weekly_ap AS (
+                SELECT
+                    DATE_TRUNC(due_date, WEEK) AS week_start,
+                    SUM(amount) AS weekly_total,
+                    currency
+                FROM {_table('ap_open_items')}
+                WHERE status = 'OPEN'
+                GROUP BY week_start, currency
+            ),
+            historical_avg AS (
+                SELECT
+                    currency,
+                    AVG(weekly_total) AS avg_weekly,
+                    STDDEV(weekly_total) AS stddev_weekly
+                FROM weekly_ap
+                GROUP BY currency
+            )
+            SELECT
+                w.week_start, w.currency, w.weekly_total,
+                h.avg_weekly,
+                SAFE_DIVIDE(w.weekly_total - h.avg_weekly, h.stddev_weekly) AS z_score
+            FROM weekly_ap w
+            JOIN historical_avg h ON w.currency = h.currency
+            WHERE SAFE_DIVIDE(w.weekly_total - h.avg_weekly, h.stddev_weekly) > 1.5
+            ORDER BY z_score DESC
+        """
+        ap_conc_rows = [dict(r) for r in client.query(ap_concentration_query).result()]
+        for item in ap_conc_rows:
+            ws = item["week_start"]
+            if hasattr(ws, "strftime"):
+                ws = ws.strftime("%Y-%m-%d")
+            anomalies.append({
+                "severity": "MEDIUM",
+                "type": "AP_CONCENTRATION",
+                "description": (
+                    f"Week of {ws}: {item['currency']} "
+                    f"{item['weekly_total']:,.0f} in AP payments "
+                    f"({item['z_score']:.1f} std devs above average)"
+                ),
+                "details": item,
+            })
+    except Exception:
+        pass
+
+    # 4. FX exposure breach — net foreign currency obligation exceeds hedging threshold
+    HEDGE_THRESHOLDS = policy_parser.get_hedge_thresholds() if policy_parser else {
+        'EUR': 750000, 'GBP': 500000, 'JPY': 50000000,
+        'CHF': 500000, 'SGD': 500000, 'AUD': 500000,
+    }
+    try:
+        ap_by_cur = {}
+        for r in client.query(f"""
+            SELECT currency, SUM(amount) AS total
+            FROM {_table('ap_open_items')} WHERE status = 'OPEN'
+            GROUP BY currency
+        """).result():
+            ap_by_cur[r["currency"]] = r["total"]
+
+        ar_weighted_by_cur = {}
+        for r in client.query(f"""
+            SELECT currency, SUM(amount * probability) AS total
+            FROM {_table('ar_open_items')} WHERE status = 'OPEN'
+            GROUP BY currency
+        """).result():
+            ar_weighted_by_cur[r["currency"]] = r["total"]
+
+        for cur, threshold in HEDGE_THRESHOLDS.items():
+            net_obligation = (ap_by_cur.get(cur, 0) - ar_weighted_by_cur.get(cur, 0))
+            if net_obligation > threshold:
+                anomalies.append({
+                    "severity": "HIGH" if net_obligation > threshold * 2 else "MEDIUM",
+                    "type": "FX_EXPOSURE_BREACH",
+                    "description": (
+                        f"{cur} net FX obligation of {net_obligation:,.0f} "
+                        f"exceeds hedging threshold of {threshold:,.0f} "
+                        f"(AP: {ap_by_cur.get(cur, 0):,.0f}, "
+                        f"weighted AR: {ar_weighted_by_cur.get(cur, 0):,.0f})"
+                    ),
+                    "details": {
+                        "currency": cur,
+                        "net_obligation": net_obligation,
+                        "threshold": threshold,
+                        "ap_total": ap_by_cur.get(cur, 0),
+                        "ar_weighted": ar_weighted_by_cur.get(cur, 0),
+                    },
+                })
+    except Exception:
+        pass
+
+    # 5. Payment spike — next 7 days AP exceeds 2x weekly average
+    try:
+        spike_query = f"""
+            WITH next_7_days AS (
+                SELECT currency, SUM(amount) AS upcoming_total
+                FROM {_table('ap_open_items')}
+                WHERE status = 'OPEN'
+                  AND due_date BETWEEN CURRENT_DATE() AND DATE_ADD(CURRENT_DATE(), INTERVAL 7 DAY)
+                GROUP BY currency
+            ),
+            weekly_avg AS (
+                SELECT currency, AVG(amount) * 5 AS avg_weekly_total
+                FROM {_table('ap_open_items')}
+                WHERE status = 'OPEN'
+                GROUP BY currency
+            )
+            SELECT n.currency, n.upcoming_total, w.avg_weekly_total
+            FROM next_7_days n
+            JOIN weekly_avg w ON n.currency = w.currency
+            WHERE n.upcoming_total > w.avg_weekly_total * 2
+        """
+        for r in client.query(spike_query).result():
+            anomalies.append({
+                "severity": "HIGH",
+                "type": "PAYMENT_SPIKE",
+                "description": (
+                    f"{r['currency']} has {r['upcoming_total']:,.0f} in AP due within 7 days, "
+                    f"which is more than 2x the weekly average of {r['avg_weekly_total']:,.0f}"
+                ),
+                "details": dict(r),
+            })
+    except Exception:
+        pass
 
     anomalies.sort(key=lambda x: {"HIGH": 0, "MEDIUM": 1, "LOW": 2}[x["severity"]])
     return {"anomalies": anomalies, "count": len(anomalies)}
@@ -314,15 +467,35 @@ def execute_recommendation(action_type, amount, currency, description):
                 "rate_pct": 4.2,
             }, timeout=10)
             result = resp.json()
-        elif action_type == "HEDGE_FX":
+        elif action_type in ("HEDGE_FX", "SPOT_FX_REBALANCE"):
+            trade_type = "spot" if action_type == "SPOT_FX_REBALANCE" else "forward"
             resp = requests.post(f"{BROKER_API_URL}/fx-trades", json={
-                "buy_currency": "USD",
-                "sell_currency": currency,
+                "buy_currency": currency if trade_type == "spot" else "USD",
+                "sell_currency": "USD" if trade_type == "spot" else currency,
                 "buy_amount": amount,
-                "trade_type": "forward",
-                "settlement_days": 21,
+                "trade_type": trade_type,
+                "settlement_days": 2 if trade_type == "spot" else 21,
             }, timeout=10)
             result = resp.json()
+        elif action_type == "INTERBANK_SWEEP":
+            resp = requests.post(f"{BANK_API_URL}/transfers", json={
+                "from_bank": "Chase",
+                "to_bank": "Bank of America",
+                "currency": currency,
+                "amount": amount,
+                "reference": f"Auto-sweep {description}",
+            }, timeout=10)
+            result = resp.json()
+        elif action_type == "EARLY_PAYMENT_DISCOUNT":
+            result = {
+                "status": "confirmed",
+                "action": action_type,
+                "confirmation_id": f"EPD-{random.randint(100000, 999999)}",
+                "description": description,
+                "discount_captured": round(amount * 0.02, 2),
+                "currency": currency,
+                "amount": amount,
+            }
         else:
             result = {
                 "status": "noted",
@@ -443,32 +616,44 @@ AGENT MEMORY (past decisions and preferences from VP Treasury — you MUST respe
 When generating recommendations, check each against these memories. If a memory contradicts what you would normally recommend, adjust accordingly and cite the relevant memory in your rationale.
 """
 
-        prompt = f"""You are an autonomous treasury cash management agent for a company whose FUNCTIONAL CURRENCY is USD. EUR and GBP are foreign currencies. Based on the following data, generate exactly 3 actionable recommendations.
+        prompt = f"""You are an autonomous treasury cash management agent for a company whose FUNCTIONAL CURRENCY is USD. EUR, GBP, JPY, CHF, SGD, and AUD are foreign currencies. The company operates across 14 bank accounts globally.
+
+Based on the following data, generate between 5 and 7 actionable recommendations, including a mix of large actions requiring approval and small routine actions (under $100,000 USD equivalent) that can be auto-executed without human intervention.
 
 DATA:
 {json.dumps(context_data, indent=2, default=str)}
 
-POLICIES (from corporate treasury policy documents):
-- Treasury Policy Section 2.3: Receivables with probability < 60% represent collection risk and must be escalated to VP Treasury immediately.
-- Treasury Policy Section 3.1: Surplus is defined as cash balances exceeding 120% of the next 30 days' projected obligations for a given currency. Surplus funds should be invested in approved short-term instruments.
-- FX Hedging Policy Section 2.1: FX exposures in FOREIGN currencies (EUR, GBP — NOT USD) must be hedged when net obligation exceeds EUR 750,000 or GBP 500,000. "Net obligation" = AP total minus probability-weighted AR total in that currency.
-- Approval Matrix Section 3.3: Transactions > $500,000 USD equivalent require formal VP Treasury approval.
-- Approval Matrix Section 3.2: Transactions $100,000-$500,000 require user confirmation.
+{_build_policy_section()}
 {memories_section}
 ANALYSIS INSTRUCTIONS:
-1. Check anomalies first: any receivable with probability < 60% is HIGH priority for collection acceleration.
+1. Check anomalies first — each HIGH severity anomaly MUST produce a corresponding recommendation:
+   - LOW_PROBABILITY_RECEIVABLE → ACCELERATE_COLLECTION (for the specific customer)
+   - AP_CONCENTRATION → INTERBANK_SWEEP or liquidity action to ensure coverage
+   - FX_EXPOSURE_BREACH → HEDGE_FX (forward or spot depending on amount)
+   - TIMESFM_CASH_FLOW_ANOMALY → investigate and recommend corrective action
+   - PAYMENT_SPIKE → ensure liquidity coverage, recommend transfer if needed
+   For each anomaly-driven recommendation, you MUST set source_anomaly_type and source_anomaly_description.
+
 2. Calculate 30-day obligations per currency = sum of AP items + scheduled payment runs in that currency. Compare bank balances to 120% of obligations to find surplus currencies. Surplus investment is MEDIUM priority.
-3. Calculate net FX exposure per FOREIGN currency (EUR, GBP) = AP total - probability-weighted AR total. Check against hedging thresholds. FX hedging is MEDIUM priority.
+
+3. Calculate net FX exposure per FOREIGN currency = AP total - probability-weighted AR total. Check against hedging thresholds. FX hedging is MEDIUM priority.
+
 4. Do NOT recommend hedging USD — it is the functional currency.
 
-Return exactly 3 recommendations as a JSON array. Each must have:
-- "priority": "HIGH" for collection risks, "MEDIUM" for surplus investment and FX hedging
-- "action_type": one of "PLACE_DEPOSIT", "HEDGE_FX", "ACCELERATE_COLLECTION"
-- "amount": number (the recommended action amount)
-- "currency": "USD" | "EUR" | "GBP"
+5. Identify 2-3 small auto-executable opportunities (under $100K USD equivalent):
+   - Small FX spot trades to rebalance minor currency positions (action_type: SPOT_FX_REBALANCE)
+   - Small interbank sweeps between accounts of the same currency (action_type: INTERBANK_SWEEP)
+   - Early payment discount captures for AP items offering 2/10 net 30 terms (action_type: EARLY_PAYMENT_DISCOUNT)
+   - Small overnight deposits for idle cash in secondary currencies (action_type: PLACE_DEPOSIT)
+
+Return between 5 and 7 recommendations as a JSON array. Each must have:
+- "priority": "HIGH" for anomaly-driven actions, "MEDIUM" for surplus/hedging, "LOW" for small optimizations
+- "action_type": one of "PLACE_DEPOSIT", "HEDGE_FX", "ACCELERATE_COLLECTION", "INTERBANK_SWEEP", "SPOT_FX_REBALANCE", "EARLY_PAYMENT_DISCOUNT", "PLACE_INVESTMENT"
+- "amount": number (the recommended action amount in the specified currency)
+- "currency": the currency code (USD, EUR, GBP, JPY, CHF, SGD, or AUD)
 - "description": short human-readable description
 - "rationale": detailed reasoning citing specific policy sections and computed values (show the math)
-- "source_anomaly_type": if this recommendation was triggered by an anomaly, the anomaly type (e.g. "TIMESFM_CASH_FLOW_ANOMALY", "LOW_PROBABILITY_RECEIVABLE", "AP_CONCENTRATION"), otherwise null
+- "source_anomaly_type": if this recommendation was triggered by an anomaly, the anomaly type (e.g. "TIMESFM_CASH_FLOW_ANOMALY", "LOW_PROBABILITY_RECEIVABLE", "AP_CONCENTRATION", "FX_EXPOSURE_BREACH", "PAYMENT_SPIKE"), otherwise null
 - "source_anomaly_description": if triggered by an anomaly, a short description of the anomaly, otherwise null
 
 Return ONLY the JSON array, no other text."""
@@ -507,10 +692,12 @@ Return ONLY the JSON array, no other text."""
                 rec_id = f"REC-{datetime.date.today().strftime('%Y%m%d')}-{i+1:03d}"
                 amount = rec.get("amount", 0)
 
-                # Determine status based on amount
-                if amount > 500000:
+                # Determine status based on amount vs policy thresholds
+                _formal_min = policy_parser.get_formal_approval_min() if policy_parser else 500000
+                _auto_max = policy_parser.get_auto_execute_max() if policy_parser else 100000
+                if amount > _formal_min:
                     status = "PENDING_APPROVAL"
-                elif amount > 100000:
+                elif amount > _auto_max:
                     status = "RECOMMENDED"
                 else:
                     status = "AUTO_EXECUTED"

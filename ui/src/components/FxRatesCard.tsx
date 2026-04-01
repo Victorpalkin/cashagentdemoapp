@@ -6,6 +6,10 @@ import { getFxRates } from '../api/bigquery'
 const PAIR_LABELS: Record<string, string> = {
   'EUR-USD': 'EUR/USD',
   'GBP-USD': 'GBP/USD',
+  'JPY-USD': 'JPY/USD',
+  'CHF-USD': 'CHF/USD',
+  'SGD-USD': 'SGD/USD',
+  'AUD-USD': 'AUD/USD',
   'EUR-GBP': 'EUR/GBP',
 }
 
@@ -47,7 +51,7 @@ const FxRatesCard = () => {
             No FX rates available for today
           </Typography>
         ) : (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1 }}>
             {displayPairs.map(({ pair, rate }) => (
               <Box
                 key={pair}
@@ -55,15 +59,15 @@ const FxRatesCard = () => {
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  p: 1.5,
+                  p: 1,
                   bgcolor: 'background.default',
                   borderRadius: 1,
                 }}
               >
-                <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   {pair}
                 </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: 'monospace' }}>
+                <Typography variant="body1" sx={{ fontWeight: 700, fontFamily: 'monospace' }}>
                   {rate.toFixed(4)}
                 </Typography>
               </Box>
