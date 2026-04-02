@@ -12,9 +12,8 @@ It's Tuesday morning. Sarah Chen, VP of Treasury at a multinational corporation,
 
 ## Pre-Demo Setup
 
-1. Open the Management UI. Click the **gear icon** (sidebar top) and choose **Quick Reset** (or **Full Reset** to regenerate seed data with today's dates).
-2. On the Dashboard, click **Execute Agents Synchronously Now** -- this populates recommendations, anomaly alerts, and agent activity.
-3. Open the **Agent Chat** in a second browser tab (side-by-side with the UI). Use `adk web` locally or the deployed chat app.
+1. Open the Management UI. Click the **gear icon** (sidebar top) and choose **Quick Reset** (or **Full Reset** to regenerate seed data with today's dates). The reset automatically chains into an agent review -- a **blue progress banner** appears across the top of the page showing each phase ("Clearing operational tables..." → "Running agent review..."). When complete, a snackbar confirms how many recommendations were created. No manual "Execute Agents" click is needed.
+2. Open the **Agent Chat** in a second browser tab (side-by-side with the UI). Use `adk web` locally or the deployed chat app.
 
 ---
 
@@ -24,12 +23,14 @@ It's Tuesday morning. Sarah Chen, VP of Treasury at a multinational corporation,
 
 **What she sees in the UI** (Dashboard tab -- "Treasury Overview"):
 
-- Seven **Cash Position Cards** in a compact 4-column grid: ~$5.2M Chase, ~$3.8M BofA, ~EUR 4.5M Deutsche Bank, ~GBP 1.9M Barclays, ~JPY 450M MUFG, ~SGD 2.7M DBS, ~AUD 2.4M ANZ, plus six more accounts -- totaling roughly **$34M** in the **Currency Summary** card below.
+- Seven **Cash Position Cards** in a compact 4-column grid: ~$5.2M Chase, ~$3.8M BofA, ~EUR 4.5M Deutsche Bank, ~GBP 1.9M Barclays, ~JPY 450M MUFG, ~SGD 2.7M DBS, ~AUD 2.4M ANZ, plus six more accounts -- totaling roughly **$34M** in the **Currency Summary** card below. Each card shows a **daily change percentage** indicator (green up / red down), and cards are **expandable** -- clicking one reveals the individual bank account breakdown for that currency.
 - The **FX Rates** card shows a 2-column layout with current rates: EUR/USD (~1.08), GBP/USD (~1.27), JPY/USD (~0.0067), CHF/USD (~1.12), SGD/USD (~0.75), AUD/USD (~0.66).
 - The **Receivables vs Payables** card breaks down net AR/AP by currency with color-coded chips -- 75 AR items and 84 AP items across all seven currencies.
 - The **Forecast Chart** shows two lines per currency: a solid **Agent-Enriched Forecast** (adjusted for probability-weighted AR, scheduled AP, and payment runs) and a dashed **ML Baseline** (pure TimesFM statistical forecast). Use the **Show All Currencies** toggle to switch between the top 3 (USD/EUR/GBP) and all 7 currencies. The lines diverge around AR/AP due dates, showing the agent's value-add.
 - The **Scheduled Payment Runs** card lists 10 upcoming payment runs across all currencies -- she spots a $2.8M vendor run, a JPY 120M supplier batch, and a SGD 800K regional payroll.
 - The **Recent Agent Activity** log shows the agent has already been at work: overnight forecast updates, anomaly scans, and position checks.
+
+A collapsible **Dashboard Guide** widget at the top explains each section of the Dashboard -- click it to expand a reference grid describing Cash Position Cards, Currency Summary, FX Rates, Anomaly Detection, Agent Decision Factors, Scheduled Payment Runs, and more. Useful for onboarding new users or during a demo walkthrough.
 
 She notices the agent ran its last review a few hours ago. She clicks **Execute Agents Synchronously Now** to get a fresh analysis with the latest data.
 
@@ -176,7 +177,7 @@ She clicks the **Memory** tab to see all agent memories:
 
 **What happens next**:
 
-She clicks **Execute Agents Synchronously Now** on the Dashboard. The new recommendations no longer include the ACME collection acceleration. The rationale for other recommendations cites the agent's memory -- for example, the EUR deposit rationale mentions preferring Deutsche Bank per stored memory.
+She triggers a fresh agent run -- either by clicking **Execute Agents Synchronously Now** on the Dashboard, or by clicking the gear icon and choosing **Quick Reset** (which auto-chains into an agent review). The new recommendations no longer include the ACME collection acceleration. The rationale for other recommendations cites the agent's memory -- for example, the EUR deposit rationale mentions preferring Deutsche Bank per stored memory.
 
 **Key talking points**: The agent learns from human decisions. Every rejection or edit can become persistent memory that shapes future recommendations. This is organizational knowledge capture -- the agent adapts to the company's specific context, not just generic policies. Memory entries can also be added manually or deactivated when no longer relevant.
 
@@ -227,11 +228,11 @@ For maximum impact, present with two browser windows side by side:
 
 Key moments where both screens shine:
 
-1. **Beat 1**: Agent reports cash position across 14 accounts -- Dashboard shows the same totals
+1. **Beat 1**: Agent reports cash position across 14 accounts -- Dashboard shows the same totals. Expand a cash position card to show per-bank breakdown.
 2. **Beat 2**: Agent explains ACME anomaly -- Obligations Table flags the row; auto-executed actions visible in Executions
 3. **Beat 3**: Agent creates approval request -- Recommendations tab shows it with full reasoning
 4. **Beat 4**: Click Approve in the UI -- Executions tab shows the trade confirmation
-5. **Beat 4.5**: Reject ACME in Recommendations -- Memory tab shows the new entry
+5. **Beat 4.5**: Reject ACME in Recommendations -- Memory tab shows the new entry. Quick Reset auto-runs agent review (blue banner shows progress); new recommendations reflect the memory.
 6. **Beat 5**: Navigate to Policies -- show the governance framework grounding agent decisions
 7. **Beat 6**: Agent runs scenario -- Dashboard serves as the base-case reference
 
@@ -250,7 +251,7 @@ Key moments where both screens shine:
 8. Show me pending approval requests
    [approve in UI -> auto-executes -> check Executions tab]
 9. [Reject ACME approval -> "Remember this?" -> Yes -> check Memory tab]
-10. [Execute Agents Synchronously Now -> recommendations now reflect memory]
+10. [Quick Reset (gear icon) -> auto-runs agent review -> recommendations now reflect memory]
 11. [Navigate to Policies tab -> review governance framework]
 12. What if ACME Corp doesn't pay and EUR/USD drops 5%?
 ```
@@ -334,6 +335,6 @@ Key moments where both screens shine:
 | BQML forecast unavailable | Model may need retraining; see `deploy.sh` |
 | Slow responses on `adk web` | First query initializes connections; subsequent queries are faster |
 | Mock service errors | Check Cloud Run services: `gcloud run services list` |
-| Recommendations empty after reset | Click **Execute Agents Synchronously Now** on the Dashboard |
+| Recommendations empty after reset | Reset now auto-runs agent review; if it failed, click **Execute Agents Synchronously Now** on the Dashboard |
 | Policy thresholds not loading | Check `/api/policy-thresholds` endpoint; ensure `pyyaml` is installed in ui_api |
 | Only 3 currencies in forecast chart | Click **Show All Currencies** toggle to see all 7 |
