@@ -627,7 +627,7 @@ When generating recommendations, check each against these memories. If a memory 
 
         prompt = f"""You are an autonomous treasury cash management agent for a company whose FUNCTIONAL CURRENCY is USD. EUR, GBP, JPY, CHF, SGD, and AUD are foreign currencies. The company operates across 14 bank accounts globally.
 
-Based on the following data, generate between 7 and 10 actionable recommendations, including a mix of large actions requiring approval and small routine actions (under $100,000 USD equivalent) that can be auto-executed without human intervention.
+Based on the following data, generate between 8 and 12 actionable recommendations, including a mix of large actions requiring approval and small routine actions (under $100,000 USD equivalent) that can be auto-executed without human intervention.
 
 DATA:
 {json.dumps(context_data, indent=2, default=str)}
@@ -662,7 +662,7 @@ ANALYSIS INSTRUCTIONS:
 6. Only AFTER cross-currency transfers are addressed: if a currency STILL has remaining surplus
    above 120% of obligations, recommend PLACE_DEPOSIT for the excess. This is MEDIUM priority.
 
-7. Identify 3-4 small auto-executable opportunities (under $100K USD equivalent):
+7. Identify 4-6 small auto-executable opportunities (under $100K USD equivalent):
    - Small FX spot trades to rebalance minor currency positions (action_type: SPOT_FX_REBALANCE)
    - Small interbank sweeps between accounts of the same currency (action_type: INTERBANK_SWEEP)
    - Early payment discount captures for AP items offering 2/10 net 30 terms (action_type: EARLY_PAYMENT_DISCOUNT)
