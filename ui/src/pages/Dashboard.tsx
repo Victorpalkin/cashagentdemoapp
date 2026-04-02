@@ -1,5 +1,5 @@
-import { Box, Grid, Card, CardContent, Typography, List, ListItem, ListItemText, Chip, CircularProgress, Alert, Button, Snackbar } from '@mui/material'
-import { SmartToy } from '@mui/icons-material'
+import { Box, Grid, Card, CardContent, Typography, List, ListItem, ListItemText, Chip, CircularProgress, Alert, Button, Snackbar, Collapse, IconButton } from '@mui/material'
+import { SmartToy, ExpandMore, Info } from '@mui/icons-material'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import CashPositionCard from '../components/CashPositionCard'
 import CurrencySummaryCard from '../components/CurrencySummaryCard'
@@ -30,6 +30,7 @@ const Dashboard = () => {
   const recQuery = useQuery({ queryKey: ['recommendations'], queryFn: getRecommendations })
   const paymentRunsQuery = useQuery({ queryKey: ['paymentRuns'], queryFn: getPaymentRuns })
 
+  const [guideOpen, setGuideOpen] = useState(false)
   const [reviewSnackbar, setReviewSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false, message: '', severity: 'success',
   })
@@ -110,6 +111,86 @@ const Dashboard = () => {
           {reviewMutation.isPending ? 'Running...' : 'Execute Agents Synchronously Now'}
         </Button>
       </Box>
+
+      {/* Dashboard Guide */}
+      <Card sx={{ mb: 3, border: '1px solid', borderColor: 'divider' }}>
+        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+          <Box
+            sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+            onClick={() => setGuideOpen(!guideOpen)}
+          >
+            <Info sx={{ color: 'primary.main', mr: 1 }} />
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, flexGrow: 1 }}>
+              Dashboard Guide
+            </Typography>
+            <IconButton size="small">
+              <ExpandMore
+                sx={{
+                  transform: guideOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.2s',
+                }}
+              />
+            </IconButton>
+          </Box>
+          <Collapse in={guideOpen}>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              {[
+                {
+                  title: 'Cash Position Cards',
+                  desc: 'Shows the current real-time balance for each currency (USD, EUR, GBP) held across all bank accounts. Each card displays the native currency balance, its USD equivalent, and a daily percentage change indicator so treasury managers can spot significant balance movements at a glance.',
+                },
+                {
+                  title: 'Currency Summary',
+                  desc: 'Aggregates the total portfolio value in USD and visualizes the allocation across currencies as a proportional breakdown. Helps assess concentration risk and whether the currency mix aligns with operational needs and hedging targets.',
+                },
+                {
+                  title: 'FX Rates',
+                  desc: 'Displays live foreign exchange rates for the currency pairs relevant to the treasury (EUR/USD, GBP/USD, etc.). Provides context for evaluating cross-currency transfers, FX hedge timing, and the USD-equivalent valuations shown elsewhere on the dashboard.',
+                },
+                {
+                  title: 'Anomaly Detection',
+                  desc: 'Summarizes anomalies flagged by the AI anomaly detection agent. These include unusual transaction patterns, unexpected cash flow deviations, low-probability receivables, and unmatched payments that may require investigation or corrective action.',
+                },
+                {
+                  title: 'Agent Decision Factors',
+                  desc: 'Shows the key data points and metrics the AI agent weighs when generating recommendations: upcoming obligations, net cash flow per currency, liquidity coverage ratios, and payment run impacts. Provides transparency into the agent\'s reasoning process.',
+                },
+                {
+                  title: 'Scheduled Payment Runs',
+                  desc: 'Lists upcoming batch payment runs imported from SAP, including the run description, total amount, currency, scheduled date, and number of line items. Helps anticipate near-term cash outflows.',
+                },
+                {
+                  title: 'Recent Agent Activity',
+                  desc: 'A chronological feed of the latest actions taken by the autonomous AI agents, including analysis runs, recommendations generated, and executions performed. Each entry shows the agent name, action type, summary, and timestamp.',
+                },
+                {
+                  title: 'Recent Recommendations',
+                  desc: 'Displays the most recent AI-generated treasury recommendations (e.g., inter-account transfers, FX hedges, term deposits) with priority levels (HIGH/MEDIUM/LOW), amounts, and descriptions. High-priority items may require approval before execution.',
+                },
+                {
+                  title: 'Cash Flow Forecast',
+                  desc: 'A 30-day forward-looking chart powered by Google\'s TimesFM AI forecasting model. Shows projected cash positions per currency, overlaid with known obligations and payment runs, highlighting potential shortfalls or surplus periods that may need action.',
+                },
+                {
+                  title: 'Obligations Table',
+                  desc: 'A detailed table of all upcoming accounts payable (AP) and accounts receivable (AR) with counterparty names, amounts, currencies, due dates, and probability scores. Provides the granular data behind the forecast and helps identify collection risks or payment scheduling opportunities.',
+                },
+              ].map((item) => (
+                <Grid item xs={12} sm={6} md={4} key={item.title}>
+                  <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'background.default', height: '100%' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                      {item.title}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.5 }}>
+                      {item.desc}
+                    </Typography>
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
+          </Collapse>
+        </CardContent>
+      </Card>
 
       {/* Cash Position Cards */}
       {cashQuery.isLoading ? (

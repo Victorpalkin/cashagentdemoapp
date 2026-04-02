@@ -163,6 +163,19 @@ gcloud run services update cash-agent-ui \
   --quiet
 ok "UI rebuilt with live API URL."
 
+# ---------- 4f. Force-update services to pick up latest images ----------
+info "Forcing Cloud Run services to use latest images..."
+AGENT_RUNNER_IMAGE="${REGISTRY}/agent-runner:latest"
+gcloud run services update ui-api \
+  --region "$REGION" \
+  --image "$UI_API_IMAGE" \
+  --quiet
+gcloud run services update agent-runner \
+  --region "$REGION" \
+  --image "$AGENT_RUNNER_IMAGE" \
+  --quiet
+ok "Services updated with latest images."
+
 # ---------- 5. Load seed data into BigQuery ----------
 info "Loading seed data into BigQuery..."
 
