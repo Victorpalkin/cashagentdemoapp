@@ -2,11 +2,19 @@
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
+export interface BankAccountSummary {
+  bank_name: string
+  account_type: string
+  current_balance: number
+  usd_equivalent: number
+}
+
 export interface CashPosition {
   currency: string
   balance: number
   usdEquivalent: number
   changePercent: number
+  accounts: BankAccountSummary[]
 }
 
 export interface BankAccount {

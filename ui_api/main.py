@@ -122,20 +122,22 @@ def cash_position():
         balances.append(entry)
         cur = entry["currency"]
         if cur not in currency_totals:
-            currency_totals[cur] = {"currency": cur, "balance": 0, "usdEquivalent": 0}
+            currency_totals[cur] = {"currency": cur, "balance": 0, "usdEquivalent": 0, "accounts": []}
         currency_totals[cur]["balance"] += entry["current_balance"]
         currency_totals[cur]["usdEquivalent"] += entry["usd_equivalent"]
+        currency_totals[cur]["accounts"].append({
+            "bank_name": entry["bank_name"],
+            "account_type": entry["account_type"],
+            "current_balance": entry["current_balance"],
+            "usd_equivalent": entry["usd_equivalent"],
+        })
 
-    # Compute weekly change from cash_journal
+    # Compute weekly change: net flow this week as % of current balance
     change_query = f"""
         SELECT currency,
-            SUM(CASE WHEN posting_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
-                THEN CASE WHEN transaction_type='INFLOW' THEN amount ELSE -amount END ELSE 0 END) AS this_week,
-            SUM(CASE WHEN posting_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
-                AND posting_date < DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
-                THEN CASE WHEN transaction_type='INFLOW' THEN amount ELSE -amount END ELSE 0 END) AS last_week
+            SUM(CASE WHEN transaction_type='INFLOW' THEN amount ELSE -amount END) AS net_flow
         FROM {_table('cash_journal')}
-        WHERE posting_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
+        WHERE posting_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
         GROUP BY currency
     """
     # Deterministic per-currency fallback values for demo realism
@@ -143,14 +145,11 @@ def cash_position():
     change_pcts: dict[str, float] = {}
     try:
         for row in client.query(change_query).result():
-            this_week = float(row["this_week"] or 0)
-            last_week = float(row["last_week"] or 0)
-            if abs(last_week) > 0:
-                change_pcts[row["currency"]] = round(
-                    (this_week - last_week) / abs(last_week) * 100, 1
-                )
-            elif this_week != 0:
-                change_pcts[row["currency"]] = round(this_week / 1000, 1)
+            net_flow = float(row["net_flow"] or 0)
+            cur = row["currency"]
+            cur_balance = currency_totals.get(cur, {}).get("balance", 0)
+            if cur_balance > 0 and net_flow != 0:
+                change_pcts[cur] = round(net_flow / cur_balance * 100, 1)
     except Exception:
         pass
 
@@ -159,7 +158,7 @@ def cash_position():
         raw = change_pcts.get(t["currency"])
         if raw is None or raw == 0:
             raw = _FALLBACK_CHANGE.get(t["currency"], 2.0)
-        t["changePercent"] = max(-15.0, min(15.0, raw))
+        t["changePercent"] = round(raw, 1)
     grand_total = sum(t["usdEquivalent"] for t in totals)
     return {
         "balances": balances,

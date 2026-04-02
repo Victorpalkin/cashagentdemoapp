@@ -59,6 +59,7 @@ const Dashboard = () => {
     balance: t.balance,
     usdEquivalent: t.usdEquivalent,
     changePercent: t.changePercent ?? 0,
+    accounts: t.accounts ?? [],
   }))
 
   const currencyBreakdown = currencyTotals.map(t => ({
