@@ -2,7 +2,7 @@ import { useState } from 'react'
 import {
   Typography, IconButton, Box, Badge,
   Menu, MenuItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent,
-  DialogContentText, DialogActions, Button, Snackbar, Alert, CircularProgress,
+  DialogContentText, DialogActions, Button, CircularProgress,
   Drawer, List, ListSubheader, ListItemButton, Divider,
 } from '@mui/material'
 import {
@@ -21,8 +21,9 @@ import {
   Description as DescriptionIcon,
 } from '@mui/icons-material'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { resetDemo, getApprovals } from '../api/bigquery'
+import { useQuery } from '@tanstack/react-query'
+import { getApprovals } from '../api/bigquery'
+import { useOperation } from '../contexts/OperationContext'
 
 const DRAWER_WIDTH = 240
 
@@ -56,13 +57,10 @@ const navSections = [
 const Shell = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const queryClient = useQueryClient()
+  const { state: opState, startReset } = useOperation()
 
   const [settingsAnchor, setSettingsAnchor] = useState<null | HTMLElement>(null)
   const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; full: boolean }>({ open: false, full: false })
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
-    open: false, message: '', severity: 'success',
-  })
 
   const { data: approvals = [] } = useQuery({
     queryKey: ['approvals'],
@@ -71,20 +69,7 @@ const Shell = () => {
   })
   const pendingCount = approvals.filter(a => a.status === 'PENDING').length
 
-  const resetMutation = useMutation({
-    mutationFn: (full: boolean) => resetDemo(full),
-    onSuccess: (_data, full) => {
-      queryClient.invalidateQueries()
-      setSnackbar({
-        open: true,
-        message: full ? 'Full reset complete — seed data regenerated' : 'Quick reset complete — operational tables cleared',
-        severity: 'success',
-      })
-    },
-    onError: (err: Error) => {
-      setSnackbar({ open: true, message: `Reset failed: ${err.message}`, severity: 'error' })
-    },
-  })
+  const isBusy = opState.status === 'resetting' || opState.status === 'reviewing'
 
   const handleResetClick = (full: boolean) => {
     setSettingsAnchor(null)
@@ -94,7 +79,7 @@ const Shell = () => {
   const handleResetConfirm = () => {
     const full = confirmDialog.full
     setConfirmDialog({ open: false, full: false })
-    resetMutation.mutate(full)
+    startReset(full)
   }
 
   const isActive = (path: string) => location.pathname.startsWith(path)
@@ -125,9 +110,9 @@ const Shell = () => {
               size="small"
               sx={{ color: 'rgba(255,255,255,0.7)' }}
               onClick={(e) => setSettingsAnchor(e.currentTarget)}
-              disabled={resetMutation.isPending}
+              disabled={isBusy}
             >
-              {resetMutation.isPending ? (
+              {isBusy ? (
                 <CircularProgress size={18} color="inherit" />
               ) : (
                 <SettingsIcon fontSize="small" />
@@ -247,17 +232,6 @@ const Shell = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={5000}
-        onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert severity={snackbar.severity} onClose={() => setSnackbar(s => ({ ...s, open: false }))}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
     </>
   )
 }

@@ -6,6 +6,7 @@ import { ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import App from './App'
 import { fioriTheme } from './theme/fioriTheme'
+import { OperationProvider } from './contexts/OperationContext'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,7 +24,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <ThemeProvider theme={fioriTheme}>
         <CssBaseline />
         <BrowserRouter>
-          <App />
+          <OperationProvider>
+            <App />
+          </OperationProvider>
         </BrowserRouter>
       </ThemeProvider>
     </QueryClientProvider>
