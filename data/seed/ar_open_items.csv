@@ -66,16 +66,17 @@ AR-064,C-061,Takeda Pharmaceutical,INV-AR-064,180000000,JPY,2026-04-10,OPEN,0.4,
 AR-065,C-062,Sony Interactive,INV-AR-065,42000000,JPY,2026-04-17,OPEN,0.91,Gaming analytics platform
 AR-066,C-063,NTT Data Corp,INV-AR-066,65000000,JPY,2026-04-24,OPEN,0.93,Telecom infrastructure project
 AR-067,C-064,Panasonic Holdings,INV-AR-067,28000000,JPY,2026-04-29,OPEN,0.88,Smart factory monitoring
-AR-068,C-065,Nestle SA,INV-AR-068,185000,CHF,2026-04-09,OPEN,0.92,Supply chain analytics
-AR-069,C-066,ABB Ltd,INV-AR-069,120000,CHF,2026-04-18,OPEN,0.9,Power grid monitoring system
-AR-070,C-067,Roche Holding AG,INV-AR-070,95000,CHF,2026-04-26,OPEN,0.88,Lab data management
-AR-071,C-079,Zurich Insurance Group,INV-AR-071,225000,CHF,2026-04-12,OPEN,0.91,Risk analytics platform
-AR-072,C-080,Lonza Group AG,INV-AR-072,180000,CHF,2026-04-20,OPEN,0.9,Biotech process monitoring
-AR-073,C-068,Singapore Airlines,INV-AR-073,145000,SGD,2026-04-06,OPEN,0.91,Flight operations analytics
-AR-074,C-069,DBS Group Holdings,INV-AR-074,85000,SGD,2026-04-14,OPEN,0.89,Banking platform integration
-AR-075,C-070,Keppel Corporation,INV-AR-075,210000,SGD,2026-04-21,OPEN,0.93,Marine engineering platform
-AR-076,C-071,Sea Limited,INV-AR-076,55000,SGD,2026-04-28,OPEN,0.87,E-commerce analytics module
-AR-077,C-072,BHP Group,INV-AR-077,320000,AUD,2026-04-08,OPEN,0.94,Mining operations dashboard
-AR-078,C-073,BHP Mining Services,INV-AR-078,450000,AUD,2026-04-16,OPEN,0.35,Exploration data platform (contract under review)
-AR-079,C-074,Rio Tinto Ltd,INV-AR-079,260000,AUD,2026-04-22,OPEN,0.91,Logistics optimization system
-AR-080,C-075,CSL Limited,INV-AR-080,95000,AUD,2026-04-29,OPEN,0.88,Biotech research data system
+AR-068,C-065,Nestle SA,INV-AR-068,285000,CHF,2026-04-09,OPEN,0.92,Supply chain analytics
+AR-069,C-066,ABB Ltd,INV-AR-069,195000,CHF,2026-04-18,OPEN,0.9,Power grid monitoring system
+AR-070,C-067,Roche Holding AG,INV-AR-070,145000,CHF,2026-04-26,OPEN,0.88,Lab data management
+AR-071,C-079,Zurich Insurance Group,INV-AR-071,275000,CHF,2026-04-12,OPEN,0.91,Risk analytics platform
+AR-072,C-080,Lonza Group AG,INV-AR-072,240000,CHF,2026-04-20,OPEN,0.9,Biotech process monitoring
+AR-073,C-081,Schindler Holding,INV-AR-073,165000,CHF,2026-04-28,OPEN,0.89,Elevator IoT monitoring system
+AR-074,C-068,Singapore Airlines,INV-AR-074,145000,SGD,2026-04-06,OPEN,0.91,Flight operations analytics
+AR-075,C-069,DBS Group Holdings,INV-AR-075,85000,SGD,2026-04-14,OPEN,0.89,Banking platform integration
+AR-076,C-070,Keppel Corporation,INV-AR-076,210000,SGD,2026-04-21,OPEN,0.93,Marine engineering platform
+AR-077,C-071,Sea Limited,INV-AR-077,55000,SGD,2026-04-28,OPEN,0.87,E-commerce analytics module
+AR-078,C-072,BHP Group,INV-AR-078,320000,AUD,2026-04-08,OPEN,0.94,Mining operations dashboard
+AR-079,C-073,BHP Mining Services,INV-AR-079,450000,AUD,2026-04-16,OPEN,0.35,Exploration data platform (contract under review)
+AR-080,C-074,Rio Tinto Ltd,INV-AR-080,260000,AUD,2026-04-22,OPEN,0.91,Logistics optimization system
+AR-081,C-075,CSL Limited,INV-AR-081,95000,AUD,2026-04-29,OPEN,0.88,Biotech research data system

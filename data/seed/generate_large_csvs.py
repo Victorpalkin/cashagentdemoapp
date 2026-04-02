@@ -680,11 +680,12 @@ def generate_ar_items(today):
         ('C-064', 'Panasonic Holdings',        28000000,  'JPY', 27, 0.88, 'Smart factory monitoring'),
 
         # --- CHF AR items ---
-        ('C-065', 'Nestle SA',                    185000,  'CHF', 7,  0.92, 'Supply chain analytics'),
-        ('C-066', 'ABB Ltd',                      120000,  'CHF', 16, 0.90, 'Power grid monitoring system'),
-        ('C-067', 'Roche Holding AG',              95000,  'CHF', 24, 0.88, 'Lab data management'),
-        ('C-079', 'Zurich Insurance Group',      225000,  'CHF', 10, 0.91, 'Risk analytics platform'),
-        ('C-080', 'Lonza Group AG',              180000,  'CHF', 18, 0.90, 'Biotech process monitoring'),
+        ('C-065', 'Nestle SA',                    285000,  'CHF', 7,  0.92, 'Supply chain analytics'),
+        ('C-066', 'ABB Ltd',                      195000,  'CHF', 16, 0.90, 'Power grid monitoring system'),
+        ('C-067', 'Roche Holding AG',             145000,  'CHF', 24, 0.88, 'Lab data management'),
+        ('C-079', 'Zurich Insurance Group',       275000,  'CHF', 10, 0.91, 'Risk analytics platform'),
+        ('C-080', 'Lonza Group AG',               240000,  'CHF', 18, 0.90, 'Biotech process monitoring'),
+        ('C-081', 'Schindler Holding',            165000,  'CHF', 26, 0.89, 'Elevator IoT monitoring system'),
 
         # --- SGD AR items ---
         ('C-068', 'Singapore Airlines',           145000,  'SGD', 4,  0.91, 'Flight operations analytics'),

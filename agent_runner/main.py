@@ -643,18 +643,26 @@ ANALYSIS INSTRUCTIONS:
    - PAYMENT_SPIKE → ensure liquidity coverage, recommend transfer if needed
    For each anomaly-driven recommendation, you MUST set source_anomaly_type and source_anomaly_description.
 
-2. Calculate 30-day obligations per currency = sum of AP items + scheduled payment runs in that currency. Compare bank balances to 120% of obligations to find surplus currencies. Surplus investment is MEDIUM priority.
+2. Calculate 30-day net cash flow per currency = probability-weighted AR total - AP total - payment runs.
+   Add this to the current bank balance to get the projected end balance.
+   Identify which currencies are SURPLUS (projected end balance > 120% of obligations) and
+   which are in DEFICIT (projected end balance declining significantly).
 
-3. Calculate net FX exposure per FOREIGN currency = AP total - probability-weighted AR total. Check against hedging thresholds. FX hedging is MEDIUM priority.
+3. CRITICAL — cross-currency rebalancing (HIGH priority, MUST include at least one):
+   If USD or any major currency has a projected shortfall while another currency has surplus,
+   you MUST recommend INTERCOMPANY_TRANSFER to convert surplus foreign currency into the
+   deficit currency. This takes PRIORITY over investing the surplus as a deposit.
+   For example: if EUR is projected to grow by +1.5M while USD is projected to drop by -5M,
+   recommend transferring EUR surplus to USD. Cite the specific surplus and shortfall amounts.
 
-4. Do NOT recommend hedging USD — it is the functional currency.
+4. Calculate net FX exposure per FOREIGN currency = AP total - probability-weighted AR total. Check against hedging thresholds. FX hedging is MEDIUM priority.
 
-5. Compare surplus currencies against deficit currencies. If a foreign currency has surplus
-   (bank balance + weighted net AR/AP > 120% of obligations) while USD or another currency
-   has a projected shortfall, recommend INTERCOMPANY_TRANSFER to convert the surplus into
-   the deficit currency. Cite the specific surplus amount and the shortfall it would cover.
+5. Do NOT recommend hedging USD — it is the functional currency.
 
-6. Identify 2-3 small auto-executable opportunities (under $100K USD equivalent):
+6. Only AFTER cross-currency transfers are addressed: if a currency STILL has remaining surplus
+   above 120% of obligations, recommend PLACE_DEPOSIT for the excess. This is MEDIUM priority.
+
+7. Identify 2-3 small auto-executable opportunities (under $100K USD equivalent):
    - Small FX spot trades to rebalance minor currency positions (action_type: SPOT_FX_REBALANCE)
    - Small interbank sweeps between accounts of the same currency (action_type: INTERBANK_SWEEP)
    - Early payment discount captures for AP items offering 2/10 net 30 terms (action_type: EARLY_PAYMENT_DISCOUNT)
