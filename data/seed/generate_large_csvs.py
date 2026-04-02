@@ -607,19 +607,19 @@ def generate_ar_items(today):
         ('C-002', 'AutoMotive Industries GmbH',   380000,  'EUR', 4,  0.92, 'Manufacturing equipment delivery'),
         ('C-003', 'British Retail Group',           95000,  'GBP', 3,  0.88, 'Retail POS system integration'),
         ('C-004', 'Pacific Trading Corp',          520000,  'USD', 6,  0.94, 'International shipping services'),
-        ('C-005', 'Nordic Energy AS',              285000,  'EUR', 8,  0.90, 'Energy management consulting'),
+        ('C-005', 'Nordic Energy AS',              420000,  'EUR', 8,  0.90, 'Energy management consulting'),
         ('C-006', 'London Financial Services',     125000,  'GBP', 9,  0.91, 'Financial software licensing'),
         ('C-007', 'MegaCorp USA',                  680000,  'USD', 11, 0.96, 'Enterprise cloud migration'),
         ('C-008', 'Deutsche Industrial AG',        195000,  'EUR', 12, 0.89, 'Industrial automation project'),
         ('C-009', 'Highland Manufacturing',         78000,  'GBP', 13, 0.85, 'Equipment calibration services'),
         ('C-010', 'American Logistics Inc',        425000,  'USD', 15, 0.93, 'Supply chain optimization'),
-        ('C-011', 'EuroTech Solutions',            340000,  'EUR', 16, 0.91, 'IT infrastructure upgrade'),
+        ('C-011', 'EuroTech Solutions',            480000,  'EUR', 16, 0.91, 'IT infrastructure upgrade'),
         ('C-012', 'Westminster Holdings',           42000,  'GBP', 17, 0.87, 'Business consulting services'),
         ('C-013', 'Continental Systems',           575000,  'USD', 18, 0.95, 'Software licensing annual renewal'),
         ('C-014', 'FranceTech SA',                 265000,  'EUR', 19, 0.90, 'Digital transformation services'),
         ('C-015', 'Manchester United Industries',   35000,  'GBP', 20, 0.86, 'Maintenance contract quarterly'),
         ('C-016', 'Global Pharma Corp',            890000,  'USD', 21, 0.97, 'Pharmaceutical data analytics platform'),
-        ('C-017', 'Siemens Digital Industries',    425000,  'EUR', 22, 0.92, 'IoT platform deployment'),
+        ('C-017', 'Siemens Digital Industries',    560000,  'EUR', 22, 0.92, 'IoT platform deployment'),
         ('C-018', 'Oxford Research Labs',           52000,  'GBP', 23, 0.88, 'Research data management system'),
         ('C-019', 'TransAtlantic Shipping',        755000,  'USD', 24, 0.96, 'Fleet management software'),
         ('C-020', 'ACME Corp',                    2300000,  'EUR', 1,  0.45, 'Major enterprise solution delivery - Phase 3'),
@@ -662,6 +662,9 @@ def generate_ar_items(today):
         ('C-053', 'Frankfurt Solutions',            85000,  'EUR', 15, 0.87, 'Consulting engagement Phase 2'),
         ('C-054', 'Deutsche Industrial AG',        145000,  'EUR', 23, 0.90, 'Automation system upgrade'),
         ('C-055', 'Nordic Energy AS',               92000,  'EUR', 25, 0.88, 'Wind farm monitoring system'),
+        ('C-076', 'AutoMotive Industries GmbH',   475000,  'EUR', 3,  0.93, 'Connected vehicle platform Phase 2'),
+        ('C-077', 'FranceTech SA',                345000,  'EUR', 13, 0.91, 'AI consulting engagement Q2'),
+        ('C-078', 'Munich Automotive',            290000,  'EUR', 21, 0.92, 'Production analytics expansion'),
 
         # --- New GBP AR items ---
         ('C-056', 'Leeds Precision Engineering',    65000,  'GBP', 6,  0.87, 'CNC programming services'),
@@ -680,6 +683,8 @@ def generate_ar_items(today):
         ('C-065', 'Nestle SA',                    185000,  'CHF', 7,  0.92, 'Supply chain analytics'),
         ('C-066', 'ABB Ltd',                      120000,  'CHF', 16, 0.90, 'Power grid monitoring system'),
         ('C-067', 'Roche Holding AG',              95000,  'CHF', 24, 0.88, 'Lab data management'),
+        ('C-079', 'Zurich Insurance Group',      225000,  'CHF', 10, 0.91, 'Risk analytics platform'),
+        ('C-080', 'Lonza Group AG',              180000,  'CHF', 18, 0.90, 'Biotech process monitoring'),
 
         # --- SGD AR items ---
         ('C-068', 'Singapore Airlines',           145000,  'SGD', 4,  0.91, 'Flight operations analytics'),
@@ -690,7 +695,7 @@ def generate_ar_items(today):
         # --- AUD AR items (includes anomaly trigger) ---
         ('C-072', 'BHP Group',                    320000,  'AUD', 6,  0.94, 'Mining operations dashboard'),
         ('C-073', 'BHP Mining Services',          450000,  'AUD', 14, 0.35, 'Exploration data platform (contract under review)'),
-        ('C-074', 'Rio Tinto Ltd',                185000,  'AUD', 20, 0.91, 'Logistics optimization system'),
+        ('C-074', 'Rio Tinto Ltd',                260000,  'AUD', 20, 0.91, 'Logistics optimization system'),
         ('C-075', 'CSL Limited',                   95000,  'AUD', 27, 0.88, 'Biotech research data system'),
     ]
 
@@ -731,7 +736,7 @@ def generate_ap_items(today):
         ('V-004', 'Shell Energy',            'INV-SHL-4429', 185000,  'GBP', 3,  'ACH',  'Quarterly energy costs'),
         ('V-005', 'Microsoft Corp',          'INV-MSF-7712', 520000,  'USD', 5,  'WIRE', 'Azure cloud services Q1'),
         ('V-006', 'Deloitte Consulting',     'INV-DLT-3384', 380000,  'USD', 7,  'WIRE', 'Q1 advisory services'),
-        ('V-007', 'BASF SE',                 'INV-BAS-5591', 420000,  'EUR', 9,  'WIRE', 'Raw materials supply'),
+        ('V-007', 'BASF SE',                 'INV-BAS-5591', 320000,  'EUR', 9,  'WIRE', 'Raw materials supply'),
         ('V-008', 'BP Energy',               'INV-BPE-2214', 220000,  'GBP', 8,  'ACH',  'Fuel and energy costs'),
         ('V-009', 'Cisco Systems',           'INV-CSC-9905', 310000,  'USD', 10, 'WIRE', 'Network infrastructure upgrade'),
         ('V-010', 'Accenture PLC',           'INV-ACC-4472', 295000,  'USD', 11, 'WIRE', 'IT consulting services'),
@@ -750,7 +755,7 @@ def generate_ap_items(today):
         ('V-023', 'BAE Systems',             'INV-BAE-6659', 800000,  'GBP', 16, 'WIRE', 'Defense systems components'),
         ('V-024', 'Workday Inc',             'INV-WKD-2283', 425000,  'USD', 13, 'WIRE', 'HR software subscription'),
         ('V-025', 'Bosch Group',             'INV-BSH-5574', 210000,  'EUR', 17, 'WIRE', 'Automation equipment'),
-        ('V-026', 'Capgemini SE',            'INV-CPG-9918', 365000,  'EUR', 19, 'WIRE', 'Digital transformation services'),
+        ('V-026', 'Capgemini SE',            'INV-CPG-9918', 265000,  'EUR', 19, 'WIRE', 'Digital transformation services'),
         ('V-027', 'BT Group',                'INV-BTG-7726', 155000,  'GBP', 21, 'ACH',  'Enterprise connectivity services'),
         ('V-028', 'VMware Inc',              'INV-VMW-4441', 290000,  'USD', 23, 'WIRE', 'Virtualization platform license'),
         ('V-029', 'Airbus SE',               'INV-AIR-1195', 380000,  'EUR', 22, 'WIRE', 'Aviation parts and maintenance'),
@@ -802,7 +807,7 @@ def generate_ap_items(today):
         ('V-067', 'Murata Manufacturing',    'INV-MUR-5527', 12000000,  'JPY', 14, 'LOCAL', 'Capacitor components order'),
 
         # --- CHF AP items ---
-        ('V-068', 'Holcim Group',            'INV-HLC-5528', 195000,  'CHF', 6,  'WIRE', 'Construction materials'),
+        ('V-068', 'Holcim Group',            'INV-HLC-5528', 120000,  'CHF', 6,  'WIRE', 'Construction materials'),
         ('V-069', 'Kuehne+Nagel',            'INV-KNL-5529', 125000,  'CHF', 13, 'WIRE', 'International freight services'),
         ('V-070', 'Swisscom AG',             'INV-SWC-5530', 85000,   'CHF', 19, 'WIRE', 'Telecom infrastructure'),
         ('V-071', 'Sika AG',                 'INV-SKA-5531', 65000,   'CHF', 25, 'WIRE', 'Chemical construction products'),
@@ -886,18 +891,16 @@ def generate_payment_runs(today):
 
     # (day_offset, total_amount, currency, item_count, description)
     runs = [
-        # Original 6 runs — unchanged
-        (2,  1200000,   'USD', 5,  'Weekly vendor payments - USD batch 1'),
-        (4,   450000,   'EUR', 3,  'EUR vendor payments'),
-        (9,  2800000,   'USD', 8,  'Weekly vendor payments - USD batch 2'),
-        (12,  800000,   'GBP', 4,  'GBP vendor payments'),
+        (2,   450000,   'USD', 3,  'Payroll withholding tax remittance'),
+        (4,   180000,   'EUR', 2,  'VAT quarterly payment - DE entity'),
+        (9,   850000,   'USD', 4,  'Employee benefits and insurance premiums'),
+        (12,  250000,   'GBP', 2,  'HMRC corporation tax installment'),
         (16, 1500000,   'USD', 6,  'Monthly payroll run'),
-        (20,  650000,   'EUR', 3,  'EUR vendor payments batch 2'),
-        # New runs
-        (7,  350000000, 'JPY', 5,  'JPY vendor payments batch'),
-        (14,  280000,   'CHF', 3,  'CHF quarterly settlements'),
-        (18,  185000,   'SGD', 4,  'SGD supplier payments'),
-        (22,  165000,   'AUD', 3,  'AUD vendor payments batch'),
+        (20,  220000,   'EUR', 3,  'Social security contributions - EU entities'),
+        (7,  85000000,  'JPY', 3,  'Japanese consumption tax quarterly'),
+        (14,   75000,   'CHF', 2,  'Swiss pension fund contribution'),
+        (18,   55000,   'SGD', 2,  'CPF employer contribution - SG'),
+        (22,   45000,   'AUD', 2,  'Superannuation guarantee payment'),
     ]
 
     with open(pr_file, 'w', newline='') as f:

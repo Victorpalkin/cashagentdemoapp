@@ -486,6 +486,15 @@ def execute_recommendation(action_type, amount, currency, description):
                 "reference": f"Auto-sweep {description}",
             }, timeout=10)
             result = resp.json()
+        elif action_type == "INTERCOMPANY_TRANSFER":
+            resp = requests.post(f"{BROKER_API_URL}/fx-trades", json={
+                "buy_currency": "USD",
+                "sell_currency": currency,
+                "buy_amount": amount,
+                "trade_type": "spot",
+                "settlement_days": 2,
+            }, timeout=10)
+            result = resp.json()
         elif action_type == "EARLY_PAYMENT_DISCOUNT":
             result = {
                 "status": "confirmed",
@@ -640,7 +649,12 @@ ANALYSIS INSTRUCTIONS:
 
 4. Do NOT recommend hedging USD — it is the functional currency.
 
-5. Identify 2-3 small auto-executable opportunities (under $100K USD equivalent):
+5. Compare surplus currencies against deficit currencies. If a foreign currency has surplus
+   (bank balance + weighted net AR/AP > 120% of obligations) while USD or another currency
+   has a projected shortfall, recommend INTERCOMPANY_TRANSFER to convert the surplus into
+   the deficit currency. Cite the specific surplus amount and the shortfall it would cover.
+
+6. Identify 2-3 small auto-executable opportunities (under $100K USD equivalent):
    - Small FX spot trades to rebalance minor currency positions (action_type: SPOT_FX_REBALANCE)
    - Small interbank sweeps between accounts of the same currency (action_type: INTERBANK_SWEEP)
    - Early payment discount captures for AP items offering 2/10 net 30 terms (action_type: EARLY_PAYMENT_DISCOUNT)
@@ -648,7 +662,7 @@ ANALYSIS INSTRUCTIONS:
 
 Return between 5 and 7 recommendations as a JSON array. Each must have:
 - "priority": "HIGH" for anomaly-driven actions, "MEDIUM" for surplus/hedging, "LOW" for small optimizations
-- "action_type": one of "PLACE_DEPOSIT", "HEDGE_FX", "ACCELERATE_COLLECTION", "INTERBANK_SWEEP", "SPOT_FX_REBALANCE", "EARLY_PAYMENT_DISCOUNT", "PLACE_INVESTMENT"
+- "action_type": one of "PLACE_DEPOSIT", "HEDGE_FX", "ACCELERATE_COLLECTION", "INTERBANK_SWEEP", "SPOT_FX_REBALANCE", "EARLY_PAYMENT_DISCOUNT", "PLACE_INVESTMENT", "INTERCOMPANY_TRANSFER"
 - "amount": number (the recommended action amount in the specified currency)
 - "currency": the currency code (USD, EUR, GBP, JPY, CHF, SGD, or AUD)
 - "description": short human-readable description

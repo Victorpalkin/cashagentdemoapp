@@ -1,76 +1,81 @@
 ar_item_id,customer_id,customer_name,invoice_number,amount,currency,due_date,status,probability,description
-AR-001,C-001,TechGlobal Solutions,INV-AR-001,450000,USD,2026-04-03,OPEN,0.95,Q1 software implementation project
-AR-002,C-002,AutoMotive Industries GmbH,INV-AR-002,380000,EUR,2026-04-05,OPEN,0.92,Manufacturing equipment delivery
-AR-003,C-003,British Retail Group,INV-AR-003,95000,GBP,2026-04-04,OPEN,0.88,Retail POS system integration
-AR-004,C-004,Pacific Trading Corp,INV-AR-004,520000,USD,2026-04-07,OPEN,0.94,International shipping services
-AR-005,C-005,Nordic Energy AS,INV-AR-005,285000,EUR,2026-04-09,OPEN,0.9,Energy management consulting
-AR-006,C-006,London Financial Services,INV-AR-006,125000,GBP,2026-04-10,OPEN,0.91,Financial software licensing
-AR-007,C-007,MegaCorp USA,INV-AR-007,680000,USD,2026-04-12,OPEN,0.96,Enterprise cloud migration
-AR-008,C-008,Deutsche Industrial AG,INV-AR-008,195000,EUR,2026-04-13,OPEN,0.89,Industrial automation project
-AR-009,C-009,Highland Manufacturing,INV-AR-009,78000,GBP,2026-04-14,OPEN,0.85,Equipment calibration services
-AR-010,C-010,American Logistics Inc,INV-AR-010,425000,USD,2026-04-16,OPEN,0.93,Supply chain optimization
-AR-011,C-011,EuroTech Solutions,INV-AR-011,340000,EUR,2026-04-17,OPEN,0.91,IT infrastructure upgrade
-AR-012,C-012,Westminster Holdings,INV-AR-012,42000,GBP,2026-04-18,OPEN,0.87,Business consulting services
-AR-013,C-013,Continental Systems,INV-AR-013,575000,USD,2026-04-19,OPEN,0.95,Software licensing annual renewal
-AR-014,C-014,FranceTech SA,INV-AR-014,265000,EUR,2026-04-20,OPEN,0.9,Digital transformation services
-AR-015,C-015,Manchester United Industries,INV-AR-015,35000,GBP,2026-04-21,OPEN,0.86,Maintenance contract quarterly
-AR-016,C-016,Global Pharma Corp,INV-AR-016,890000,USD,2026-04-22,OPEN,0.97,Pharmaceutical data analytics platform
-AR-017,C-017,Siemens Digital Industries,INV-AR-017,425000,EUR,2026-04-23,OPEN,0.92,IoT platform deployment
-AR-018,C-018,Oxford Research Labs,INV-AR-018,52000,GBP,2026-04-24,OPEN,0.88,Research data management system
-AR-019,C-019,TransAtlantic Shipping,INV-AR-019,755000,USD,2026-04-25,OPEN,0.96,Fleet management software
-AR-020,C-020,ACME Corp,INV-AR-035,2300000,EUR,2026-04-02,OPEN,0.45,Major enterprise solution delivery - Phase 3
-AR-021,C-021,Cambridge Biotech,INV-AR-021,68000,GBP,2026-04-26,OPEN,0.89,Laboratory information system
-AR-022,C-022,Midwest Manufacturing,INV-AR-022,385000,USD,2026-04-27,OPEN,0.94,Production monitoring system
-AR-023,C-023,Berlin Analytics GmbH,INV-AR-023,215000,EUR,2026-04-28,OPEN,0.9,Business intelligence platform
-AR-024,C-024,Scottish Energy Solutions,INV-AR-024,28000,GBP,2026-04-29,OPEN,0.85,Energy audit services
-AR-025,C-025,Sunrise Technologies,INV-AR-025,495000,USD,2026-04-30,OPEN,0.93,Mobile application development
-AR-026,C-026,Rhine Logistics AG,INV-AR-026,175000,EUR,2026-04-30,OPEN,0.91,Warehouse management system
-AR-027,C-027,Cardiff Construction Ltd,INV-AR-027,45000,GBP,2026-04-06,OPEN,0.87,Project management software
-AR-028,C-028,Coastal Shipping USA,INV-AR-028,620000,USD,2026-04-08,OPEN,0.95,Port operations management
-AR-029,C-029,Munich Automotive,INV-AR-029,155000,EUR,2026-04-11,OPEN,0.89,Quality control system
-AR-030,C-030,Bristol Aerospace,INV-AR-030,38000,GBP,2026-04-15,OPEN,0.86,Engineering documentation system
-AR-031,C-031,Sunbelt Energy Corp,INV-AR-031,725000,USD,2026-04-18,OPEN,0.96,Smart grid analytics platform
-AR-032,C-032,Hamburg Port Services,INV-AR-032,95000,EUR,2026-04-21,OPEN,0.88,Terminal management system
-AR-033,C-033,Metropolitan Transit,INV-AR-033,22000,GBP,2026-04-23,OPEN,0.85,Ticketing system maintenance
-AR-034,C-034,Midwest Agribusiness,INV-AR-034,340000,USD,2026-04-24,OPEN,0.92,Agricultural IoT platform
-AR-035,C-035,Stuttgart Engineering,INV-AR-036,125000,EUR,2026-04-27,OPEN,0.9,CAD/CAM system licensing
-AR-036,C-036,Apex Data Systems,INV-AR-036,320000,USD,2026-04-04,OPEN,0.93,Data warehouse migration
-AR-037,C-037,Liberty Financial Group,INV-AR-037,185000,USD,2026-04-08,OPEN,0.91,Compliance platform licensing
-AR-038,C-038,Pinnacle Health Inc,INV-AR-038,72000,USD,2026-04-11,OPEN,0.88,Healthcare analytics module
-AR-039,C-039,Summit Logistics Corp,INV-AR-039,445000,USD,2026-04-15,OPEN,0.94,Route optimization software
-AR-040,C-040,Frontier Energy LLC,INV-AR-040,95000,USD,2026-04-19,OPEN,0.9,Energy monitoring dashboard
-AR-041,C-041,Columbia River Tech,INV-AR-041,38000,USD,2026-04-23,OPEN,0.86,IT support contract quarterly
-AR-042,C-042,National Services LLC,INV-AR-042,560000,USD,2026-04-26,OPEN,0.95,Government contract milestone
-AR-043,C-043,Western Digital Corp,INV-AR-043,67000,USD,2026-04-29,OPEN,0.87,Storage solution maintenance
-AR-044,C-044,Northeast Industries,INV-AR-044,290000,USD,2026-04-06,OPEN,0.92,Manufacturing execution system
-AR-045,C-045,Southern Manufacturing,INV-AR-045,48000,USD,2026-04-13,OPEN,0.85,Quality assurance tools
-AR-046,C-046,Central Systems Inc,INV-AR-046,155000,USD,2026-04-17,OPEN,0.89,Network monitoring platform
-AR-047,C-047,Atlantic Corp,INV-AR-047,410000,USD,2026-04-21,OPEN,0.93,ERP integration services
-AR-048,C-048,Barcelona Dynamics SL,INV-AR-048,195000,EUR,2026-04-09,OPEN,0.91,Robotics integration project
-AR-049,C-049,Amsterdam Data BV,INV-AR-049,280000,EUR,2026-04-10,OPEN,0.9,Data center migration
-AR-050,C-050,Zurich Instruments AG,INV-AR-050,165000,EUR,2026-04-11,OPEN,0.88,Precision instruments calibration
-AR-051,C-051,Vienna Tech GmbH,INV-AR-051,220000,EUR,2026-04-12,OPEN,0.92,Smart building platform
-AR-052,C-052,Milan Industries,INV-AR-052,310000,EUR,2026-04-13,OPEN,0.89,Industrial IoT deployment
-AR-053,C-053,Frankfurt Solutions,INV-AR-053,85000,EUR,2026-04-16,OPEN,0.87,Consulting engagement Phase 2
-AR-054,C-054,Deutsche Industrial AG,INV-AR-054,145000,EUR,2026-04-24,OPEN,0.9,Automation system upgrade
-AR-055,C-055,Nordic Energy AS,INV-AR-055,92000,EUR,2026-04-26,OPEN,0.88,Wind farm monitoring system
-AR-056,C-056,Leeds Precision Engineering,INV-AR-056,65000,GBP,2026-04-07,OPEN,0.87,CNC programming services
-AR-057,C-057,Liverpool Maritime Services,INV-AR-057,115000,GBP,2026-04-12,OPEN,0.89,Port logistics software
-AR-058,C-058,Edinburgh Systems,INV-AR-058,45000,GBP,2026-04-19,OPEN,0.86,Municipal IT services
-AR-059,C-059,Highland Manufacturing,INV-AR-059,82000,GBP,2026-04-25,OPEN,0.88,Production line optimization
-AR-060,C-060,Toyota Motor Corp,INV-AR-060,85000000,JPY,2026-04-06,OPEN,0.94,Connected vehicle platform
-AR-061,C-061,Takeda Pharmaceutical,INV-AR-061,180000000,JPY,2026-04-09,OPEN,0.4,Clinical data analytics - Phase 2 (payment dispute)
-AR-062,C-062,Sony Interactive,INV-AR-062,42000000,JPY,2026-04-16,OPEN,0.91,Gaming analytics platform
-AR-063,C-063,NTT Data Corp,INV-AR-063,65000000,JPY,2026-04-23,OPEN,0.93,Telecom infrastructure project
-AR-064,C-064,Panasonic Holdings,INV-AR-064,28000000,JPY,2026-04-28,OPEN,0.88,Smart factory monitoring
-AR-065,C-065,Nestle SA,INV-AR-065,185000,CHF,2026-04-08,OPEN,0.92,Supply chain analytics
-AR-066,C-066,ABB Ltd,INV-AR-066,120000,CHF,2026-04-17,OPEN,0.9,Power grid monitoring system
-AR-067,C-067,Roche Holding AG,INV-AR-067,95000,CHF,2026-04-25,OPEN,0.88,Lab data management
-AR-068,C-068,Singapore Airlines,INV-AR-068,145000,SGD,2026-04-05,OPEN,0.91,Flight operations analytics
-AR-069,C-069,DBS Group Holdings,INV-AR-069,85000,SGD,2026-04-13,OPEN,0.89,Banking platform integration
-AR-070,C-070,Keppel Corporation,INV-AR-070,210000,SGD,2026-04-20,OPEN,0.93,Marine engineering platform
-AR-071,C-071,Sea Limited,INV-AR-071,55000,SGD,2026-04-27,OPEN,0.87,E-commerce analytics module
-AR-072,C-072,BHP Group,INV-AR-072,320000,AUD,2026-04-07,OPEN,0.94,Mining operations dashboard
-AR-073,C-073,BHP Mining Services,INV-AR-073,450000,AUD,2026-04-15,OPEN,0.35,Exploration data platform (contract under review)
-AR-074,C-074,Rio Tinto Ltd,INV-AR-074,185000,AUD,2026-04-21,OPEN,0.91,Logistics optimization system
-AR-075,C-075,CSL Limited,INV-AR-075,95000,AUD,2026-04-28,OPEN,0.88,Biotech research data system
+AR-001,C-001,TechGlobal Solutions,INV-AR-001,450000,USD,2026-04-04,OPEN,0.95,Q1 software implementation project
+AR-002,C-002,AutoMotive Industries GmbH,INV-AR-002,380000,EUR,2026-04-06,OPEN,0.92,Manufacturing equipment delivery
+AR-003,C-003,British Retail Group,INV-AR-003,95000,GBP,2026-04-05,OPEN,0.88,Retail POS system integration
+AR-004,C-004,Pacific Trading Corp,INV-AR-004,520000,USD,2026-04-08,OPEN,0.94,International shipping services
+AR-005,C-005,Nordic Energy AS,INV-AR-005,420000,EUR,2026-04-10,OPEN,0.9,Energy management consulting
+AR-006,C-006,London Financial Services,INV-AR-006,125000,GBP,2026-04-11,OPEN,0.91,Financial software licensing
+AR-007,C-007,MegaCorp USA,INV-AR-007,680000,USD,2026-04-13,OPEN,0.96,Enterprise cloud migration
+AR-008,C-008,Deutsche Industrial AG,INV-AR-008,195000,EUR,2026-04-14,OPEN,0.89,Industrial automation project
+AR-009,C-009,Highland Manufacturing,INV-AR-009,78000,GBP,2026-04-15,OPEN,0.85,Equipment calibration services
+AR-010,C-010,American Logistics Inc,INV-AR-010,425000,USD,2026-04-17,OPEN,0.93,Supply chain optimization
+AR-011,C-011,EuroTech Solutions,INV-AR-011,480000,EUR,2026-04-18,OPEN,0.91,IT infrastructure upgrade
+AR-012,C-012,Westminster Holdings,INV-AR-012,42000,GBP,2026-04-19,OPEN,0.87,Business consulting services
+AR-013,C-013,Continental Systems,INV-AR-013,575000,USD,2026-04-20,OPEN,0.95,Software licensing annual renewal
+AR-014,C-014,FranceTech SA,INV-AR-014,265000,EUR,2026-04-21,OPEN,0.9,Digital transformation services
+AR-015,C-015,Manchester United Industries,INV-AR-015,35000,GBP,2026-04-22,OPEN,0.86,Maintenance contract quarterly
+AR-016,C-016,Global Pharma Corp,INV-AR-016,890000,USD,2026-04-23,OPEN,0.97,Pharmaceutical data analytics platform
+AR-017,C-017,Siemens Digital Industries,INV-AR-017,560000,EUR,2026-04-24,OPEN,0.92,IoT platform deployment
+AR-018,C-018,Oxford Research Labs,INV-AR-018,52000,GBP,2026-04-25,OPEN,0.88,Research data management system
+AR-019,C-019,TransAtlantic Shipping,INV-AR-019,755000,USD,2026-04-26,OPEN,0.96,Fleet management software
+AR-020,C-020,ACME Corp,INV-AR-035,2300000,EUR,2026-04-03,OPEN,0.45,Major enterprise solution delivery - Phase 3
+AR-021,C-021,Cambridge Biotech,INV-AR-021,68000,GBP,2026-04-27,OPEN,0.89,Laboratory information system
+AR-022,C-022,Midwest Manufacturing,INV-AR-022,385000,USD,2026-04-28,OPEN,0.94,Production monitoring system
+AR-023,C-023,Berlin Analytics GmbH,INV-AR-023,215000,EUR,2026-04-29,OPEN,0.9,Business intelligence platform
+AR-024,C-024,Scottish Energy Solutions,INV-AR-024,28000,GBP,2026-04-30,OPEN,0.85,Energy audit services
+AR-025,C-025,Sunrise Technologies,INV-AR-025,495000,USD,2026-05-01,OPEN,0.93,Mobile application development
+AR-026,C-026,Rhine Logistics AG,INV-AR-026,175000,EUR,2026-05-01,OPEN,0.91,Warehouse management system
+AR-027,C-027,Cardiff Construction Ltd,INV-AR-027,45000,GBP,2026-04-07,OPEN,0.87,Project management software
+AR-028,C-028,Coastal Shipping USA,INV-AR-028,620000,USD,2026-04-09,OPEN,0.95,Port operations management
+AR-029,C-029,Munich Automotive,INV-AR-029,155000,EUR,2026-04-12,OPEN,0.89,Quality control system
+AR-030,C-030,Bristol Aerospace,INV-AR-030,38000,GBP,2026-04-16,OPEN,0.86,Engineering documentation system
+AR-031,C-031,Sunbelt Energy Corp,INV-AR-031,725000,USD,2026-04-19,OPEN,0.96,Smart grid analytics platform
+AR-032,C-032,Hamburg Port Services,INV-AR-032,95000,EUR,2026-04-22,OPEN,0.88,Terminal management system
+AR-033,C-033,Metropolitan Transit,INV-AR-033,22000,GBP,2026-04-24,OPEN,0.85,Ticketing system maintenance
+AR-034,C-034,Midwest Agribusiness,INV-AR-034,340000,USD,2026-04-25,OPEN,0.92,Agricultural IoT platform
+AR-035,C-035,Stuttgart Engineering,INV-AR-036,125000,EUR,2026-04-28,OPEN,0.9,CAD/CAM system licensing
+AR-036,C-036,Apex Data Systems,INV-AR-036,320000,USD,2026-04-05,OPEN,0.93,Data warehouse migration
+AR-037,C-037,Liberty Financial Group,INV-AR-037,185000,USD,2026-04-09,OPEN,0.91,Compliance platform licensing
+AR-038,C-038,Pinnacle Health Inc,INV-AR-038,72000,USD,2026-04-12,OPEN,0.88,Healthcare analytics module
+AR-039,C-039,Summit Logistics Corp,INV-AR-039,445000,USD,2026-04-16,OPEN,0.94,Route optimization software
+AR-040,C-040,Frontier Energy LLC,INV-AR-040,95000,USD,2026-04-20,OPEN,0.9,Energy monitoring dashboard
+AR-041,C-041,Columbia River Tech,INV-AR-041,38000,USD,2026-04-24,OPEN,0.86,IT support contract quarterly
+AR-042,C-042,National Services LLC,INV-AR-042,560000,USD,2026-04-27,OPEN,0.95,Government contract milestone
+AR-043,C-043,Western Digital Corp,INV-AR-043,67000,USD,2026-04-30,OPEN,0.87,Storage solution maintenance
+AR-044,C-044,Northeast Industries,INV-AR-044,290000,USD,2026-04-07,OPEN,0.92,Manufacturing execution system
+AR-045,C-045,Southern Manufacturing,INV-AR-045,48000,USD,2026-04-14,OPEN,0.85,Quality assurance tools
+AR-046,C-046,Central Systems Inc,INV-AR-046,155000,USD,2026-04-18,OPEN,0.89,Network monitoring platform
+AR-047,C-047,Atlantic Corp,INV-AR-047,410000,USD,2026-04-22,OPEN,0.93,ERP integration services
+AR-048,C-048,Barcelona Dynamics SL,INV-AR-048,195000,EUR,2026-04-10,OPEN,0.91,Robotics integration project
+AR-049,C-049,Amsterdam Data BV,INV-AR-049,280000,EUR,2026-04-11,OPEN,0.9,Data center migration
+AR-050,C-050,Zurich Instruments AG,INV-AR-050,165000,EUR,2026-04-12,OPEN,0.88,Precision instruments calibration
+AR-051,C-051,Vienna Tech GmbH,INV-AR-051,220000,EUR,2026-04-13,OPEN,0.92,Smart building platform
+AR-052,C-052,Milan Industries,INV-AR-052,310000,EUR,2026-04-14,OPEN,0.89,Industrial IoT deployment
+AR-053,C-053,Frankfurt Solutions,INV-AR-053,85000,EUR,2026-04-17,OPEN,0.87,Consulting engagement Phase 2
+AR-054,C-054,Deutsche Industrial AG,INV-AR-054,145000,EUR,2026-04-25,OPEN,0.9,Automation system upgrade
+AR-055,C-055,Nordic Energy AS,INV-AR-055,92000,EUR,2026-04-27,OPEN,0.88,Wind farm monitoring system
+AR-056,C-076,AutoMotive Industries GmbH,INV-AR-056,475000,EUR,2026-04-05,OPEN,0.93,Connected vehicle platform Phase 2
+AR-057,C-077,FranceTech SA,INV-AR-057,345000,EUR,2026-04-15,OPEN,0.91,AI consulting engagement Q2
+AR-058,C-078,Munich Automotive,INV-AR-058,290000,EUR,2026-04-23,OPEN,0.92,Production analytics expansion
+AR-059,C-056,Leeds Precision Engineering,INV-AR-059,65000,GBP,2026-04-08,OPEN,0.87,CNC programming services
+AR-060,C-057,Liverpool Maritime Services,INV-AR-060,115000,GBP,2026-04-13,OPEN,0.89,Port logistics software
+AR-061,C-058,Edinburgh Systems,INV-AR-061,45000,GBP,2026-04-20,OPEN,0.86,Municipal IT services
+AR-062,C-059,Highland Manufacturing,INV-AR-062,82000,GBP,2026-04-26,OPEN,0.88,Production line optimization
+AR-063,C-060,Toyota Motor Corp,INV-AR-063,85000000,JPY,2026-04-07,OPEN,0.94,Connected vehicle platform
+AR-064,C-061,Takeda Pharmaceutical,INV-AR-064,180000000,JPY,2026-04-10,OPEN,0.4,Clinical data analytics - Phase 2 (payment dispute)
+AR-065,C-062,Sony Interactive,INV-AR-065,42000000,JPY,2026-04-17,OPEN,0.91,Gaming analytics platform
+AR-066,C-063,NTT Data Corp,INV-AR-066,65000000,JPY,2026-04-24,OPEN,0.93,Telecom infrastructure project
+AR-067,C-064,Panasonic Holdings,INV-AR-067,28000000,JPY,2026-04-29,OPEN,0.88,Smart factory monitoring
+AR-068,C-065,Nestle SA,INV-AR-068,185000,CHF,2026-04-09,OPEN,0.92,Supply chain analytics
+AR-069,C-066,ABB Ltd,INV-AR-069,120000,CHF,2026-04-18,OPEN,0.9,Power grid monitoring system
+AR-070,C-067,Roche Holding AG,INV-AR-070,95000,CHF,2026-04-26,OPEN,0.88,Lab data management
+AR-071,C-079,Zurich Insurance Group,INV-AR-071,225000,CHF,2026-04-12,OPEN,0.91,Risk analytics platform
+AR-072,C-080,Lonza Group AG,INV-AR-072,180000,CHF,2026-04-20,OPEN,0.9,Biotech process monitoring
+AR-073,C-068,Singapore Airlines,INV-AR-073,145000,SGD,2026-04-06,OPEN,0.91,Flight operations analytics
+AR-074,C-069,DBS Group Holdings,INV-AR-074,85000,SGD,2026-04-14,OPEN,0.89,Banking platform integration
+AR-075,C-070,Keppel Corporation,INV-AR-075,210000,SGD,2026-04-21,OPEN,0.93,Marine engineering platform
+AR-076,C-071,Sea Limited,INV-AR-076,55000,SGD,2026-04-28,OPEN,0.87,E-commerce analytics module
+AR-077,C-072,BHP Group,INV-AR-077,320000,AUD,2026-04-08,OPEN,0.94,Mining operations dashboard
+AR-078,C-073,BHP Mining Services,INV-AR-078,450000,AUD,2026-04-16,OPEN,0.35,Exploration data platform (contract under review)
+AR-079,C-074,Rio Tinto Ltd,INV-AR-079,260000,AUD,2026-04-22,OPEN,0.91,Logistics optimization system
+AR-080,C-075,CSL Limited,INV-AR-080,95000,AUD,2026-04-29,OPEN,0.88,Biotech research data system

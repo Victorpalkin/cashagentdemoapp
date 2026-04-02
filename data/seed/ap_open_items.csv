@@ -1,85 +1,85 @@
 ap_item_id,vendor_id,vendor_name,invoice_number,amount,currency,due_date,status,payment_method,description
-AP-001,V-001,Oracle Corp,INV-ORC-2401,450000,USD,2026-04-03,OPEN,WIRE,Software license renewal
-AP-002,V-002,Siemens AG,INV-SIE-8821,350000,EUR,2026-04-05,OPEN,WIRE,Industrial equipment purchase
-AP-003,V-003,SAP SE,INV-SAP-1923,280000,EUR,2026-04-07,OPEN,WIRE,ERP system maintenance
-AP-004,V-004,Shell Energy,INV-SHL-4429,185000,GBP,2026-04-04,OPEN,ACH,Quarterly energy costs
-AP-005,V-005,Microsoft Corp,INV-MSF-7712,520000,USD,2026-04-06,OPEN,WIRE,Azure cloud services Q1
-AP-006,V-006,Deloitte Consulting,INV-DLT-3384,380000,USD,2026-04-08,OPEN,WIRE,Q1 advisory services
-AP-007,V-007,BASF SE,INV-BAS-5591,420000,EUR,2026-04-10,OPEN,WIRE,Raw materials supply
-AP-008,V-008,BP Energy,INV-BPE-2214,220000,GBP,2026-04-09,OPEN,ACH,Fuel and energy costs
-AP-009,V-009,Cisco Systems,INV-CSC-9905,310000,USD,2026-04-11,OPEN,WIRE,Network infrastructure upgrade
-AP-010,V-010,Accenture PLC,INV-ACC-4472,295000,USD,2026-04-12,OPEN,WIRE,IT consulting services
-AP-011,V-011,Volkswagen AG,INV-VWG-7783,175000,EUR,2026-04-13,OPEN,WIRE,Fleet vehicle lease payment
-AP-012,V-012,Rolls-Royce Holdings,INV-RRH-6638,125000,GBP,2026-04-14,OPEN,WIRE,Equipment maintenance
-AP-013,V-013,IBM Corp,INV-IBM-3321,1200000,USD,2026-04-15,OPEN,WIRE,Mainframe systems and support
-AP-014,V-014,Bayer AG,INV-BAY-8847,195000,EUR,2026-04-16,OPEN,WIRE,Chemical supplies
-AP-015,V-015,Unilever PLC,INV-UNL-2259,95000,GBP,2026-04-17,OPEN,ACH,Office supplies and catering
-AP-016,V-016,Amazon Web Services,INV-AWS-5514,680000,USD,2026-04-18,OPEN,WIRE,Cloud infrastructure Q1
-AP-017,V-017,Deutsche Telekom,INV-DTK-9926,165000,EUR,2026-04-19,OPEN,WIRE,Telecommunications services
-AP-018,V-018,Vodafone Group,INV-VDF-7741,88000,GBP,2026-04-20,OPEN,ACH,Mobile services corporate plan
-AP-019,V-019,Adobe Systems,INV-ADB-4453,240000,USD,2026-04-21,OPEN,WIRE,Creative Cloud enterprise license
-AP-020,V-020,Allianz SE,INV-ALZ-1176,145000,EUR,2026-04-22,OPEN,WIRE,Corporate insurance premium
-AP-021,V-021,Salesforce Inc,INV-SFC-8882,1800000,USD,2026-04-10,OPEN,WIRE,CRM platform annual contract
-AP-022,V-022,ThyssenKrupp AG,INV-TKA-3347,255000,EUR,2026-04-12,OPEN,WIRE,Steel materials procurement
-AP-023,V-023,BAE Systems,INV-BAE-6659,800000,GBP,2026-04-17,OPEN,WIRE,Defense systems components
-AP-024,V-024,Workday Inc,INV-WKD-2283,425000,USD,2026-04-14,OPEN,WIRE,HR software subscription
-AP-025,V-025,Bosch Group,INV-BSH-5574,210000,EUR,2026-04-18,OPEN,WIRE,Automation equipment
-AP-026,V-026,Capgemini SE,INV-CPG-9918,365000,EUR,2026-04-20,OPEN,WIRE,Digital transformation services
-AP-027,V-027,BT Group,INV-BTG-7726,155000,GBP,2026-04-22,OPEN,ACH,Enterprise connectivity services
-AP-028,V-028,VMware Inc,INV-VMW-4441,290000,USD,2026-04-24,OPEN,WIRE,Virtualization platform license
-AP-029,V-029,Airbus SE,INV-AIR-1195,380000,EUR,2026-04-23,OPEN,WIRE,Aviation parts and maintenance
-AP-030,V-030,Honeywell International,INV-HON-8863,335000,USD,2026-04-25,OPEN,WIRE,Building automation systems
-AP-031,V-031,General Electric,INV-GEL-3372,475000,USD,2026-04-26,OPEN,WIRE,Power generation equipment
-AP-032,V-032,Schneider Electric,INV-SCH-6684,185000,EUR,2026-04-24,OPEN,WIRE,Electrical distribution systems
-AP-033,V-033,Caterpillar Inc,INV-CAT-2297,550000,USD,2026-04-27,OPEN,WIRE,Heavy machinery purchase
-AP-034,V-034,AstraZeneca PLC,INV-AZN-5519,195000,GBP,2026-04-28,OPEN,WIRE,Pharmaceutical supplies
-AP-035,V-035,3M Company,INV-3MC-9941,385000,USD,2026-04-29,OPEN,WIRE,Industrial materials and supplies
-AP-036,V-036,L'Oreal SA,INV-LOR-7758,125000,EUR,2026-04-28,OPEN,WIRE,Marketing and promotional materials
-AP-037,V-037,KPMG LLP,INV-KPM-4465,420000,USD,2026-04-30,OPEN,WIRE,Annual audit services
-AP-038,V-038,Lufthansa AG,INV-LHA-1183,95000,EUR,2026-04-29,OPEN,ACH,Corporate travel services
-AP-039,V-039,EY Global,INV-EYG-8896,355000,USD,2026-04-30,OPEN,WIRE,Tax advisory services
-AP-040,V-040,Tesco PLC,INV-TSC-3374,65000,GBP,2026-04-30,OPEN,ACH,Corporate catering services
-AP-041,V-041,Palo Alto Networks,INV-PAN-5501,680000,USD,2026-04-10,OPEN,WIRE,Cybersecurity platform renewal
-AP-042,V-042,ServiceNow Inc,INV-SNW-5502,520000,USD,2026-04-11,OPEN,WIRE,ITSM platform annual license
-AP-043,V-043,Snowflake Inc,INV-SNF-5503,445000,USD,2026-04-11,OPEN,WIRE,Data cloud services Q1
-AP-044,V-044,Palo Alto Networks,INV-PAN-5504,390000,USD,2026-04-12,OPEN,WIRE,Security operations center setup
-AP-045,V-045,ServiceNow Inc,INV-SNW-5505,285000,USD,2026-04-12,OPEN,WIRE,IT workflow automation module
-AP-046,V-046,Waste Management Inc,INV-WMI-5506,42000,USD,2026-04-16,OPEN,ACH,Quarterly waste services (2/10 net 30 discount available)
-AP-047,V-047,Office Depot,INV-OFD-5507,28000,USD,2026-04-19,OPEN,ACH,Office supplies bulk order (2/10 net 30 discount available)
-AP-048,V-048,Staples Inc,INV-STP-5508,35000,USD,2026-04-23,OPEN,ACH,Printer supplies and paper (2/10 net 30 discount available)
-AP-049,V-049,AT&T Services,INV-ATT-5509,155000,USD,2026-04-26,OPEN,WIRE,Enterprise communications Q1
-AP-050,V-050,Verizon Business,INV-VZB-5510,195000,USD,2026-04-28,OPEN,WIRE,5G infrastructure services
-AP-051,V-051,Infineon Technologies,INV-IFX-5511,285000,EUR,2026-04-06,OPEN,WIRE,Semiconductor components
-AP-052,V-052,Continental AG,INV-CON-5512,195000,EUR,2026-04-09,OPEN,WIRE,Automotive parts supply
-AP-053,V-053,RWE Energy,INV-RWE-5513,145000,EUR,2026-04-15,OPEN,WIRE,Renewable energy procurement
-AP-054,V-054,Deutsche Post,INV-DPO-5514,55000,EUR,2026-04-21,OPEN,ACH,Logistics and shipping services
-AP-055,V-055,Bosch Group,INV-BSH-5515,82000,EUR,2026-04-25,OPEN,WIRE,IoT sensor equipment
-AP-056,V-056,Aviva PLC,INV-AVI-5516,175000,GBP,2026-04-08,OPEN,WIRE,Employee benefits insurance
-AP-057,V-057,Legal & General,INV-LGL-5517,95000,GBP,2026-04-16,OPEN,WIRE,Pension fund management
-AP-058,V-058,Royal Mail,INV-RML-5518,32000,GBP,2026-04-23,OPEN,ACH,Postal and courier services (2/10 net 30)
-AP-059,V-059,British Gas,INV-BGS-5519,48000,GBP,2026-04-27,OPEN,ACH,Energy costs Q1
-AP-060,V-060,Toyota Tsusho,INV-TTS-5520,120000000,JPY,2026-04-10,OPEN,WIRE,Automotive components bulk order
-AP-061,V-061,Mitsui & Co,INV-MIT-5521,135000000,JPY,2026-04-11,OPEN,WIRE,Industrial materials procurement
-AP-062,V-062,Marubeni Corp,INV-MRB-5522,95000000,JPY,2026-04-12,OPEN,WIRE,Infrastructure project materials
-AP-063,V-063,Denso Corp,INV-DNS-5523,45000000,JPY,2026-04-18,OPEN,WIRE,Electronic components supply
-AP-064,V-064,Nippon Steel,INV-NST-5524,68000000,JPY,2026-04-24,OPEN,WIRE,Steel materials for construction
-AP-065,V-065,FANUC Corporation,INV-FNC-5525,22000000,JPY,2026-04-28,OPEN,LOCAL,Robotics maintenance contract
-AP-066,V-066,Keyence Corp,INV-KEY-5526,18000000,JPY,2026-04-30,OPEN,LOCAL,Sensor equipment (2/10 net 30)
-AP-067,V-067,Murata Manufacturing,INV-MUR-5527,12000000,JPY,2026-04-15,OPEN,LOCAL,Capacitor components order
-AP-068,V-068,Holcim Group,INV-HLC-5528,195000,CHF,2026-04-07,OPEN,WIRE,Construction materials
-AP-069,V-069,Kuehne+Nagel,INV-KNL-5529,125000,CHF,2026-04-14,OPEN,WIRE,International freight services
-AP-070,V-070,Swisscom AG,INV-SWC-5530,85000,CHF,2026-04-20,OPEN,WIRE,Telecom infrastructure
-AP-071,V-071,Sika AG,INV-SKA-5531,65000,CHF,2026-04-26,OPEN,WIRE,Chemical construction products
-AP-072,V-072,Georg Fischer AG,INV-GFA-5532,42000,CHF,2026-04-29,OPEN,LOCAL,Piping systems (2/10 net 30)
-AP-073,V-073,Singapore Power,INV-SPW-5533,165000,SGD,2026-04-06,OPEN,WIRE,Electricity and utilities Q1
-AP-074,V-074,ST Engineering,INV-STE-5534,220000,SGD,2026-04-13,OPEN,WIRE,Engineering services contract
-AP-075,V-075,StarHub Ltd,INV-STH-5535,45000,SGD,2026-04-19,OPEN,LOCAL,Telecom services
-AP-076,V-076,Olam Group,INV-OLM-5536,85000,SGD,2026-04-24,OPEN,WIRE,Agricultural commodity supply
-AP-077,V-077,SMRT Corporation,INV-SMR-5537,35000,SGD,2026-04-28,OPEN,LOCAL,Transport services (2/10 net 30)
-AP-078,V-078,Frasers Property,INV-FRP-5538,95000,SGD,2026-04-30,OPEN,WIRE,Office space lease Q1
-AP-079,V-079,AGL Energy,INV-AGL-5539,185000,AUD,2026-04-05,OPEN,WIRE,Energy procurement Q1
-AP-080,V-080,Qantas Airways,INV-QAN-5540,125000,AUD,2026-04-11,OPEN,WIRE,Corporate travel program
-AP-081,V-081,Telstra Corp,INV-TLS-5541,95000,AUD,2026-04-17,OPEN,WIRE,Telecommunications services
-AP-082,V-082,Lendlease Group,INV-LDL-5542,220000,AUD,2026-04-21,OPEN,WIRE,Construction project milestone
-AP-083,V-083,Origin Energy,INV-ORG-5543,65000,AUD,2026-04-25,OPEN,ACH,Natural gas supply
-AP-084,V-084,Boral Limited,INV-BRL-5544,38000,AUD,2026-04-29,OPEN,LOCAL,Building materials (2/10 net 30)
+AP-001,V-001,Oracle Corp,INV-ORC-2401,450000,USD,2026-04-04,OPEN,WIRE,Software license renewal
+AP-002,V-002,Siemens AG,INV-SIE-8821,350000,EUR,2026-04-06,OPEN,WIRE,Industrial equipment purchase
+AP-003,V-003,SAP SE,INV-SAP-1923,280000,EUR,2026-04-08,OPEN,WIRE,ERP system maintenance
+AP-004,V-004,Shell Energy,INV-SHL-4429,185000,GBP,2026-04-05,OPEN,ACH,Quarterly energy costs
+AP-005,V-005,Microsoft Corp,INV-MSF-7712,520000,USD,2026-04-07,OPEN,WIRE,Azure cloud services Q1
+AP-006,V-006,Deloitte Consulting,INV-DLT-3384,380000,USD,2026-04-09,OPEN,WIRE,Q1 advisory services
+AP-007,V-007,BASF SE,INV-BAS-5591,320000,EUR,2026-04-11,OPEN,WIRE,Raw materials supply
+AP-008,V-008,BP Energy,INV-BPE-2214,220000,GBP,2026-04-10,OPEN,ACH,Fuel and energy costs
+AP-009,V-009,Cisco Systems,INV-CSC-9905,310000,USD,2026-04-12,OPEN,WIRE,Network infrastructure upgrade
+AP-010,V-010,Accenture PLC,INV-ACC-4472,295000,USD,2026-04-13,OPEN,WIRE,IT consulting services
+AP-011,V-011,Volkswagen AG,INV-VWG-7783,175000,EUR,2026-04-14,OPEN,WIRE,Fleet vehicle lease payment
+AP-012,V-012,Rolls-Royce Holdings,INV-RRH-6638,125000,GBP,2026-04-15,OPEN,WIRE,Equipment maintenance
+AP-013,V-013,IBM Corp,INV-IBM-3321,1200000,USD,2026-04-16,OPEN,WIRE,Mainframe systems and support
+AP-014,V-014,Bayer AG,INV-BAY-8847,195000,EUR,2026-04-17,OPEN,WIRE,Chemical supplies
+AP-015,V-015,Unilever PLC,INV-UNL-2259,95000,GBP,2026-04-18,OPEN,ACH,Office supplies and catering
+AP-016,V-016,Amazon Web Services,INV-AWS-5514,680000,USD,2026-04-19,OPEN,WIRE,Cloud infrastructure Q1
+AP-017,V-017,Deutsche Telekom,INV-DTK-9926,165000,EUR,2026-04-20,OPEN,WIRE,Telecommunications services
+AP-018,V-018,Vodafone Group,INV-VDF-7741,88000,GBP,2026-04-21,OPEN,ACH,Mobile services corporate plan
+AP-019,V-019,Adobe Systems,INV-ADB-4453,240000,USD,2026-04-22,OPEN,WIRE,Creative Cloud enterprise license
+AP-020,V-020,Allianz SE,INV-ALZ-1176,145000,EUR,2026-04-23,OPEN,WIRE,Corporate insurance premium
+AP-021,V-021,Salesforce Inc,INV-SFC-8882,1800000,USD,2026-04-11,OPEN,WIRE,CRM platform annual contract
+AP-022,V-022,ThyssenKrupp AG,INV-TKA-3347,255000,EUR,2026-04-13,OPEN,WIRE,Steel materials procurement
+AP-023,V-023,BAE Systems,INV-BAE-6659,800000,GBP,2026-04-18,OPEN,WIRE,Defense systems components
+AP-024,V-024,Workday Inc,INV-WKD-2283,425000,USD,2026-04-15,OPEN,WIRE,HR software subscription
+AP-025,V-025,Bosch Group,INV-BSH-5574,210000,EUR,2026-04-19,OPEN,WIRE,Automation equipment
+AP-026,V-026,Capgemini SE,INV-CPG-9918,265000,EUR,2026-04-21,OPEN,WIRE,Digital transformation services
+AP-027,V-027,BT Group,INV-BTG-7726,155000,GBP,2026-04-23,OPEN,ACH,Enterprise connectivity services
+AP-028,V-028,VMware Inc,INV-VMW-4441,290000,USD,2026-04-25,OPEN,WIRE,Virtualization platform license
+AP-029,V-029,Airbus SE,INV-AIR-1195,380000,EUR,2026-04-24,OPEN,WIRE,Aviation parts and maintenance
+AP-030,V-030,Honeywell International,INV-HON-8863,335000,USD,2026-04-26,OPEN,WIRE,Building automation systems
+AP-031,V-031,General Electric,INV-GEL-3372,475000,USD,2026-04-27,OPEN,WIRE,Power generation equipment
+AP-032,V-032,Schneider Electric,INV-SCH-6684,185000,EUR,2026-04-25,OPEN,WIRE,Electrical distribution systems
+AP-033,V-033,Caterpillar Inc,INV-CAT-2297,550000,USD,2026-04-28,OPEN,WIRE,Heavy machinery purchase
+AP-034,V-034,AstraZeneca PLC,INV-AZN-5519,195000,GBP,2026-04-29,OPEN,WIRE,Pharmaceutical supplies
+AP-035,V-035,3M Company,INV-3MC-9941,385000,USD,2026-04-30,OPEN,WIRE,Industrial materials and supplies
+AP-036,V-036,L'Oreal SA,INV-LOR-7758,125000,EUR,2026-04-29,OPEN,WIRE,Marketing and promotional materials
+AP-037,V-037,KPMG LLP,INV-KPM-4465,420000,USD,2026-05-01,OPEN,WIRE,Annual audit services
+AP-038,V-038,Lufthansa AG,INV-LHA-1183,95000,EUR,2026-04-30,OPEN,ACH,Corporate travel services
+AP-039,V-039,EY Global,INV-EYG-8896,355000,USD,2026-05-01,OPEN,WIRE,Tax advisory services
+AP-040,V-040,Tesco PLC,INV-TSC-3374,65000,GBP,2026-05-01,OPEN,ACH,Corporate catering services
+AP-041,V-041,Palo Alto Networks,INV-PAN-5501,680000,USD,2026-04-11,OPEN,WIRE,Cybersecurity platform renewal
+AP-042,V-042,ServiceNow Inc,INV-SNW-5502,520000,USD,2026-04-12,OPEN,WIRE,ITSM platform annual license
+AP-043,V-043,Snowflake Inc,INV-SNF-5503,445000,USD,2026-04-12,OPEN,WIRE,Data cloud services Q1
+AP-044,V-044,Palo Alto Networks,INV-PAN-5504,390000,USD,2026-04-13,OPEN,WIRE,Security operations center setup
+AP-045,V-045,ServiceNow Inc,INV-SNW-5505,285000,USD,2026-04-13,OPEN,WIRE,IT workflow automation module
+AP-046,V-046,Waste Management Inc,INV-WMI-5506,42000,USD,2026-04-17,OPEN,ACH,Quarterly waste services (2/10 net 30 discount available)
+AP-047,V-047,Office Depot,INV-OFD-5507,28000,USD,2026-04-20,OPEN,ACH,Office supplies bulk order (2/10 net 30 discount available)
+AP-048,V-048,Staples Inc,INV-STP-5508,35000,USD,2026-04-24,OPEN,ACH,Printer supplies and paper (2/10 net 30 discount available)
+AP-049,V-049,AT&T Services,INV-ATT-5509,155000,USD,2026-04-27,OPEN,WIRE,Enterprise communications Q1
+AP-050,V-050,Verizon Business,INV-VZB-5510,195000,USD,2026-04-29,OPEN,WIRE,5G infrastructure services
+AP-051,V-051,Infineon Technologies,INV-IFX-5511,285000,EUR,2026-04-07,OPEN,WIRE,Semiconductor components
+AP-052,V-052,Continental AG,INV-CON-5512,195000,EUR,2026-04-10,OPEN,WIRE,Automotive parts supply
+AP-053,V-053,RWE Energy,INV-RWE-5513,145000,EUR,2026-04-16,OPEN,WIRE,Renewable energy procurement
+AP-054,V-054,Deutsche Post,INV-DPO-5514,55000,EUR,2026-04-22,OPEN,ACH,Logistics and shipping services
+AP-055,V-055,Bosch Group,INV-BSH-5515,82000,EUR,2026-04-26,OPEN,WIRE,IoT sensor equipment
+AP-056,V-056,Aviva PLC,INV-AVI-5516,175000,GBP,2026-04-09,OPEN,WIRE,Employee benefits insurance
+AP-057,V-057,Legal & General,INV-LGL-5517,95000,GBP,2026-04-17,OPEN,WIRE,Pension fund management
+AP-058,V-058,Royal Mail,INV-RML-5518,32000,GBP,2026-04-24,OPEN,ACH,Postal and courier services (2/10 net 30)
+AP-059,V-059,British Gas,INV-BGS-5519,48000,GBP,2026-04-28,OPEN,ACH,Energy costs Q1
+AP-060,V-060,Toyota Tsusho,INV-TTS-5520,120000000,JPY,2026-04-11,OPEN,WIRE,Automotive components bulk order
+AP-061,V-061,Mitsui & Co,INV-MIT-5521,135000000,JPY,2026-04-12,OPEN,WIRE,Industrial materials procurement
+AP-062,V-062,Marubeni Corp,INV-MRB-5522,95000000,JPY,2026-04-13,OPEN,WIRE,Infrastructure project materials
+AP-063,V-063,Denso Corp,INV-DNS-5523,45000000,JPY,2026-04-19,OPEN,WIRE,Electronic components supply
+AP-064,V-064,Nippon Steel,INV-NST-5524,68000000,JPY,2026-04-25,OPEN,WIRE,Steel materials for construction
+AP-065,V-065,FANUC Corporation,INV-FNC-5525,22000000,JPY,2026-04-29,OPEN,LOCAL,Robotics maintenance contract
+AP-066,V-066,Keyence Corp,INV-KEY-5526,18000000,JPY,2026-05-01,OPEN,LOCAL,Sensor equipment (2/10 net 30)
+AP-067,V-067,Murata Manufacturing,INV-MUR-5527,12000000,JPY,2026-04-16,OPEN,LOCAL,Capacitor components order
+AP-068,V-068,Holcim Group,INV-HLC-5528,120000,CHF,2026-04-08,OPEN,WIRE,Construction materials
+AP-069,V-069,Kuehne+Nagel,INV-KNL-5529,125000,CHF,2026-04-15,OPEN,WIRE,International freight services
+AP-070,V-070,Swisscom AG,INV-SWC-5530,85000,CHF,2026-04-21,OPEN,WIRE,Telecom infrastructure
+AP-071,V-071,Sika AG,INV-SKA-5531,65000,CHF,2026-04-27,OPEN,WIRE,Chemical construction products
+AP-072,V-072,Georg Fischer AG,INV-GFA-5532,42000,CHF,2026-04-30,OPEN,LOCAL,Piping systems (2/10 net 30)
+AP-073,V-073,Singapore Power,INV-SPW-5533,165000,SGD,2026-04-07,OPEN,WIRE,Electricity and utilities Q1
+AP-074,V-074,ST Engineering,INV-STE-5534,220000,SGD,2026-04-14,OPEN,WIRE,Engineering services contract
+AP-075,V-075,StarHub Ltd,INV-STH-5535,45000,SGD,2026-04-20,OPEN,LOCAL,Telecom services
+AP-076,V-076,Olam Group,INV-OLM-5536,85000,SGD,2026-04-25,OPEN,WIRE,Agricultural commodity supply
+AP-077,V-077,SMRT Corporation,INV-SMR-5537,35000,SGD,2026-04-29,OPEN,LOCAL,Transport services (2/10 net 30)
+AP-078,V-078,Frasers Property,INV-FRP-5538,95000,SGD,2026-05-01,OPEN,WIRE,Office space lease Q1
+AP-079,V-079,AGL Energy,INV-AGL-5539,185000,AUD,2026-04-06,OPEN,WIRE,Energy procurement Q1
+AP-080,V-080,Qantas Airways,INV-QAN-5540,125000,AUD,2026-04-12,OPEN,WIRE,Corporate travel program
+AP-081,V-081,Telstra Corp,INV-TLS-5541,95000,AUD,2026-04-18,OPEN,WIRE,Telecommunications services
+AP-082,V-082,Lendlease Group,INV-LDL-5542,220000,AUD,2026-04-22,OPEN,WIRE,Construction project milestone
+AP-083,V-083,Origin Energy,INV-ORG-5543,65000,AUD,2026-04-26,OPEN,ACH,Natural gas supply
+AP-084,V-084,Boral Limited,INV-BRL-5544,38000,AUD,2026-04-30,OPEN,LOCAL,Building materials (2/10 net 30)

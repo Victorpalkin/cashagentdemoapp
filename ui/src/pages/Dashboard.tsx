@@ -158,7 +158,7 @@ const Dashboard = () => {
                 },
                 {
                   title: 'Scheduled Payment Runs',
-                  desc: 'Lists upcoming batch payment runs imported from SAP, including the run description, total amount, currency, scheduled date, and number of line items. Helps anticipate near-term cash outflows.',
+                  desc: 'Lists upcoming scheduled payment obligations such as payroll, tax remittances, pension contributions, and social security — distinct from vendor AP items. Shows the run description, total amount, currency, scheduled date, and number of line items.',
                 },
                 {
                   title: 'Recent Agent Activity',
@@ -166,11 +166,11 @@ const Dashboard = () => {
                 },
                 {
                   title: 'Recent Recommendations',
-                  desc: 'Displays the most recent AI-generated treasury recommendations (e.g., inter-account transfers, FX hedges, term deposits) with priority levels (HIGH/MEDIUM/LOW), amounts, and descriptions. High-priority items may require approval before execution.',
+                  desc: 'Displays the most recent AI-generated treasury recommendations (e.g., intercompany transfers, FX hedges, term deposits, collection acceleration) with priority levels (HIGH/MEDIUM/LOW), amounts, and descriptions. The agent may recommend converting surplus currency (e.g. EUR) to cover shortfalls in others (e.g. USD). High-priority items may require approval before execution.',
                 },
                 {
                   title: 'Cash Flow Forecast',
-                  desc: 'A 30-day forward-looking chart powered by Google\'s TimesFM AI forecasting model. Shows projected cash positions per currency, overlaid with known obligations and payment runs, highlighting potential shortfalls or surplus periods that may need action.',
+                  desc: 'A 30-day forward-looking chart powered by Google\'s TimesFM AI forecasting model. Shows projected cash positions per currency, overlaid with known obligations and payment runs. Some currencies (e.g. EUR, CHF) may trend upward while others (e.g. USD, GBP) decline — revealing cross-currency rebalancing opportunities.',
                 },
                 {
                   title: 'Obligations Table',

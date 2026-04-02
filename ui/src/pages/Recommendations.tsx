@@ -62,6 +62,11 @@ const ACTION_CONFIG: Record<string, { label: string; icon: React.ReactNode; colo
     icon: <TrendingUp fontSize="small" />,
     color: '#CC1919',
   },
+  INTERCOMPANY_TRANSFER: {
+    label: 'Intercompany Transfer',
+    icon: <CurrencyExchange fontSize="small" />,
+    color: '#9B59B6',
+  },
 }
 
 const ACTION_OPTIONS = [
@@ -72,6 +77,7 @@ const ACTION_OPTIONS = [
   { value: 'INTERBANK_SWEEP', label: 'Interbank Sweep' },
   { value: 'SPOT_FX_REBALANCE', label: 'Spot FX Rebalance' },
   { value: 'EARLY_PAYMENT_DISCOUNT', label: 'Early Payment Discount' },
+  { value: 'INTERCOMPANY_TRANSFER', label: 'Intercompany Transfer' },
 ]
 
 const CURRENCY_OPTIONS = ['USD', 'EUR', 'GBP', 'JPY', 'CHF', 'SGD', 'AUD']
@@ -125,6 +131,14 @@ const getExecutionPlan = (rec: { action_type: string; amount: number; currency: 
         `Process payment of ${amount} before discount deadline`,
         `Net savings credited to operating account`,
         `Payment confirmation recorded in execution log`,
+      ]
+    case 'INTERCOMPANY_TRANSFER':
+      return [
+        `Convert ${amount} surplus to cover projected shortfall in target currency`,
+        `Execute spot FX trade at current market rate`,
+        `Settlement T+2 business days`,
+        `Intercompany loan agreement documented per Treasury Policy Section 5`,
+        `Transfer confirmation recorded in execution log`,
       ]
     default:
       return [`Execute ${rec.action_type.replace(/_/g, ' ').toLowerCase()} for ${amount}`]
