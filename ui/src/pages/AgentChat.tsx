@@ -3,7 +3,7 @@ import { Box, Typography, Card, Paper, TextField, Button, Avatar, IconButton, Me
 import { Send, MoreVert, Description, Code, PictureAsPdf, Article } from '@mui/icons-material'
 import ReactMarkdown, { Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { sendChatMessage } from '../api/bigquery'
+import { sendChatMessage, ChatImage } from '../api/bigquery'
 import ChatChart from '../components/ChatChart'
 import { ChartData } from '../types/chart'
 import { exportAsMarkdown, exportAsHTML, exportAsPDF, exportAsDOCX } from '../utils/messageExport'
@@ -87,6 +87,7 @@ interface Message {
   id: string
   sender: 'user' | 'agent'
   text: string
+  images?: ChatImage[]
   timestamp: string
 }
 
@@ -129,11 +130,11 @@ const AgentChat = () => {
     setLoading(true)
 
     try {
-      const response = await sendChatMessage(inputText)
+      const { response, images } = await sendChatMessage(inputText)
       setMessages(prev =>
         prev.map(m =>
           m.id === thinkingId
-            ? { ...m, text: response, timestamp: new Date().toISOString() }
+            ? { ...m, text: response, images, timestamp: new Date().toISOString() }
             : m
         )
       )
@@ -214,9 +215,20 @@ const AgentChat = () => {
                       </IconButton>
                     )}
                     {message.sender === 'agent' ? (
-                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                        {message.text}
-                      </ReactMarkdown>
+                      <>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                          {message.text}
+                        </ReactMarkdown>
+                        {message.images?.map((img, i) => (
+                          <Box key={i} sx={{ mt: 1.5 }}>
+                            <img
+                              src={`data:${img.mime_type};base64,${img.data}`}
+                              alt="Chart"
+                              style={{ maxWidth: '100%', borderRadius: 8 }}
+                            />
+                          </Box>
+                        ))}
+                      </>
                     ) : (
                       <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
                         {message.text}

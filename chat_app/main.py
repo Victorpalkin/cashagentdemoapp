@@ -38,32 +38,48 @@ def _get_or_create_session(user_id: str) -> str:
     return session["id"]
 
 
-def _query_agent(user_id: str, message: str) -> str:
-    """Send a message to the agent and collect the response."""
+def _query_agent(user_id: str, message: str) -> dict:
+    """Send a message to the agent and collect text + images."""
     agent_app = _get_agent_app()
     session_id = _get_or_create_session(user_id)
 
     response_text = ""
+    images = []
     try:
         for event in agent_app.stream_query(
             user_id=user_id,
             session_id=session_id,
             message=message,
         ):
-            # Handle both dict events and object events
             if isinstance(event, dict):
                 content = event.get("content", {})
                 for part in content.get("parts", []):
                     if part.get("text"):
                         response_text += part["text"]
+                    inline = part.get("inline_data") or part.get("inlineData")
+                    if inline:
+                        mime = inline.get("mime_type") or inline.get("mimeType", "")
+                        if mime.startswith("image/"):
+                            images.append({"data": inline.get("data", ""), "mime_type": mime})
             elif hasattr(event, "content") and event.content:
                 for part in event.content.parts:
                     if hasattr(part, "text") and part.text:
                         response_text += part.text
+                    if hasattr(part, "inline_data") and part.inline_data:
+                        mime = getattr(part.inline_data, "mime_type", "")
+                        if mime.startswith("image/"):
+                            import base64
+                            data = part.inline_data.data
+                            if isinstance(data, bytes):
+                                data = base64.b64encode(data).decode()
+                            images.append({"data": data, "mime_type": mime})
     except Exception as e:
         response_text = f"I encountered an error: {str(e)}"
 
-    return response_text or "I didn't get a response. Please try again."
+    return {
+        "response": response_text or "I didn't get a response. Please try again.",
+        "images": images,
+    }
 
 
 CHAT_HTML = """<!DOCTYPE html>
@@ -163,7 +179,17 @@ async function sendMessage() {
     });
     const data = await res.json();
     thinking.remove();
-    addMessage(data.response || data.error || 'No response', 'agent');
+    const resp = data.response || data.error || 'No response';
+    addMessage(typeof resp === 'string' ? resp : resp.response || 'No response', 'agent');
+    if (data.images && data.images.length > 0) {
+      data.images.forEach(img => {
+        const imgDiv = document.createElement('div');
+        imgDiv.className = 'msg agent';
+        imgDiv.innerHTML = '<img src="data:' + img.mime_type + ';base64,' + img.data + '" style="max-width:100%;border-radius:8px;">';
+        messagesEl.appendChild(imgDiv);
+      });
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
   } catch (err) {
     thinking.remove();
     addMessage('Error: ' + err.message, 'agent');
@@ -193,8 +219,8 @@ def api_chat():
             )
         })
 
-    response = _query_agent("web-user", message)
-    return jsonify({"response": response})
+    result = _query_agent("web-user", message)
+    return jsonify(result)
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -242,8 +268,8 @@ def root():
                 )
             })
 
-        response = _query_agent(user_id, message_text)
-        return jsonify({"text": response})
+        result = _query_agent(user_id, message_text)
+        return jsonify({"text": result["response"]})
 
     if event_type == "CARD_CLICKED":
         action = event.get("action", {})
@@ -256,11 +282,11 @@ def root():
             )
             if request_id:
                 user_id = event.get("user", {}).get("name", "anonymous")
-                response = _query_agent(
+                result = _query_agent(
                     user_id,
                     f"Approve request {request_id}. I am approving this action.",
                 )
-                return jsonify({"text": response})
+                return jsonify({"text": result["response"]})
 
         if action_name == "reject":
             params = action.get("parameters", [])
@@ -269,11 +295,11 @@ def root():
             )
             if request_id:
                 user_id = event.get("user", {}).get("name", "anonymous")
-                response = _query_agent(
+                result = _query_agent(
                     user_id,
                     f"Reject request {request_id}. Reason: Rejected via Chat.",
                 )
-                return jsonify({"text": response})
+                return jsonify({"text": result["response"]})
 
     return jsonify({"text": ""})
 

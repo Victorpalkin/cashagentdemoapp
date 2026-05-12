@@ -995,7 +995,10 @@ def chat(body: dict = Body(...)):
             )
             with urllib.request.urlopen(req, timeout=120) as resp:
                 result = json.loads(resp.read().decode())
-                return {"response": result.get("response", "No response from agent")}
+                out = {"response": result.get("response", "No response from agent")}
+                if result.get("images"):
+                    out["images"] = result["images"]
+                return out
         except urllib.error.URLError as e:
             last_error = e
             logger.warning(f"Chat proxy attempt {attempt + 1}/3 failed: {e}")

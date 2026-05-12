@@ -266,6 +266,21 @@ resource "google_cloud_run_v2_service" "agent_runner" {
         name  = "REGION"
         value = var.region
       }
+
+      env {
+        name  = "BQ_ANALYTICS_DATASET_ID"
+        value = google_bigquery_dataset.agent_analytics.dataset_id
+      }
+
+      env {
+        name  = "LOGS_BUCKET_NAME"
+        value = google_storage_bucket.agent_logs.name
+      }
+
+      env {
+        name  = "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT"
+        value = "NO_CONTENT"
+      }
     }
 
     service_account = google_service_account.cash_agent_sa.email

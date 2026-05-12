@@ -1,39 +1,11 @@
 """Policy document search and threshold tools."""
 
-import os
-import sys
-
-from ..shared_libraries.constants import PROJECT_ID
-
-
-_POLICY_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "data", "policies")
-
-# Make the policy parser importable
-sys.path.insert(0, os.path.normpath(_POLICY_DIR))
-import policy_parser as _parser  # noqa: E402
+from ..shared_libraries import policy_parser as _parser
 
 
 def _load_policies() -> dict[str, str]:
-    """Load policy markdown files from local directory (body only, no frontmatter)."""
-    policies = {}
-    for data in _parser.load_all_policies().values():
-        # Use the body without YAML frontmatter for text search
-        pass
-    policy_dir = os.path.normpath(_POLICY_DIR)
-    if os.path.isdir(policy_dir):
-        for fname in os.listdir(policy_dir):
-            if fname.endswith(".md"):
-                with open(os.path.join(policy_dir, fname)) as f:
-                    content = f.read()
-                # Strip YAML frontmatter for search
-                if content.startswith("---"):
-                    try:
-                        end = content.index("---", 3)
-                        content = content[end + 3:].strip()
-                    except ValueError:
-                        pass
-                policies[fname] = content
-    return policies
+    """Load policy markdown files (body only, no frontmatter). Reads from GCS or local."""
+    return {fname: data["body"] for fname, data in _parser.load_all_policies().items()}
 
 
 def search_policies(query: str) -> dict:

@@ -387,7 +387,17 @@ export const getPolicyThresholds = async (): Promise<Record<string, any>> => {
 
 // ---- Chat ----
 
-export const sendChatMessage = async (message: string): Promise<string> => {
+export interface ChatImage {
+  data: string
+  mime_type: string
+}
+
+export interface ChatResponse {
+  response: string
+  images?: ChatImage[]
+}
+
+export const sendChatMessage = async (message: string): Promise<ChatResponse> => {
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -395,7 +405,10 @@ export const sendChatMessage = async (message: string): Promise<string> => {
   })
   if (!res.ok) throw new Error(`Chat failed: ${res.status}`)
   const data = await res.json()
-  return data.response || data.error || 'No response'
+  return {
+    response: data.response || data.error || 'No response',
+    images: data.images,
+  }
 }
 
 // ---- Reset Demo ----

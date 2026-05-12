@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "AI-powered Treasury Cash Agent demo for Google Cloud"
 requires-python = ">=3.10,<3.13"
 dependencies = [
-    "google-adk",
+    "google-adk[bigquery-analytics]>=1.21.0",
     "google-cloud-aiplatform[adk,agent_engines]",
     "google-cloud-bigquery",
     "google-cloud-storage",
@@ -13,6 +13,7 @@ dependencies = [
     "fastapi",
     "uvicorn[standard]",
     "python-dotenv",
+    "google-cloud-modelarmor",
 ]
 
 [project.optional-dependencies]
@@ -21,3 +22,10 @@ dev = [
     "pytest-asyncio",
     "httpx",
 ]
+
+[tool.agents-cli]
+agent_directory = "agent"
+region = "us-central1"
+
+[tool.agents-cli.create_params]
+deployment_target = "agent_runtime"

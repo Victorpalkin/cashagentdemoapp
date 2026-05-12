@@ -1,14 +1,22 @@
 """Root Cash Agent — orchestrates all sub-agents."""
 
-from google.adk.agents import Agent
+import os
 
-from .shared_libraries.constants import MODEL
+from google.adk.agents import Agent
+from google.adk.apps import App
+from google.adk.plugins.bigquery_agent_analytics_plugin import (
+    BigQueryAgentAnalyticsPlugin,
+)
+
+from .plugins.model_armor_plugin import ModelArmorPlugin
+from .shared_libraries.constants import MODEL, PROJECT_ID, REGION
 from .sub_agents.cash_position.agent import cash_position_agent
 from .sub_agents.forecasting.agent import cash_forecast_agent
 from .sub_agents.recommendation.agent import recommendation_agent
 from .sub_agents.execution.agent import execution_agent
 from .sub_agents.anomaly_detection.agent import anomaly_detection_agent
 from .sub_agents.scenario_simulation.agent import scenario_simulation_agent
+from .sub_agents.visualization.agent import visualization_agent
 
 root_agent = Agent(
     name="cash_agent",
@@ -28,6 +36,7 @@ You help the Treasury team manage cash positions, forecast cash flows, and optim
 - **Execution**: Delegate to ExecutionAgent to execute approved financial actions.
 - **Anomaly Detection**: Delegate to AnomalyDetectionAgent for risk identification and unusual patterns.
 - **Scenario Simulation**: Delegate to ScenarioSimulationAgent for what-if analysis.
+- **Visualization**: Delegate to VisualizationAgent to generate charts from data.
 
 ## Rules
 - Show amounts with currency symbols ($, EUR, GBP, JPY, CHF, S$, A$). For multi-currency views, also show USD equivalent.
@@ -45,21 +54,18 @@ You help the Treasury team manage cash positions, forecast cash flows, and optim
 - Summarize first, then provide detail if asked.
 
 ## Charts and Visualizations
-When presenting numerical data that benefits from visualization, include a chart
-by embedding a JSON code block with language tag "chart". Always include the narrative
-explanation alongside the chart — charts supplement text, they don't replace it.
+When presenting numerical data that benefits from visualization (2+ data points),
+delegate to **VisualizationAgent** to generate a chart. Provide the data clearly
+so the visualization agent can create an appropriate chart.
 
-```chart
-{"type": "bar", "title": "Cash Position by Currency", "data": [{"currency": "USD", "balance": 12500000}, {"currency": "EUR", "balance": 7800000}], "config": {"xKey": "currency", "yKeys": ["balance"]}}
-```
+Always include the narrative explanation alongside the chart — charts supplement text,
+they don't replace it. First present the data in text form, then delegate to
+VisualizationAgent for the visual chart.
 
-Chart types:
-- **line**: Trends over time (forecasts, historical balances). Config: xKey + yKeys.
-- **bar**: Comparisons (balances by currency, AR/AP by vendor). Config: xKey + yKeys.
-- **pie**: Distributions (allocation %, risk tiers). Config: dataKey + nameKey.
-
-Optional: add "colors" to config to set series colors, e.g. {"colors": {"USD": "#0070F2"}}.
-Only include a chart when the data has 2+ data points and visualization adds clarity.
+Use charts for:
+- Comparisons across categories (balances by currency, AR/AP by vendor) → bar chart
+- Trends over time (forecasts, historical balances) → line chart
+- Distributions and proportions (allocation %, risk tiers) → pie chart
 """,
     sub_agents=[
         cash_position_agent,
@@ -68,5 +74,32 @@ Only include a chart when the data has 2+ data points and visualization adds cla
         execution_agent,
         anomaly_detection_agent,
         scenario_simulation_agent,
+        visualization_agent,
     ],
+)
+
+BQ_ANALYTICS_DATASET = os.environ.get(
+    "BQ_ANALYTICS_DATASET_ID", "cash_agent_analytics"
+)
+
+bq_analytics_plugin = BigQueryAgentAnalyticsPlugin(
+    project_id=PROJECT_ID,
+    dataset_id=BQ_ANALYTICS_DATASET,
+    location=REGION,
+)
+
+MODEL_ARMOR_TEMPLATE = os.environ.get(
+    "MODEL_ARMOR_TEMPLATE_ID", "cash-agent-guardrail"
+)
+
+model_armor_plugin = ModelArmorPlugin(
+    project_id=PROJECT_ID,
+    location=REGION,
+    template_id=MODEL_ARMOR_TEMPLATE,
+)
+
+app = App(
+    root_agent=root_agent,
+    name="agent",
+    plugins=[model_armor_plugin, bq_analytics_plugin],
 )
