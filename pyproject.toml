@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "AI-powered Treasury Cash Agent demo for Google Cloud"
 requires-python = ">=3.10,<3.13"
 dependencies = [
-    "google-adk[bigquery-analytics]>=1.21.0",
+    "google-adk>=1.36.2,<2",
     "google-cloud-aiplatform[adk,agent_engines]",
     "google-cloud-bigquery",
     "google-cloud-storage",
